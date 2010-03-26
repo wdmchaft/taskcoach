@@ -1,0 +1,182 @@
+=====================================================================
+Task Coach - Your friendly task manager
+Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2009 George Weeks <gcw52@telus.net>
+
+Task Coach is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Task Coach is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+=====================================================================
+
+Welcome to Task Coach - Your friendly task manager
+
+Below you find information about running, testing, installing, and 
+developing Task Coach.
+
+--- Prerequisites ---------------------------------------------------
+
+You need Python version 2.5 or higher and wxPython version 
+2.8.9.1-unicode or higher. See http://www.taskcoach.org/devinfo.html 
+for more details and platform specific notes. 
+    
+For building distributions and running tests, GNU make is used. Make 
+is installed on most systems by default. On Windows you can install 
+Cygwin (http://www.cygwin.com) to get make and a lot of other nice 
+utilities. Make will automatically use the file Makefile as its 
+script, unless directed otherwise. Makefile in turn uses "make.py" 
+to build distributions. So, if you don't have make installed you can
+still build the distributions by running the commands from the 
+Makefile by hand.
+
+--- Preparation -----------------------------------------------------
+
+Task Coach needs a few generated files, run the following command
+to generate them:
+
+  make prepare
+
+--- Running ---------------------------------------------------------
+
+Start Task Coach from the command line like this:
+
+  python taskcoach.py
+
+--- Testing ---------------------------------------------------------
+
+To run the tests, enter:
+
+  make unittests
+
+Check out the Makefile for more testing options. The test script
+has a bunch of options as well, enter: 
+
+  cd tests; python test.py --help
+
+for more information.
+
+--- Test coverage ---------------------------------------------------
+
+To create test coverage reports, you need to install coverage.py
+(http://pypi.python.org/pypi/coverage/). Install with:
+
+  sudo easy_install coverage
+
+To create a coverage report, enter:
+
+  make coverage
+
+The coverage report is written to tests/coverage.out.
+
+--- Building distributions ------------------------------------------
+
+Use the Makefile to create distributions (they are placed in dist/):
+
+  make windist # Creates installer for Windows
+  make dmg     # Creates disk image for Mac OS X
+  make rpm     # Creates generic RPM
+  make fedora  # Creates RPM for Fedora 8 or later
+  make deb     # Creates Debian package for Debian and Ubuntu
+
+Check out the Makefile for more details. E.g. to create the Task
+Coach app on Mac OS X you can also run:
+
+  python make.py py2app
+
+The TaskCoach.app ends up in build/
+
+--- Installation ----------------------------------------------------
+
+There are two options to install Task Coach: 
+
+First, you can simply move this directory to some suitable 
+location and run taskcoach.py (or taskcoach.pyw if you are on 
+the Windows platform) from there.
+
+Alternatively, you can use the Python distutils setup script
+to let Python install Task Coach for you. In that case run the
+following command:
+
+  python setup.py install
+
+You may need to run this command as root if you get 
+"Permission denied" errors:
+
+  sudo python setup.py install
+
+If you have a previous version of Task Coach installed, you may
+need to force old files to be overwritten, like this:
+
+  python setup.py install --force
+
+--- Architecture overview -------------------------------------------
+  
+Task Coach is a desktop application, developed in Python and using 
+wxPython for its GUI. Task Coach is more or less developed using the 
+Model-View-Controller architectural style. Its main components are:
+
+* the domain layer that consists of domain classes for tasks, 
+  categories, effort, notes and other domain objects,
+* the gui layer that consists of viewers, controllers, dialogs, 
+  menu's and other GUI objects,
+* the persistence layer that knows how to load and save domain 
+  objects from and to XML files (the .tsk files) and how to export 
+  domain objects to different formats, including HTML.
+
+The layering is not strict: The domain layer has no knowledge of the 
+gui and persistence layer. The persistence layer has no knowledge of 
+the gui layer. But the gui layer has knowledge of both persistence 
+and domain layer.
+
+--- Source code overview --------------------------------------------
+
+The Task Coach source code is organized in python packages. The most 
+important and biggest packages are the domain packages that contains 
+classes for the domain objects and the gui package that contains 
+viewers, dialogs and other gui components.
+
+The command package contains classes that implement user actions, 
+e.g. adding a new task or deleting a category. These actions are all 
+undoable and redoable. The package is called 'command' since it uses 
+the so-called Command patterns to implement unlimited undo-redo.
+
+The config package contains classes related to user configurable 
+options that are saved in the TaskCoach.ini file, including all 
+default values for the options.
+
+The help package contains help files and the license.
+
+The i18n ('internationalization') package contains the (generated) 
+translation modules. These python modules are generated from the .po 
+files (see taskcoach/i18n.in).
+
+The mailer package contains modules to interact with Outlook and 
+Thunderbird for email attachments and drag and drop from email 
+clients.
+
+The meta package contains meta information about Task Coach, such as 
+author, version number, etc.
+
+The patterns package contains base classes for design patterns such 
+as Singleton and Observable that are used in other packages.
+
+The persistence package contains modules for saving the Task Coach 
+data in its .tsk file format, which actually is XML and for exporting 
+data in different formats.
+
+The thirdparty package contains third party modules that are used as 
+is, but are included here to ease installation.
+
+The widgets package contains widgets that are used in the gui 
+package. These are mostly widgets from wxPython that need a slight 
+adaption in their interface.
+
+=====================================================================

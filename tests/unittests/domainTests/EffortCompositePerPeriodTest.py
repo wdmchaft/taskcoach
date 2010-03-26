@@ -1,0 +1,84 @@
+'''
+Task Coach - Your friendly task manager
+Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+
+Task Coach is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Task Coach is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+'''
+
+import test
+from taskcoachlib.domain import task, effort, date
+
+
+class CompositeEffortPerPeriodTest(test.TestCase):
+    def setUp(self):
+        self.taskList = task.TaskList()
+        self.effortList = effort.EffortList(self.taskList)
+        self.task = task.Task(subject='task')
+        self.taskList.append(self.task)
+        self.effort1 = effort.Effort(self.task, 
+            date.DateTime(2004,1,1,11,0,0), date.DateTime(2004,1,1,12,0,0))
+        self.effort2 = effort.Effort(self.task, 
+            date.DateTime(2004,1,1,13,0,0), date.DateTime(2004,1,1,14,0,0))
+        self.effort3 = effort.Effort(self.task, 
+            date.DateTime(2004,1,11,13,0,0), date.DateTime(2004,1,11,14,0,0))
+        self.trackedEffort = effort.Effort(self.task, 
+            date.DateTime(2004,1,1,9,0,0))
+        self.composite = effort.CompositeEffortPerPeriod(\
+            date.DateTime(2004,1,1,0,0,0), date.DateTime(2004,1,1,23,59,59),
+            self.taskList)
+
+    def testInitialLength(self):
+        self.assertEqual(0, len(self.composite))
+        
+    def testInitialDuration(self):
+        self.assertEqual(date.TimeDelta(), self.composite.duration())
+
+    def testInitialTrackingState(self):
+        self.failIf(self.composite.isBeingTracked())
+
+    def testInitialTrackingStateWhenTaskIsTracked(self):
+        self.task.addEffort(self.trackedEffort)
+        composite = effort.CompositeEffortPerPeriod( 
+            self.composite.getStart(), self.composite.getStop(),
+            self.taskList)
+        self.failUnless(composite.isBeingTracked())
+
+    def testDurationForSingleEffort(self):
+        self.task.addEffort(self.effort1)
+        self.assertEqual(self.effort1.duration(), self.composite.duration())
+
+    def testAddEffortOutsidePeriodToTask(self):
+        effortOutsidePeriod = effort.Effort(self.task, 
+            date.DateTime(2004,1,11,13,0,0), date.DateTime(2004,1,11,14,0,0))
+        self.task.addEffort(effortOutsidePeriod)
+        self.assertEqual(date.TimeDelta(), self.composite.duration())
+
+    def testAddEffortWithStartTimeEqualToStartOfPeriodToTask(self):
+        effortSameStartTime = effort.Effort(self.task, 
+            date.DateTime(2004,1,1,0,0,0), date.DateTime(2004,1,1,14,0,0))
+        self.task.addEffort(effortSameStartTime)
+        self.assertEqual(effortSameStartTime.duration(), 
+            self.composite.duration())
+
+    def testAddEffortWithStartTimeEqualToEndOfPeriodToTask(self):
+        effortSameStopTime = effort.Effort(self.task, 
+            date.DateTime(2004,1,1,23,59,59), date.DateTime(2004,1,2,1,0,0))
+        self.task.addEffort(effortSameStopTime)
+        self.assertEqual(effortSameStopTime.duration(), 
+            self.composite.duration())
+
+    def testRemoveEffortFromTask(self):
+        self.task.addEffort(self.effort1)
+        self.task.removeEffort(self.effort1)
+        self.assertEqual(date.TimeDelta(), self.composite.duration())

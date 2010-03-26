@@ -1,0 +1,65 @@
+Metadata-Version: 1.0
+Name: TaskCoach
+Version: 1.0.0
+Summary: Your friendly task manager
+Home-page: http://www.taskcoach.org/
+Author: Frank Niessink and Jerome Laheurte
+Author-email: developers@taskcoach.org
+License: GNU General Public License version 3 or any later version
+Download-URL: http://www.taskcoach.org/download.html
+Description: Task Coach is a simple open source todo manager to manage personal tasks and todo lists. It grew out of a frustration that well-known task managers, such as those provided with Outlook or Lotus Notes, do not provide facilities for composite tasks. Often, tasks and other things todo consist of several activities. Task Coach is designed to deal with composite tasks.
+Platform: UNKNOWN
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: End Users/Desktop
+Classifier: License :: OSI Approved :: GNU General Public License (GPL)
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python
+Classifier: Topic :: Office/Business :: Scheduling
+Classifier: Natural Language :: Arabic
+Classifier: Natural Language :: Basque
+Classifier: Natural Language :: Bosnian
+Classifier: Natural Language :: Breton
+Classifier: Natural Language :: Bulgarian
+Classifier: Natural Language :: Catalan
+Classifier: Natural Language :: Chinese (Simplified)
+Classifier: Natural Language :: Chinese (Traditional)
+Classifier: Natural Language :: Czech
+Classifier: Natural Language :: Danish
+Classifier: Natural Language :: Dutch
+Classifier: Natural Language :: English
+Classifier: Natural Language :: Esperanto
+Classifier: Natural Language :: Estonian
+Classifier: Natural Language :: Finnish
+Classifier: Natural Language :: French
+Classifier: Natural Language :: Galician
+Classifier: Natural Language :: German
+Classifier: Natural Language :: German (Low)
+Classifier: Natural Language :: Greek
+Classifier: Natural Language :: Hebrew
+Classifier: Natural Language :: Hindi
+Classifier: Natural Language :: Hungarian
+Classifier: Natural Language :: Indonesian
+Classifier: Natural Language :: Italian
+Classifier: Natural Language :: Japanese
+Classifier: Natural Language :: Korean
+Classifier: Natural Language :: Latvian
+Classifier: Natural Language :: Lithuanian
+Classifier: Natural Language :: Marathi
+Classifier: Natural Language :: Mongolian
+Classifier: Natural Language :: Norwegian (Bokmal)
+Classifier: Natural Language :: Norwegian (Nynorsk)
+Classifier: Natural Language :: Persian
+Classifier: Natural Language :: Polish
+Classifier: Natural Language :: Portuguese
+Classifier: Natural Language :: Portuguese (Brazilian)
+Classifier: Natural Language :: Romanian
+Classifier: Natural Language :: Russian
+Classifier: Natural Language :: Slovak
+Classifier: Natural Language :: Slovene
+Classifier: Natural Language :: Spanish
+Classifier: Natural Language :: Swedish
+Classifier: Natural Language :: Telugu
+Classifier: Natural Language :: Thai
+Classifier: Natural Language :: Turkish
+Classifier: Natural Language :: Ukranian
+Classifier: Natural Language :: Vietnamese

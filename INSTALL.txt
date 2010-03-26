@@ -1,0 +1,49 @@
+================================================================
+Task Coach - Your friendly task manager
+================================================================
+
+
+--- Prerequisites ----------------------------------------------
+
+You need Python version 2.5 or higher and wxPython 
+version 2.8.9.1-unicode or higher.
+
+
+--- Testing ----------------------------------------------------
+
+Before installing, you may want to run the unittests included.
+Issue the following command:
+
+  cd tests; python test.py
+
+If all goes well, you should see a number of dots appearing and
+the message 'Ran X tests in Y seconds. OK'. If not, you'll get
+one or more failed tests. In that case, please run the tests
+again, redirecting the output to a textfile, like this:
+
+  python test.py 2> errors.txt
+
+Please mail me the errors.txt file and your platform information
+(operating system version, Python version and wxPython version).
+
+
+--- Installation -----------------------------------------------
+
+There are two options to install Task Coach: 
+
+First, you can simply move this directory to some suitable 
+location and run taskcoach.py (or taskcoach.pyw if you are on 
+the Windows platform) from there.
+
+Alternatively, you can use the Python distutils setup script
+to let Python install Task Coach for you. In that case run the
+following command:
+
+  python setup.py install
+
+If you have a previous version of Task Coach installed, you may
+need to force old files to be overwritten, like this:
+
+  python setup.py install --force
+
+================================================================

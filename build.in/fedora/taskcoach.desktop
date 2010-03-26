@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Task Coach
+GenericName=Task Coach
+Comment=Your friendly task manager
+Exec=taskcoach.py %f
+Icon=taskcoach
+Terminal=false
+Type=Application
+Categories=Office;Application;
+
