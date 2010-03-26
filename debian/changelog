@@ -1,0 +1,5 @@
+taskcoach (1.0.0-1) unstable; urgency=low
+
+  * Initial release (Closes: #509768)
+
+ -- Alejandro Garrido Mota <garridomota@gmail.com>  Sat, 26 Sep 2009 10:35:31 -0430

@@ -1,0 +1,2 @@
+?package(taskcoach):needs="X11" section="Applications/Project Management"\
+  title="taskcoach" command="/usr/bin/taskcoach"

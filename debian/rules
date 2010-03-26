@@ -1,0 +1,18 @@
+#!/usr/bin/make -f
+export DH_VERBOSE=1
+PACKAGE = $(shell dh_listpackages)
+TMP     = $(CURDIR)/debian/$(PACKAGE)
+
+%:
+	dh --with quilt $@
+
+override_dh_auto_install:
+	dh_auto_install
+	rm -f $(TMP)/usr/bin/taskcoach.pyw
+	mv $(TMP)/usr/bin/taskcoach.py $(TMP)/usr/bin/taskcoach
+
+override_dh_fixperms:
+	dh_fixperms
+	chmod +r icons.in/taskcoach.png
+	chmod -x icons.in/taskcoach.png
+
