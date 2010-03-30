@@ -4,7 +4,7 @@ taskcoach (1.0.1-1) unstable; urgency=low
 
  -- Alejandro Garrido Mota <garridomota@gmail.com>  Tue, 30 Mar 2010 11:11:32 -0430
 
-taskcoach (1.0.0-2) unstable; urgency=low
+taskcoach (1.0.0-1) unstable; urgency=low
 
   * Initial release (Closes: #509768)
 
