@@ -1,3 +1,17 @@
+Release 1.0.1 - March 26, 2010
+This is a bugfix release.
+
+Bugs fixed:
+- Task Coach would try to use a non-existing icon when the SyncML feature was
+  turned on.
+- Task Coach wouldn't install properly on Ubuntu 10.04. Added a deb for Ubuntu
+  10.04. (SF#2975538)
+- When setting the end working hour to 24, the calendar viewer would crash.
+  (SF#2975347)
+- When trying to display tasks with notes, the calendar viewer would crash.
+- Synchronization with the iPhone did not work. (SF#2975920, SF#2976427)
+
+
 Release 1.0.0 - March 22, 2010
 To mark that Task Coach has been available for five years now, we call this
 release version 1.0. This release adds a calendar viewer for tasks, partial

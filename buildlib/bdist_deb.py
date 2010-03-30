@@ -245,7 +245,7 @@ Homepage: %(url)s
 
 Package: %(package)s
 Architecture: %(architecture)s
-Depends: python2.5, python-wxgtk2.8 (>= %(wxpythonversion)s), python-wxversion
+Depends: python, python-wxgtk2.8 (>= %(wxpythonversion)s), python-wxversion
 Description: %(description)s.
 %(long_description)s
 '''

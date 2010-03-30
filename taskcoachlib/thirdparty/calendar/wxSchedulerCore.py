@@ -332,8 +332,8 @@ class wxSchedulerCore( wxSchedulerPaint ):
 		"""
 		Set start and end work hours
 		"""
-		self._startingHour.SetHour( start )
-		self._endingHour.SetHour( stop )
+		self._startingHour.SetHour( max(0, start) )
+		self._endingHour.SetHour( min(23, stop) )
 		self._calculateWorkHour()
 		self.InvalidateMinSize()
 		self.Refresh()
