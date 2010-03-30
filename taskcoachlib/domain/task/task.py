@@ -538,7 +538,8 @@ class Task(note.NoteOwner, attachment.AttachmentOwner,
             else:
                 taskIcon += '_blue'
             taskIcon = self.pluralOrSingularIcon(taskIcon+'_icon')[:-len('_icon')]
-            taskIcon += '_open' if selected and self.children() else ''
+            hasChildren = any(child for child in self.children() if not child.isDeleted())
+            taskIcon += '_open' if selected and hasChildren else ''
         return taskIcon + '_icon'
     
     @classmethod

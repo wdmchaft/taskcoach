@@ -475,7 +475,7 @@ class SquareTaskViewer(BaseTaskViewer):
         return task.font(recursive=True)
 
     def icon(self, task, isSelected):
-        bitmap = self.iconName(task, isSelected) or 'task'
+        bitmap = self.iconName(task, isSelected) or 'led_blue_icon'
         return wx.ArtProvider_GetIcon(bitmap, wx.ART_MENU, (16,16))
 
     # Helper methods

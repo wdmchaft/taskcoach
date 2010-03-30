@@ -575,8 +575,9 @@ class InitialState(BaseState):
 
         super(InitialState, self).init('i', 1)
 
-        self.dlg = self.disp().window.createIPhoneProgressDialog()
-        self.dlg.Started()
+        if self.version == 4:
+            self.dlg = self.disp().window.createIPhoneProgressDialog()
+            self.dlg.Started()
 
         self.pack('i', version)
 
@@ -649,10 +650,6 @@ class GUIDState(BaseState):
             type_ = self.disp().window.getIPhoneSyncType(guid)
 
             self.pack('i', type_)
-
-            if type_ != 3:
-                self.dlg = self.disp().window.createIPhoneProgressDialog(self.deviceName)
-                self.dlg.Started()
 
             if type_ == 0:
                 self.setState(TwoWayState)

@@ -274,7 +274,7 @@ class TaskSchedule(wxSchedule):
                 icons.append('paperclip_icon')
 
             if self.task.notes():
-                icons.append('note')
+                icons.append('note_icon')
 
             self.icons = icons
         finally:
