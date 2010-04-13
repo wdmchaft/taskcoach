@@ -110,13 +110,6 @@ def percentage(aFloat):
     ''' Render a percentage. '''
     return '' if round(aFloat, 0) == 0 else '%.0f%%'%aFloat
 
-def multilineText(text, maxLines=3):
-    lines = text.split('\n')
-    if len(lines) > maxLines:
-        return '\n'.join(lines[:maxLines-1] + ['...'])
-    else:
-        return text
-
 def exception(exception, instance):
     ''' Safely render an exception, being prepared for new exceptions. '''
 

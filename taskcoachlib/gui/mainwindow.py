@@ -107,7 +107,9 @@ class WindowDimensionsTracker(object):
     def savePosition(self):
         iconized = self._window.IsIconized()
         self.setSetting('iconized', iconized)
-
+        if not iconized:
+            self.setSetting('position', self._window.GetPosition())
+        
 
 class MainWindow(DeferredCallMixin, PowerStateMixin, widgets.AuiManagedFrameWithNotebookAPI):
     pageClosedEvent = aui.EVT_AUI_PANE_CLOSE

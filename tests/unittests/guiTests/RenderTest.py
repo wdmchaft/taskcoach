@@ -145,19 +145,3 @@ class RenderException(test.TestCase):
         except UnicodeEncodeError: # pragma: no cover
             self.fail() 
 
-
-class RenderMultilineText(test.TestCase):
-    def testRenderOneLine(self):
-        self.assertEqual('line1', render.multilineText('line1'))
-        
-    def testRenderTwoLines(self):
-        self.assertEqual('line1\nline2', render.multilineText('line1\nline2'))
-        
-    def testRenderThreeLines(self):
-        self.assertEqual('line1\nline2\nline3', 
-                         render.multilineText('line1\nline2\nline3'))
-
-    def testRenderFourLines(self):
-        self.assertEqual('line1\nline2\n...', 
-                         render.multilineText('line1\nline2\nline3\nline4'))
-        

@@ -286,9 +286,9 @@ defaults = { \
 'feature': { \
     'notes': 'True',
     'effort': 'True',
-    'growl': 'False',
     'syncml': 'False',
-    'iphone': 'False' },
+    'iphone': 'False',
+    'notifier': 'Native' },
 'syncml': { \
     'url': '',
     'username': '',

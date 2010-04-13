@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import wx
-from taskcoachlib import meta, widgets
+from taskcoachlib import meta, widgets, notify
 from taskcoachlib.i18n import _
 
 
@@ -282,9 +282,14 @@ class FeaturesPage(SettingsPage):
             _('Allow for tracking effort'), helpText='restart')
         self.addBooleanSetting('feature', 'notes', _('Allow for taking notes'),
             helpText='restart')
-        if '__WXMAC__' in wx.PlatformInfo:
-            self.addBooleanSetting('feature', 'growl', _('Use Growl for reminders'),
-                helpText=_('Use a Growl notification instead of a dialog for reminders'))
+
+        names = [('Native', _('Native'))]
+        for name in notify.AbstractNotifier.names():
+            names.append((name, name))
+
+        self.addChoiceSetting('feature', 'notifier', _('Notification system'), names,
+                              helpText=_('Notification system to use for reminders (Growl, Snarl, etc)'))
+
         self.addBooleanSetting('feature', 'syncml', _('Enable SyncML'),
             helpText='restart')
         self.addBooleanSetting('feature', 'iphone', _('Enable iPhone synchronization'),

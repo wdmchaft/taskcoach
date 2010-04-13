@@ -54,6 +54,7 @@ class Calendar(tooltip.ToolTipMixin, wxScheduler):
         self.__showNoStartDate = False
         self.__showNoDueDate = False
 
+        self.SetShowWorkHour(False)
         self.SetResizable(True)
 
         self.taskList = taskList

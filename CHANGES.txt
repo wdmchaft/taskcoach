@@ -1,9 +1,39 @@
+Release 1.0.2 - April 10, 2010
+This release fixes some bugs, and adds support for the Snarl notification
+system.
+
+Bugs fixed:
+- Exports and prints would show long descriptions abbreviated with "...",
+  exactly as the long descriptions were displayed in the description column
+  of task, category, and note tree viewers. To fix this, the task, category,
+  and note tree viewers show descriptions fully (when the description column
+  is visible). (SF#2975805)
+- In the calendar viewer, March 31st would not appear. (SF#2979461)
+- The 13th hour would not show up in thr daily calendar view. (SF#2979452)
+- The position of the main window wouldn't be saved so it couldn't be restored
+  the next session. (SF#2969292)
+- On Ubuntu, when the user would scroll to the bottom of a tree viewer and
+  collaps an item, the tree would not be redrawn correctly. (SF#2947136)
+- Setting a task to 100 percent complete didn't work. (SF#2982561)
+- When the user clicks on a URL embedded in a description and the URL fails to
+  open, show an error dialog instead of throwing an exception.
+- The website pointed Ubuntu 9.10 users to the wrong deb package. (SF#2983202)
+- On Ubuntu 10.04, Task Coach wouldn't be added to the Applications/Office
+  menu. (SF#2978098)
+- After double clicking a task in the calendar viewer and changing its dates,
+  if the change would make the task disappear from the current period, the
+  task would not be properly drawn.
+
+Feature added:
+- Support for Snarl under Windows (for reminders).
+
+
 Release 1.0.1 - March 26, 2010
 This is a bugfix release.
 
 Bugs fixed:
 - Task Coach would try to use a non-existing icon when the SyncML feature was
-  turned on.
+  turned on. (SF#2975952)
 - Task Coach wouldn't install properly on Ubuntu 10.04. Added a deb for Ubuntu
   10.04. (SF#2975538)
 - When setting the end working hour to 24, the calendar viewer would crash.

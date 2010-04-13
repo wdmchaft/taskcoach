@@ -2,7 +2,7 @@
 Task Coach - Your friendly task manager
 ================================================================
 
-Version 1.0.1, Revision release, March 26, 2010
+Version 1.0.2, Revision release, April 10, 2010
 
 By Frank Niessink and Jerome Laheurte <developers@taskcoach.org>
 

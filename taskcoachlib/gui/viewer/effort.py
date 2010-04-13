@@ -108,11 +108,14 @@ class EffortViewer(base.ListViewer, mixin.SortableViewerForEffortMixin,
         autoResizing = self.widget.IsAutoResizing()
         if autoResizing:
             self.widget.ToggleAutoResizing(False)
+        # Refresh first so that the list control doesn't think there are more
+        # efforts than there really are when switching from aggregate mode to
+        # detail mode.
+        self.refresh()
         self._showTotalColumns(show=aggregation!='details')
         self._showWeekdayColumns(show=aggregation=='week')
         if autoResizing:
             self.widget.ToggleAutoResizing(True)
-        self.refresh()
 
     def createFilter(self, taskList):
         ''' Return a class that filters the original list. In this case we

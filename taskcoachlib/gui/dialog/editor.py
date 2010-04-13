@@ -345,6 +345,7 @@ class DatesPage(TaskHeadersMixin, PageWithHeaders):
     def __init__(self, parent, theTask, settings, *args, **kwargs):
         super(DatesPage, self).__init__(parent, theTask, *args, **kwargs)
         self._settings = settings
+        self._previousCompletionDate = theTask.completionDate()
         datesBox = self.addDatesBox(theTask)
         reminderBox = self.addReminderBox(theTask)
         recurrenceBox = self.addRecurrenceBox(theTask)
@@ -481,7 +482,9 @@ class DatesPage(TaskHeadersMixin, PageWithHeaders):
         self.item.setRecurrence(date.Recurrence(**kwargs))
         self.item.setStartDate(self._startDateEntry.get())
         self.item.setDueDate(self._dueDateEntry.get())
-        self.item.setCompletionDate(self._completionDateEntry.get())
+        newCompletionDate = self._completionDateEntry.get()
+        if newCompletionDate != self._previousCompletionDate:
+            self.item.setCompletionDate(newCompletionDate)
         self.item.setReminder(self._reminderDateTimeEntry.GetValue())
 
     def setReminder(self, reminder):
