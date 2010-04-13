@@ -264,7 +264,7 @@ class LinkFileLock(LockBase):
                             raise LockTimeout
                         else:
                             raise AlreadyLocked
-                    time.sleep(timeout is not None and timeout/10 or 0.1)
+                    time.sleep(timeout/10. if timeout > 0 else 0.1)
             else:
                 # Link creation succeeded.  We're good to go.
                 return

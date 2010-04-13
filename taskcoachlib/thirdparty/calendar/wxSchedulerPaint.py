@@ -91,6 +91,8 @@ class wxSchedulerPaint( object ):
 		results = []
 
 		for schedule in schedules:
+			schedule.bounds = None
+
 			if schedule.start.IsLaterThan(end):
 				continue
                         if start.IsLaterThan(schedule.end):
@@ -361,10 +363,7 @@ class wxSchedulerPaint( object ):
 
 			minHeight = h
 
-			end = utils.copyDateTime(day)
-			end.AddDS(wx.DateSpan(months=1))
-
-			daysCount = end.Subtract(day).GetDays()
+			daysCount = wx.DateTime.GetNumberOfDaysInMonth(day.GetMonth())
 
 			maxDY = 0
 			for idx in xrange(daysCount):
@@ -379,7 +378,7 @@ class wxSchedulerPaint( object ):
 			height -= maxDY
 			minHeight += maxDY
 
-			w, h = self._paintPeriod(drawer, day, end.Subtract(day).GetDays(), x, y, width, height)
+			w, h = self._paintPeriod(drawer, day, daysCount, x, y, width, height)
 			minHeight += h
 
 			return w, minHeight
@@ -504,28 +503,29 @@ class wxSchedulerPaint( object ):
 				self.DrawBuffer()
 
 	def RefreshSchedule( self, schedule ):
-		memDC = wx.MemoryDC()
-		memDC.SelectObject(self._bitmap)
-		try:
-			memDC.BeginDrawing()
-			memDC.SetBackground( wx.Brush( SCHEDULER_BACKGROUND_BRUSH ) )
-			memDC.SetPen( FOREGROUND_PEN )
-			memDC.SetFont(wx.NORMAL_FONT)
+		if schedule.bounds is not None:
+			memDC = wx.MemoryDC()
+			memDC.SelectObject(self._bitmap)
+			try:
+				memDC.BeginDrawing()
+				memDC.SetBackground( wx.Brush( SCHEDULER_BACKGROUND_BRUSH ) )
+				memDC.SetPen( FOREGROUND_PEN )
+				memDC.SetFont(wx.NORMAL_FONT)
 
-			if self._drawerClass.use_gc:
-				context = wx.GraphicsContext.Create(memDC)
-			else:
-				context = memDC
+				if self._drawerClass.use_gc:
+					context = wx.GraphicsContext.Create(memDC)
+				else:
+					context = memDC
 
-			self._drawerClass(context, self._lstDisplayedHours)._DrawSchedule(schedule, *schedule.bounds)
-		finally:
-			memDC.SelectObject(wx.NullBitmap)
+				self._drawerClass(context, self._lstDisplayedHours)._DrawSchedule(schedule, *schedule.bounds)
+			finally:
+				memDC.SelectObject(wx.NullBitmap)
 
-		originX, originY = self.GetViewStart()
-		unitX, unitY = self.GetScrollPixelsPerUnit()
-		x, y, w, h = schedule.bounds
-		self.RefreshRect(wx.Rect(math.floor(x - originX * unitX) - 1, math.floor(y - originY * unitY) - 1,
-					 math.ceil(w) + 2, math.ceil(h) + 2))
+			originX, originY = self.GetViewStart()
+			unitX, unitY = self.GetScrollPixelsPerUnit()
+			x, y, w, h = schedule.bounds
+			self.RefreshRect(wx.Rect(math.floor(x - originX * unitX) - 1, math.floor(y - originY * unitY) - 1,
+						 math.ceil(w) + 2, math.ceil(h) + 2))
 
 	def OnPaint( self, evt = None ):
 		# Do the draw

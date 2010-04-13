@@ -28,6 +28,7 @@ class ReminderControllerUnderTest(gui.ReminderController):
         
     def showReminderMessage(self, message):
         self.messages.append(message)
+        return True
 
         
 class DummyWindow(wx.Frame):

@@ -17,28 +17,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import wx
-from taskcoachlib import patterns, command
+from taskcoachlib import patterns, command, meta, notify
 from taskcoachlib.domain import date
 from taskcoachlib.gui.dialog import reminder, editor
 from taskcoachlib.i18n import _
-
-
-if '__WXMAC__' in wx.PlatformInfo:
-    import sys, os, struct
-
-    if struct.calcsize('L') == 8:
-        _subdir = 'IA64'
-    else:
-        _subdir = 'IA32'
-
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'bin.in', 'macos', _subdir))
-
-    from taskcoachlib.thirdparty.Growl import GrowlNotifier, Image
-    from taskcoachlib import meta
-
-    class TaskCoachGrowlNotifier(GrowlNotifier):
-        applicationName = meta.name
-        notifications = [u'Reminder']
 
 
 class ReminderController(object):
@@ -68,8 +50,7 @@ class ReminderController(object):
 
         for task, reminderDateTime in self.__tasksWithReminders.items():
             if reminderDateTime <= now:
-                self.showReminderMessage(task)
-                if not ('__WXMAC__' in wx.PlatformInfo and self.settings.getboolean('feature', 'growl')):
+                if self.showReminderMessage(task):
                     self.__removeReminder(task)
         self.requestUserAttention()
 
@@ -88,14 +69,14 @@ class ReminderController(object):
         now = event.value() + date.TimeDelta(seconds=1)
         for task, reminderDateTime in self.__tasksWithReminders.items():
             if reminderDateTime <= now:
-                self.showReminderMessage(task)
-                if not ('__WXMAC__' in wx.PlatformInfo and self.settings.getboolean('feature', 'growl')):
+                if self.showReminderMessage(task):
                     self.__removeReminder(task)
         self.requestUserAttention()
         
     def requestUserAttention(self):
-        if '__WXMAC__' in wx.PlatformInfo and self.settings.getboolean('feature', 'growl'):
-            # When using Growl, this is not necessary. Even when not using Growl, it's
+        notifier = self.settings.get('feature', 'notifier')
+        if notifier != 'Native' and notify.AbstractNotifier.get(notifier) is not None:
+            # When using Growl/Snarl, this is not necessary. Even when not using Growl, it's
             # annoying as hell. Anyway.
             return
         self.__mainWindowWasHidden = not self.__mainWindow.IsShown()
@@ -105,19 +86,19 @@ class ReminderController(object):
             self.__mainWindow.RequestUserAttention()
         
     def showReminderMessage(self, task):
-        if '__WXMAC__' in wx.PlatformInfo:
-            if self.settings.getboolean('feature', 'growl'):
-                notifier = TaskCoachGrowlNotifier(applicationIcon=Image.imageWithIconForCurrentApplication())
-                notifier.register()
-                notifier.notify(noteType=u'Reminder', title=_('%s Reminder') % meta.name,
-                                description=task.subject(), sticky=True)
-                self.__removeReminder(task)
-                task.setReminder(None)
-                return
+        notifier = self.settings.get('feature', 'notifier')
+        if notifier != 'Native' and notify.AbstractNotifier.get(notifier) is not None:
+            notify.AbstractNotifier.get(notifier).notify(_('%s Reminder') % meta.name, task.subject(),
+                                                         wx.ArtProvider.GetBitmap('taskcoach', size=wx.Size(32, 32)))
+            self.__removeReminder(task)
+            task.setReminder(None)
+            return False
 
         reminderDialog = reminder.ReminderDialog(task, self.taskList, self.settings, self.__mainWindow)
         reminderDialog.Bind(wx.EVT_CLOSE, self.onCloseReminderDialog)        
         reminderDialog.Show()
+
+        return True
         
     def onCloseReminderDialog(self, event, show=True):
         event.Skip()

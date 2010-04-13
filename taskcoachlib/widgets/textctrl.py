@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2008 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
 Copyright (C) 2007 Jerome Laheurte <fraca7@free.fr>
 
 Task Coach is free software: you can redistribute it and/or modify
@@ -74,7 +74,10 @@ class MultiLineTextCtrl(BaseTextCtrl):
         mouseEvent = event.GetMouseEvent()
         if mouseEvent.ButtonDown() and self.__webbrowser:
             url = self.GetRange(event.GetURLStart(), event.GetURLEnd())
-            self.__webbrowser.open(url)
+            try:
+                self.__webbrowser.open(url)
+            except Exception, message:
+                wx.MessageBox(unicode(message), i18n._('Error opening URL'))
      
     def __initializeText(self, text):
         self.AppendText(text)

@@ -26,6 +26,19 @@ class HyperTreeList(draganddrop.TreeCtrlDragAndDropMixin,
                     hypertreelist.HyperTreeList):
     # pylint: disable-msg=W0223
 
+
+    def __init__(self, *args, **kwargs):
+        super(HyperTreeList, self).__init__(*args, **kwargs)
+        if '__WXGTK__' == wx.Platform:
+            self.Bind(wx.EVT_TREE_ITEM_COLLAPSED, self.onItemCollapsed)
+
+    def onItemCollapsed(self, event):
+        event.Skip()
+        # On Ubuntu, when the user has scrolled to the bottom of the tree
+        # and collapses an item, the tree is not redrawn correctly. Refreshing
+        # solves this. See http://trac.wxwidgets.org/ticket/11704
+        wx.CallAfter(self.MainWindow.Refresh)
+
     def GetSelections(self):
         ''' If the root item is hidden, it should never be selected, 
         unfortunately, CustomTreeCtrl and HyperTreeList allow it to be 
