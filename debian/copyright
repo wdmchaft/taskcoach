@@ -45,6 +45,10 @@ Files: taskcoachlib/bin.in/linux/_pysyncml.so
 Copyright: 2008, Jérôme Laheurte <fraca7@free.fr>
 License: LGPL-2
 
+Files: taskcoachlib/thirdparty/chardet/*
+Copyright: 1998-2005, Mark Pilgrim <mark@diveintomark.org>
+License: LGPL-2
+
 Files: taskcoachlib/gui/dialog/entry.py,
        taskcoachlib/gui/dialog/editor.py,
        taskcoachlib/widgets/spinctrl.py
@@ -66,6 +70,10 @@ License: MIT
 Files: taskcoachlib/thirdparty/pybonjour.py
 Copyright: 2007-2008, Christopher J. Stawarz
 License: MIT
+
+Files: taskcoachlib/thirdparty/desktop/*
+Copyright: 2005-2007, Paul Boddie <paul@boddie.org.uk>
+License: LGPL-2
 
 Files: taskcoachlib/thirdparty/sized_controls.py
 Copyright: 2006, Kevin Ollivier
