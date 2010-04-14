@@ -1,5 +1,5 @@
 Format-Specification:
-    http://wiki.debian.org/Proposals/CopyrightFormat?action=recall&rev=196
+    http://svn.debian.org/wsvn/dep/web/deps/dep5.mdwn?op=file&rev=135
 Upstream-Maintainer: Frank Niessink and Jerome Laheurte <developers@taskcoach.org>
 Upstream-Source: http://www.taskcoach.org/
 Upstream-Name: TaskCoach 
@@ -80,7 +80,7 @@ Copyright: 2006, Kevin Ollivier
 License: wxwindows
 
 Files: debian/*
-Copyright: 2009, Alejandro Garrido Mota <garridomota@gmail.com>
+Copyright: 2009-2010, Alejandro Garrido Mota <garridomota@gmail.com>
 License: GPL-3+
 
 License: GPL-3+

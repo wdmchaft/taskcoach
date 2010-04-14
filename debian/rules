@@ -3,7 +3,7 @@ PACKAGE = $(shell dh_listpackages)
 TMP     = $(CURDIR)/debian/$(PACKAGE)
 
 %:
-	dh --with quilt $@
+	dh $@
 
 override_dh_auto_install:
 	dh_auto_install
