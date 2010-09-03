@@ -2,8 +2,7 @@
 
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
-Copyright (C) 2007-2008 Jérôme Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 Copyright (C) 2008 Rob McMullen <rob.mcmullen@gmail.com>
 Copyright (C) 2008 Thomas Sonne Olesen <tpo@sonnet.dk>
 
@@ -60,6 +59,8 @@ class Viewer(wx.Panel):
         self.toolbar = toolbar.ToolBar(self, (16, 16))
         self.initLayout()
         self.registerPresentationObservers()
+        patterns.Publisher().registerObserver(self.onEveryMinute,
+                                              eventType='clock.minute')
         self.refresh()
         
     def domainObjectsToView(self):
@@ -92,6 +93,9 @@ class Viewer(wx.Panel):
     @classmethod
     def selectEventType(class_):
         return '%s.select'%class_
+    
+    def onEveryMinute(self, event): # pylint: disable-msg=W0221,W0613
+        self.refresh()
     
     def title(self):
         return self.settings.get(self.settingsSection(), 'title') or self.defaultTitle
@@ -307,9 +311,6 @@ class Viewer(wx.Panel):
             uicommand.EditPaste()
             ]
     
-    def deleteItemCommand(self):
-        return command.DeleteCommand(self.presentation(), self.curselection())
-
     def newItemDialog(self, *args, **kwargs):
         bitmap = kwargs.pop('bitmap')
         NewItemCommand = self.newItemCommandClass()
@@ -318,7 +319,7 @@ class Viewer(wx.Panel):
         return self.editItemDialog(newItemCommand.items, bitmap)
     
     def editItemDialog(self, items, bitmap, columnName=''):
-        Editor = self.editorClass()
+        Editor = self.itemEditorClass()
         EditItemCommand = self.editItemCommandClass()
         editItemCommand = EditItemCommand(self.presentation(), items)
         return Editor(wx.GetTopLevelParent(self), editItemCommand, 
@@ -326,7 +327,7 @@ class Viewer(wx.Panel):
                       bitmap=bitmap, columnName=columnName)
         
     def newSubItemDialog(self, bitmap):
-        Editor = self.editorClass()
+        Editor = self.itemEditorClass()
         NewSubItemCommand = self.newSubItemCommandClass()
         newSubItemCommand = NewSubItemCommand(self.presentation(), 
                                               self.curselection())
@@ -336,7 +337,7 @@ class Viewer(wx.Panel):
                       self.settings, self.presentation(), self.taskFile, 
                       bitmap=bitmap)
         
-    def editorClass(self):
+    def itemEditorClass(self):
         raise NotImplementedError
 
     def newItemCommandClass(self):
@@ -347,6 +348,12 @@ class Viewer(wx.Panel):
 
     def editItemCommandClass(self):
         raise NotImplementedError
+
+    def deleteItemCommand(self):
+        return self.deleteItemCommandClass()(self.presentation(), self.curselection())
+
+    def deleteItemCommandClass(self):
+        return command.DeleteCommand
     
 
 class ListViewer(Viewer): # pylint: disable-msg=W0223
@@ -652,11 +659,11 @@ class ViewerWithColumns(Viewer): # pylint: disable-msg=W0223
             lines = description.split('\n')
             result.append((None, [line.rstrip('\n') for line in lines]))                            
         try:
-            result.append(('note_icon', [note.subject() for note in item.notes()]))
+            result.append(('note_icon', sorted([note.subject() for note in item.notes()])))
         except AttributeError:
             pass
         try:
-            result.append(('paperclip_icon', [unicode(attachment) for attachment in item.attachments()]))
+            result.append(('paperclip_icon', sorted([unicode(attachment) for attachment in item.attachments()])))
         except AttributeError:
             pass
         return result

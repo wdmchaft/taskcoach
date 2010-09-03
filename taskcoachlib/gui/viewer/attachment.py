@@ -2,8 +2,7 @@
 
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
-Copyright (C) 2007-2008 Jérôme Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 Copyright (C) 2008 Rob McMullen <rob.mcmullen@gmail.com>
 Copyright (C) 2008 Thomas Sonne Olesen <tpo@sonnet.dk>
 
@@ -138,12 +137,18 @@ class AttachmentViewer(mixin.AttachmentDropTargetMixin, base.ViewerWithColumns,
                                      'mail': 'email'}[anAttachment.type_]]
         except KeyError:
             return -1
-
-    def editorClass(self):
-        return dialog.editor.AttachmentEditor
     
+    def deleteItemCommand(self):
+        return command.DeleteAttachmentCommand(self.presentation(), self.curselection())
+    
+    def itemEditorClass(self):
+        return dialog.editor.AttachmentEditor
+
     def newItemCommandClass(self):
         return command.NewAttachmentCommand
     
     def editItemCommandClass(self):
         return command.EditAttachmentCommand
+
+    def deleteItemCommandClass(self):
+        return command.DeleteAttachmentCommand

@@ -2,8 +2,7 @@
 
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
-Copyright (C) 2008-2009 Jerome Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 Copyright (C) 2008 Rob McMullen <rob.mcmullen@gmail.com>
 
 Task Coach is free software: you can redistribute it and/or modify
@@ -22,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import wx
 from taskcoachlib import meta, widgets, notify
+from taskcoachlib.domain import date
 from taskcoachlib.i18n import _
 
 
@@ -57,9 +57,9 @@ class SettingsPageBase(widgets.BookPage):
         ''' choices is a list of (number, text) tuples. '''
         multipleChoice = wx.CheckListBox(self, choices=[choice[1] for choice in choices])
         checkedNumbers = eval(self.get(section, setting))
-        for index in range(len(choices)):
-            multipleChoice.Check(index, choices[index][0] in checkedNumbers)
-        self.addEntry(text, multipleChoice, helpText)
+        for index, choice in enumerate(choices):
+            multipleChoice.Check(index, choice[0] in checkedNumbers)
+        self.addEntry(text, multipleChoice, helpText, growable=True)
         self._multipleChoiceSettings.append((section, setting, multipleChoice, 
                                              [choice[0] for choice in choices]))
         
@@ -126,10 +126,10 @@ class SettingsPage(SettingsPageBase):
         self.settings = settings
         super(SettingsPage, self).__init__(*args, **kwargs)
         
-    def addEntry(self, text, control, helpText=''): # pylint: disable-msg=W0221
+    def addEntry(self, text, control, helpText='', **kwargs): # pylint: disable-msg=W0221
         if helpText == 'restart':
             helpText = _('This setting will take effect\nafter you restart %s')%meta.name
-        super(SettingsPage, self).addEntry(text, control, helpText)
+        super(SettingsPage, self).addEntry(text, control, helpText, **kwargs)
 
     def get(self, section, name):
         return self.settings.get(section, name)
@@ -182,12 +182,6 @@ class WindowBehaviorPage(SettingsPage):
             _('Make clock in the task bar tick when tracking effort'))
         self.addBooleanSetting('view', 'descriptionpopups',
             _('Show a popup with the description of an item\nwhen hovering over it'))
-        self.addBooleanSetting('view', 'tabbedmainwindow',
-            _('''Use a tabbed user interface for the main window
-(Note: the layout you create by dragging and
-dropping tabs cannot be saved. This is a limitation
-of the underlying toolkit).'''), 
-            helpText='restart')
         self.fit()
 
 
@@ -283,15 +277,20 @@ class FeaturesPage(SettingsPage):
         self.addBooleanSetting('feature', 'notes', _('Allow for taking notes'),
             helpText='restart')
 
-        names = [('Native', _('Native'))]
+        names = [] # There's at least one, the universal one
         for name in notify.AbstractNotifier.names():
             names.append((name, name))
 
         self.addChoiceSetting('feature', 'notifier', _('Notification system'), names,
                               helpText=_('Notification system to use for reminders (Growl, Snarl, etc)'))
 
-        self.addBooleanSetting('feature', 'syncml', _('Enable SyncML'),
-            helpText='restart')
+        try:
+            import taskcoachlib.syncml.core
+        except ImportError:
+            pass
+        else:
+            self.addBooleanSetting('feature', 'syncml', _('Enable SyncML'),
+                helpText='restart')
         self.addBooleanSetting('feature', 'iphone', _('Enable iPhone synchronization'),
             helpText='restart')
         self.addIntegerSetting('view', 'efforthourstart',
@@ -312,18 +311,12 @@ class TaskBehaviorPage(SettingsPage):
         super(TaskBehaviorPage, self).__init__(*args, **kwargs)
         self.addBooleanSetting('behavior', 'markparentcompletedwhenallchildrencompleted',
             _('Mark parent task completed when all children are completed'))
-        self.addIntegerSetting('behavior', 'duesoondays', 
-            _("Number of days that tasks are considered to be 'due soon'"), 
+        self.addIntegerSetting('behavior', 'duesoonhours', 
+            _("Number of hours that tasks are considered to be 'due soon'"), 
             minimum=0, maximum=90)
         self.addMultipleChoiceSettings('view', 'snoozetimes', 
             _('Snooze times to offer in task reminder dialog'), 
-            [(5, _('5 minutes')), (10, _('10 minutes')), (15, _('15 minutes')), 
-             (20, _('20 minutes')), (30, _('30 minutes')), 
-             (45, _('45 minutes')), (60, _('1 hour')), (90, _('1.5 hour')), 
-             (120, _('2 hours')), (3*60, _('3 hours')), (4*60, _('4 hours')), 
-             (6*60, _('6 hours')), (8*60, _('8 hours')), (12*60, _('12 hours')), 
-             (18*60, _('18 hours')), (24*60, _('24 hours')),
-             (48*60, _('48 hours')), (72*60, _('72 hours'))]) # FIMXE: duplicated in reminder dialog
+            date.snoozeChoices[1:]) # Don't offer "Don't snooze" as a choice
         self.fit()
 
 
@@ -354,11 +347,14 @@ class EditorPage(SettingsPage):
             self.settings.getboolean('editor', 'maccheckspelling')
 
 
-class Preferences(widgets.ListbookDialog):
+class Preferences(widgets.NotebookDialog):
     def __init__(self, settings=None, *args, **kwargs):
         self.settings = settings
         super(Preferences, self).__init__(bitmap='wrench_icon', *args, **kwargs)
-                   
+
+        if '__WXMAC__' in wx.PlatformInfo:
+            self.CentreOnParent()
+
     def addPages(self):
         self.SetMinSize((300, 430))
         pages = [\

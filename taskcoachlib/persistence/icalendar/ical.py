@@ -1,7 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
-Copyright (C) 2007-2008 Jerome Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -23,16 +22,16 @@ format.
 ''' # pylint: disable-msg=W0105
 
 from taskcoachlib.domain.base import Object
-from taskcoachlib.domain.date import date
+from taskcoachlib.domain import date
 from taskcoachlib.i18n import _
 
 import time, calendar, datetime
 
 #{ Utility functions
 
-def parseDate(fulldate):
-    ''' Parses a date as seen in iCalendar files into a 
-    L{taskcoachlib.domain.date.Date} object. '''
+def parseDateTime(fulldate):
+    ''' Parses a datetime as seen in iCalendar files into a 
+    L{taskcoachlib.domain.date.DateTime} object. '''
 
     dt, tm = fulldate.split('T')
     year, month, day = int(dt[:4]), int(dt[4:6]), int(dt[6:8])
@@ -41,9 +40,9 @@ def parseDate(fulldate):
     if fulldate.endswith('Z'):
         # GMT. Convert this to local time.
         localTime = time.localtime(calendar.timegm((year, month, day, hour, minute, second, 0, 0, -1)))
-        year, month, day = localTime[:3]
+        year, month, day, hour, minute, second = localTime[:6]
 
-    return date.Date(year, month, day)
+    return date.DateTime(year, month, day, hour, minute, second)
 
 def fmtDate(dt):
     ''' Formats a L{taskcoachlib.domain.date.Date} object to a string
@@ -166,8 +165,8 @@ class VCalendarParser(object):
                 context.update(date.__dict__)
                 context['_'] = _
                 value = eval(value, context)
-                if isinstance(value, datetime.date):
-                    value = fmtDate(value)
+                if isinstance(value, datetime.datetime):
+                    value = fmtDateTime(value)
 
             self.acceptItem(name, value)
 
@@ -188,30 +187,30 @@ class VTodoParser(VCalendarParser):
     ''' This is the state responsible for parsing VTODO objects. ''' # pylint: disable-msg=W0511
 
     def onFinish(self):
-        if not self.kwargs.has_key('startDate'):
-            # This means no start  date, but the task constructor will
-            # take today, so force.
-            self.kwargs['startDate'] = date.Date()
+        if not self.kwargs.has_key('startDateTime'):
+            # This means no start date, but the task constructor will
+            # take today by default, so force.
+            self.kwargs['startDateTime'] = date.DateTime()
 
         if self.kwargs.has_key('vcardStatus'):
             if self.kwargs['vcardStatus'] == 'COMPLETED' and \
-                   not self.kwargs.has_key('completionDate'):
+                   not self.kwargs.has_key('completionDateTime'):
                 # Some servers only give the status, and not the date (SW)
                 if self.kwargs.has_key('last-modified'):
-                    self.kwargs['completionDate'] = parseDate(self.kwargs['last-modified'])
+                    self.kwargs['completionDateTime'] = parseDateTime(self.kwargs['last-modified'])
                 else:
-                    self.kwargs['completionDate'] = date.Today()
+                    self.kwargs['completionDateTime'] = date.Now()
 
         self.kwargs['status'] = Object.STATUS_NONE
         self.tasks.append(self.kwargs)
 
     def acceptItem(self, name, value):
         if name == 'DTSTART':
-            self.kwargs['startDate'] = parseDate(value)
+            self.kwargs['startDateTime'] = parseDateTime(value)
         elif name == 'DUE':
-            self.kwargs['dueDate'] = parseDate(value)
+            self.kwargs['dueDateTime'] = parseDateTime(value)
         elif name == 'COMPLETED':
-            self.kwargs['completionDate'] = parseDate(value)
+            self.kwargs['completionDateTime'] = parseDateTime(value)
         elif name == 'UID':
             self.kwargs['id'] = value.decode('UTF-8')
         elif name == 'PRIORITY':
@@ -238,20 +237,20 @@ def VCalFromTask(task, encoding=True):
         iCalendar format. '''
 
     encoding = ';CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE' if encoding else ''
-    quote = quoteString if encoding else lambda s: s.encode('UTF-8')
+    quote = quoteString if encoding else lambda s: s
 
     components = []
     components.append('BEGIN:VTODO') # pylint: disable-msg=W0511
     components.append('UID:%s' % task.id().encode('UTF-8'))
 
-    if task.startDate() != date.Date():
-        components.append('DTSTART:%s'%fmtDate(task.startDate()))
+    if task.startDateTime() != date.DateTime():
+        components.append('DTSTART:%s'%fmtDateTime(task.startDateTime()))
 
-    if task.dueDate() != date.Date():
-        components.append('DUE:%s'%fmtDate(task.dueDate()))
+    if task.dueDateTime() != date.DateTime():
+        components.append('DUE:%s'%fmtDateTime(task.dueDateTime()))
 
-    if task.completionDate() != date.Date():
-        components.append('COMPLETED:%s'%fmtDate(task.completionDate()))
+    if task.completionDateTime() != date.DateTime():
+        components.append('COMPLETED:%s'%fmtDateTime(task.completionDateTime()))
 
     if task.categories(True):
         categories = ','.join([quote(unicode(c)) for c in task.categories(True)])
@@ -275,7 +274,7 @@ def VCalFromTask(task, encoding=True):
 
 def VCalFromEffort(effort, encoding=True):
     encoding = ';CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE' if encoding else ''
-    quote = quoteString if encoding else lambda s: s.encode('UTF-8')
+    quote = quoteString if encoding else lambda s: s
     components = []
     components.append('BEGIN:VEVENT')
     components.append('UID:%s' % effort.id().encode('UTF-8'))
@@ -294,9 +293,17 @@ def fold(components, linewidth=75, eol='\r\n', indent=' '):
     # width includes the indentation or not. We keep on the safe side:
     indentedlinewidth = linewidth - len(indent)
     for component in components:
-        line, remainder = component[:linewidth], component[linewidth:]
-        lines.append(line)
-        while remainder:
-            line, remainder = remainder[:indentedlinewidth], remainder[indentedlinewidth:]
-            lines.append(indent + line)
+        componentLines = component.split('\n')
+        firstLine = componentLines[0]
+        firstLine, remainderFirstLine = firstLine[:linewidth], firstLine[linewidth:]
+        lines.append(firstLine)
+        while remainderFirstLine:
+            nextLine, remainderFirstLine = remainderFirstLine[:indentedlinewidth], remainderFirstLine[indentedlinewidth:]
+            lines.append(indent + nextLine)
+        for line in componentLines[1:]:
+            nextLine, remainder = line[:linewidth], line[linewidth:]
+            lines.append(indent + nextLine)
+            while remainder:
+                nextLine, remainder = remainder[:indentedlinewidth], remainder[indentedlinewidth:]
+                lines.append(indent + nextLine)
     return eol.join(lines) + eol if lines else ''

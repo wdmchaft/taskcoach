@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -167,14 +167,14 @@ class CompositeEffortTest(test.TestCase):
 
     def testIsBeingTracked(self):
         self.task.addEffort(self.effort1)
-        self.effort1.setStop(date.Date())
+        self.effort1.setStop(date.DateTime())
         self.failUnless(self.composite.isBeingTracked())
 
     def testNotificationForStartTracking(self):
         patterns.Publisher().registerObserver(self.onEvent,
             eventType=self.composite.trackStartEventType())
         self.task.addEffort(self.effort1)
-        self.effort1.setStop(date.Date())
+        self.effort1.setStop(date.DateTime())
         self.failUnless(patterns.Event(self.composite.trackStartEventType(), 
             self.composite, self.effort1) in self.events)
 
@@ -182,14 +182,14 @@ class CompositeEffortTest(test.TestCase):
         patterns.Publisher().registerObserver(self.onEvent,
             eventType=self.effort3.trackStartEventType())
         self.task.addEffort(self.effort3)
-        self.effort3.setStop(date.Date())
+        self.effort3.setStop(date.DateTime())
         self.assertEqual([patterns.Event(self.effort3.trackStartEventType(),
                                          self.effort3)],
             self.events)
 
     def testNotificationForStopTracking(self):
         self.task.addEffort(self.effort1)
-        self.effort1.setStop(date.Date())
+        self.effort1.setStop(date.DateTime())
         patterns.Publisher().registerObserver(self.onEvent, 
             eventType=self.composite.trackStopEventType())
         self.effort1.setStop()
@@ -198,7 +198,7 @@ class CompositeEffortTest(test.TestCase):
 
     def testNoNotificationForStopTrackingIfActiveEffortOutsidePeriod(self):
         self.task.addEffort(self.effort3)
-        self.effort3.setStop(date.Date())
+        self.effort3.setStop(date.DateTime())
         patterns.Publisher().registerObserver(self.onEvent,
             eventType=self.effort3.trackStopEventType())
         self.effort3.setStop()

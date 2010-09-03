@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -67,7 +67,7 @@ class ListCtrlComboPopup(wx.ListCtrl, wx.combo.ComboPopup):
 
 
 class ComboCtrl(wx.combo.ComboCtrl):
-    def __init__(self, parent, value, choices, size):
+    def __init__(self, parent, choices, size):
         super(ComboCtrl, self).__init__(parent, size=size)
         # Create a Popup
         popup = ListCtrlComboPopup()
@@ -77,4 +77,3 @@ class ComboCtrl(wx.combo.ComboCtrl):
         # Add some items to the listctrl.
         for choice in choices:
             popup.AddItem(choice)
-        self.SetValue(value)

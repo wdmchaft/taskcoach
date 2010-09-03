@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -22,8 +22,8 @@ import base
 
 
 class ToggleCategoryCommand(base.BaseCommand):
-    def name(self):
-        return _('Toggle category')
+    plural_name = _('Toggle category')
+    singular_name = _('Toggle category of "%s"')
     
     def __init__(self, *args, **kwargs):
         self.category = kwargs.pop('category')
@@ -36,9 +36,9 @@ class ToggleCategoryCommand(base.BaseCommand):
         self.toggle_category()
         
     undo_command = redo_command = do_command
-        
-    def toggle_category(self):
-        event = patterns.Event()
+    
+    @patterns.eventSource    
+    def toggle_category(self, event=None):
         for categorizable in self.items:
             if self.category in categorizable.categories():
                 self.unlink_category(self.category, categorizable, event)
@@ -46,7 +46,6 @@ class ToggleCategoryCommand(base.BaseCommand):
             else:
                 self.link_category(self.category, categorizable, event)
                 self.unlink_previous_categories(categorizable, event)
-        event.send()
         
     def unlink_previous_categories(self, categorizable, event):
         ''' Remove categorizable from any mutual exclusive categories it might

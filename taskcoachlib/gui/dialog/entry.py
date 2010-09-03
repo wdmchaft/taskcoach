@@ -1,7 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
-Copyright (C) 2007-2008 Jerome Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 Copyright (C) 2008 Rob McMullen <rob.mcmullen@gmail.com>
 Copyright (C) 2008 Carl Zmola <zmola@acm.org>
 
@@ -20,41 +19,51 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import wx, locale
-from wx.lib import masked, combotreebox
+from wx.lib import masked #, combotreebox
 from taskcoachlib import widgets
 from taskcoachlib.domain import date
+from taskcoachlib.thirdparty import combotreebox
+ 
 
+class DateTimeEntry(widgets.PanelWithBoxSizer):
+    defaultDateTime = date.DateTime()
 
-class DateEntry(widgets.PanelWithBoxSizer):
-    defaultDate = date.Date()
-
-    def __init__(self, parent, initialDate=defaultDate, readonly=False, 
-                 callback=None, *args, **kwargs):
-        super(DateEntry, self).__init__(parent, *args, **kwargs)
-        self._entry = widgets.DateCtrl(self, callback)
+    def __init__(self, parent, settings, initialDateTime=defaultDateTime, 
+                 readonly=False, callback=None, noneAllowed=True, 
+                 showSeconds=False, *args, **kwargs):
+        super(DateTimeEntry, self).__init__(parent, *args, **kwargs)
+        starthour = settings.getint('view', 'efforthourstart')
+        endhour = settings.getint('view', 'efforthourend')
+        interval = settings.getint('view', 'effortminuteinterval')
+        self._entry = widgets.DateTimeCtrl(self, noneAllowed=noneAllowed, 
+                                           starthour=starthour, endhour=endhour, 
+                                           interval=interval, 
+                                           showSeconds=showSeconds)
         if readonly:
             self._entry.Disable()
-        self._entry.SetValue(initialDate)
+        # First set the initial value and then set the callback so that the
+        # callback is not triggered for the initial value
+        self._entry.SetValue(initialDateTime)
+        if callback:
+            self._entry.setCallback(callback) 
         self.add(self._entry)
         self.fit()
 
-    def get(self, defaultDate=None):
-        result = self._entry.GetValue()
-        if result == date.Date() and defaultDate:
-            result = defaultDate
-        return result
+    def get(self):
+        return self._entry.GetValue()
 
-    def set(self, newDate=defaultDate):
-        self._entry.SetValue(newDate)
-
-    def setToday(self):
-        self._entry.SetValue(date.Today())
+    def set(self, newDateTime=defaultDateTime):
+        self._entry.SetValue(newDateTime)
+        
+    def setCallback(self, callback):
+        self._entry.setCallback(callback)
 
 
 class TimeDeltaEntry(widgets.PanelWithBoxSizer):
     defaultTimeDelta=date.TimeDelta()
 
-    def __init__(self, parent, timeDelta=defaultTimeDelta, *args, **kwargs):
+    def __init__(self, parent, timeDelta=defaultTimeDelta, readonly=False, 
+                 *args, **kwargs):
         super(TimeDeltaEntry, self).__init__(parent, *args, **kwargs)
         hours, minutes, seconds = timeDelta.hoursMinutesSeconds()
         self._entry = widgets.masked.TextCtrl(self, mask='#{6}:##:##',
@@ -62,6 +71,8 @@ class TimeDeltaEntry(widgets.PanelWithBoxSizer):
             fields=[masked.Field(formatcodes='r', defaultValue='%6d'%hours),
                     masked.Field(defaultValue='%02d'%minutes),
                     masked.Field(defaultValue='%02d'%seconds)])
+        if readonly:
+            self._entry.Disable()
         self.add(self._entry, flag=wx.EXPAND|wx.ALL, proportion=1)
         self.fit()
 
@@ -70,10 +81,12 @@ class TimeDeltaEntry(widgets.PanelWithBoxSizer):
 
 
 class AmountEntry(widgets.PanelWithBoxSizer):
-    def __init__(self, parent, amount=0.0, *args, **kwargs):
+    def __init__(self, parent, amount=0.0, readonly=False, *args, **kwargs):
         self.local_conventions = kwargs.pop('localeconv', locale.localeconv())
         super(AmountEntry, self).__init__(parent, *args, **kwargs)
         self._entry = self.createEntry(amount)
+        if readonly:
+            self._entry.Disable()
         self.add(self._entry)
         self.fit()
 
@@ -103,13 +116,14 @@ class AmountEntry(widgets.PanelWithBoxSizer):
         
         
 class PercentageEntry(widgets.PanelWithBoxSizer):
-    def __init__(self, parent, percentage=0, *args, **kwargs):
+    def __init__(self, parent, percentage=0, callback=None, *args, **kwargs):
         kwargs['orientation'] = wx.HORIZONTAL
         super(PercentageEntry, self).__init__(parent, *args, **kwargs)
         self._slider = self._createSlider(percentage)
         self._entry = self._createSpinCtrl(percentage)
-        self.add(self._slider, proportion=2)
-        self.add(self._entry)
+        self._callback = callback
+        self.add(self._slider, flag=wx.ALL, proportion=0)
+        self.add(self._entry, flag=wx.ALL, proportion=0)
         self.fit()
         
     def _createSlider(self, percentage):
@@ -121,7 +135,7 @@ class PercentageEntry(widgets.PanelWithBoxSizer):
         
     def _createSpinCtrl(self, percentage):
         entry = widgets.SpinCtrl(self, value=str(percentage),
-            initial=percentage, size=(20, -1), min=0, max=100)
+            initial=percentage, size=(50, -1), min=0, max=100)
         for eventType in wx.EVT_SPINCTRL, wx.EVT_KILL_FOCUS:
             entry.Bind(eventType, self.onSpin)
         return entry
@@ -145,6 +159,8 @@ class PercentageEntry(widgets.PanelWithBoxSizer):
         # the value:
         if controlToWrite.GetValue() != value:
             controlToWrite.SetValue(value)
+        if self._callback:
+            self._callback()
     
     
 class TaskComboTreeBox(wx.Panel):
@@ -174,12 +190,13 @@ class TaskComboTreeBox(wx.Panel):
         boxSizer = wx.BoxSizer()
         boxSizer.Add(self._comboTreeBox, flag=wx.EXPAND, proportion=1)
         self.SetSizerAndFit(boxSizer)
-
+        
     def _addTasks(self, rootTasks):
         ''' Add the root tasks to the ComboTreeBox, including all their
             subtasks. '''
         for task in rootTasks:
-            self._addTaskRecursively(task)
+            if not task.isDeleted():
+                self._addTaskRecursively(task)
 
     def _addTaskRecursively(self, task, parentItem=None):
         ''' Add a task to the ComboTreeBox and then recursively add its
@@ -187,7 +204,8 @@ class TaskComboTreeBox(wx.Panel):
         item = self._comboTreeBox.Append(task.subject(), parent=parentItem,
                                          clientData=task)
         for child in task.children():
-            self._addTaskRecursively(child, item)
+            if not child.isDeleted():
+                self._addTaskRecursively(child, item)
 
     def SetSelection(self, task):
         ''' Select the given task. '''

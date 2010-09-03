@@ -2,8 +2,7 @@
 
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
-Copyright (C) 2007-2008 Jérôme Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 Copyright (C) 2008 Rob McMullen <rob.mcmullen@gmail.com>
 Copyright (C) 2008 Thomas Sonne Olesen <tpo@sonnet.dk>
 
@@ -51,7 +50,10 @@ class BaseCategoryViewer(mixin.AttachmentDropTargetMixin,
                           category.Category.exclusiveSubcategoriesChangedEventType()):
             patterns.Publisher().registerObserver(self.onAttributeChanged, 
                 eventType)
-            
+
+    def onEveryMinute(self, event):
+        pass
+
     def domainObjectsToView(self):
         return self.taskFile.categories()
     
@@ -189,9 +191,9 @@ class BaseCategoryViewer(mixin.AttachmentDropTargetMixin,
         status2 = _('Status: %d filtered')%len(filteredCategories)
         return status1, status2
         
-    def editorClass(self):
+    def itemEditorClass(self):
         return dialog.editor.CategoryEditor
-    
+
     def newItemCommandClass(self):
         return command.NewCategoryCommand
     
@@ -200,6 +202,9 @@ class BaseCategoryViewer(mixin.AttachmentDropTargetMixin,
     
     def newSubItemCommandClass(self):
         return command.NewSubCategoryCommand
+
+    def deleteItemCommandClass(self):
+        return command.DeleteCategoryCommand
     
 
 class CategoryViewer(BaseCategoryViewer):

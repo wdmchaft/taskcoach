@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -20,6 +20,11 @@ import wx, test
 from taskcoachlib import gui, config, persistence, meta
 
 
+class MockWidget(object):
+    def Bind(*args, **kwargs):
+        pass
+
+
 class MockViewer(wx.Frame):
     def title(self):
         return ''
@@ -32,6 +37,8 @@ class MockViewer(wx.Frame):
     
     def selectEventType(self):
         return ''
+
+    widget = MockWidget()
 
 
 class MainWindowUnderTest(gui.MainWindow):

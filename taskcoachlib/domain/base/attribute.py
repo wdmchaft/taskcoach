@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -28,15 +28,12 @@ class Attribute(object):
     def get(self):
         return self.__value
     
+    @patterns.eventSource
     def set(self, value, event=None):
         if value == self.__value:
             return
-        notify = event is None
-        event = event or patterns.Event()
         self.__value = value
         self.__setEvent(event)
-        if notify:
-            event.send()
            
 
 class SetAttribute(object):
@@ -49,11 +46,10 @@ class SetAttribute(object):
     def get(self):
         return self.__set.copy()
     
+    @patterns.eventSource
     def set(self, values, event=None):
         if values == self.__set:
             return
-        notify = event is None
-        event = event or patterns.Event()
         added = values - self.__set
         removed = self.__set - values
         self.__set = values
@@ -61,25 +57,17 @@ class SetAttribute(object):
             self.__addEvent(event, *added) # pylint: disable-msg=W0142
         if removed:
             self.__removeEvent(event, *removed) # pylint: disable-msg=W0142
-        if notify:
-            event.send()
-            
+
+    @patterns.eventSource            
     def add(self, values, event=None):
         if values <= self.__set:
             return
-        notify = event is None
-        event = event or patterns.Event()
         self.__set |= values
         self.__addEvent(event, *values) # pylint: disable-msg=W0142
-        if notify:
-            event.send()
-            
+
+    @patterns.eventSource                    
     def remove(self, values, event=None):
         if values & self.__set == set():
             return
-        notify = event is None
-        event = event or patterns.Event()
         self.__set -= values
         self.__removeEvent(event, *values) # pylint: disable-msg=W0142
-        if notify:
-            event.send()

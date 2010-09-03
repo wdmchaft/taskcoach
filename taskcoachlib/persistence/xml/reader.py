@@ -2,8 +2,7 @@
 
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
-Copyright (C) 2007 Jérôme Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -47,8 +46,12 @@ class XMLReaderTooNewException(Exception):
 
 
 class XMLReader(object):
+    defaultStartTime = (0, 0, 0, 0)
+    defaultEndTime = (23, 59, 59, 999999)
+
     def __init__(self, fd):
         self.__fd = fd
+        self.__defaultFontSize = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT).GetPointSize()
 
     def read(self):
         if self._hasBrokenLines():
@@ -164,9 +167,12 @@ class XMLReader(object):
     def _parseTaskNode(self, taskNode):
         kwargs = self._parseBaseCompositeAttributes(taskNode, self._parseTaskNodes)
         kwargs.update(dict(
-            startDate=date.parseDate(taskNode.attrib.get('startdate', '')),
-            dueDate=date.parseDate(taskNode.attrib.get('duedate', '')),
-            completionDate=date.parseDate(taskNode.attrib.get('completiondate', '')),
+            startDateTime=date.parseDateTime(taskNode.attrib.get('startdate', ''), 
+                                             *self.defaultStartTime),
+            dueDateTime=date.parseDateTime(taskNode.attrib.get('duedate', ''), 
+                                           *self.defaultEndTime),
+            completionDateTime=date.parseDateTime(taskNode.attrib.get('completiondate', ''), 
+                                                  *self.defaultEndTime),
             percentageComplete=int(taskNode.attrib.get('percentageComplete','0')),
             budget=date.parseTimeDelta(taskNode.attrib.get('budget', '')),
             priority=int(taskNode.attrib.get('priority', '0')),
@@ -228,7 +234,7 @@ class XMLReader(object):
             description=self._parseDescription(node),
             fgColor=self._parseTuple(node.attrib.get('fgColor', ''), None),
             bgColor=self._parseTuple(node.attrib.get(bgColorAttribute, ''), None),
-            font=self._parseFontDesc(node.attrib.get('font', ''), None),
+            font=self._parseFontDesc(node.attrib.get('font', '')),
             icon=node.attrib.get('icon', ''),
             selectedIcon=node.attrib.get('selectedIcon', ''))
 
@@ -315,7 +321,13 @@ class XMLReader(object):
         return guid if guid else generate()
         
     def _parseAttachmentNodes(self, parent):
-        return [self._parseAttachmentNode(node) for node in parent.findall('attachment')]
+        result = []
+        for node in parent.findall('attachment'):
+            try:
+                result.append(self._parseAttachmentNode(node))
+            except IOError:
+                pass
+        return result
 
     def _parseAttachmentNode(self, attachmentNode):
         kwargs = self._parseBaseAttributes(attachmentNode)
@@ -365,13 +377,18 @@ class XMLReader(object):
                 text = text[:-1]
         return text
                     
-    def _parseDateTime(self, dateTimeText):
-        return self._parse(dateTimeText, date.parseDateTime, None)
+    def _parseDateTime(self, dateTimeText, *timeDefaults):
+        return self._parse(dateTimeText, date.parseDateTime, None, *timeDefaults)
     
-    def _parseFontDesc(self, fontDesc, defaultValue):
+    def _parseFontDesc(self, fontDesc, defaultValue=None):
         if fontDesc:
-            font = wx.FontFromNativeInfoString(fontDesc)
+            try:
+                font = wx.FontFromNativeInfoString(fontDesc)
+            except wx.PyAssertionError:
+                return defaultValue
             if font.IsOk():
+                if font.GetPointSize() < 4:
+                    font.SetPointSize(self.__defaultFontSize)
                 return font
         return defaultValue
     
@@ -389,9 +406,9 @@ class XMLReader(object):
         else:
             return defaultValue
     
-    def _parse(self, text, parseFunction, defaultValue):
+    def _parse(self, text, parseFunction, defaultValue, *parseArgs):
         try:
-            return parseFunction(text)
+            return parseFunction(text, *parseArgs) if parseArgs else parseFunction(text) 
         except ValueError:
             return defaultValue
 

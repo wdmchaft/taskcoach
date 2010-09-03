@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -23,19 +23,24 @@ import task
 
 class ViewFilter(base.Filter):
     def __init__(self, *args, **kwargs):
-        self.__dueDateFilter = self.stringToDueDate(kwargs.pop('dueDateFilter', 
-                                                               'Unlimited'))
+        self.__dueDateTimeFilter = self.stringToDueDateTime(kwargs.pop('dueDateTimeFilter', 
+                                                                       'Unlimited'))
         self.__hideCompletedTasks = kwargs.pop('hideCompletedTasks', False)
         self.__hideInactiveTasks = kwargs.pop('hideInactiveTasks', False)
         self.__hideActiveTasks = kwargs.pop('hideActiveTasks', False)
         self.__hideCompositeTasks = kwargs.pop('hideCompositeTasks', False)
-        for eventType in ('task.dueDate', 'task.startDate', 
-                          'task.completionDate', 
+        self.registerObservers()
+        super(ViewFilter, self).__init__(*args, **kwargs)
+
+    def registerObservers(self):
+        publisher = patterns.Publisher()
+        for eventType in ('task.dueDateTime', 'task.startDateTime', 
+                          'task.completionDateTime', 'task.prerequisites',
                           task.Task.addChildEventType(),
                           task.Task.removeChildEventType()):
-            patterns.Publisher().registerObserver(self.onTaskChange,
+            publisher.registerObserver(self.onTaskChange,
                 eventType=eventType)
-        super(ViewFilter, self).__init__(*args, **kwargs)
+        publisher.registerObserver(self.onMidnight, eventType='clock.midnight')
 
     def onTaskChange(self, event):
         tasks = event.sources()
@@ -46,9 +51,12 @@ class ViewFilter(base.Filter):
                       and task in self.observable() and task not in self]
         self.extendSelf(tasksToAdd, newEvent)
         newEvent.send()
+        
+    def onMidnight(self, event):
+        self.reset()
             
-    def setFilteredByDueDate(self, dueDateString):
-        self.__dueDateFilter = self.stringToDueDate(dueDateString)
+    def setFilteredByDueDateTime(self, dueDateTimeString):
+        self.__dueDateTimeFilter = self.stringToDueDateTime(dueDateTimeString)
         self.reset()
     
     def hideInactiveTasks(self, hide=True):
@@ -80,17 +88,17 @@ class ViewFilter(base.Filter):
             result = False
         elif self.__hideCompositeTasks and not self.treeMode() and task.children():
             result = False
-        elif task.dueDate(recursive=self.treeMode()) > self.__dueDateFilter:
+        elif task.dueDateTime(recursive=self.treeMode()) > self.__dueDateTimeFilter():
             result = False
         return result
 
     @staticmethod
-    def stringToDueDate(dueDateString):
-        dateFactory = { 'Today' : date.Today, 
-                        'Tomorrow' : date.Tomorrow,
-                        'Workweek' : date.NextFriday, 
-                        'Week' : date.NextSunday, 
-                        'Month' : date.LastDayOfCurrentMonth, 
-                        'Year' : date.LastDayOfCurrentYear, 
-                        'Unlimited' : date.Date }        
-        return dateFactory[dueDateString]()
+    def stringToDueDateTime(dueDateTimeString):
+        dateTimeFactory = {'Today' : lambda: date.Now().endOfDay(), 
+                           'Tomorrow' : lambda: date.Now().endOfTomorrow(),
+                           'Workweek' : lambda: date.Now().endOfWorkWeek(), 
+                           'Week' : lambda: date.Now().endOfWeek(), 
+                           'Month' : lambda: date.Now().endOfMonth(), 
+                           'Year' : lambda: date.Now().endOfYear(), 
+                           'Unlimited' : date.DateTime }        
+        return dateTimeFactory[dueDateTimeString]

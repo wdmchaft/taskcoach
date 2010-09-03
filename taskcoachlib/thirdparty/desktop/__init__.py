@@ -155,6 +155,9 @@ def get_desktop():
     elif os.environ.has_key("GNOME_DESKTOP_SESSION_ID") or \
         os.environ.has_key("GNOME_KEYRING_SOCKET"):
         return "GNOME"
+    elif os.environ.has_key('DESKTOP_SESSION') and \
+            os.environ['DESKTOP_SESSION'].lower() == 'lubuntu':
+        return "GNOME"
     elif sys.platform == "darwin":
         return "Mac OS X"
     elif hasattr(os, "startfile"):

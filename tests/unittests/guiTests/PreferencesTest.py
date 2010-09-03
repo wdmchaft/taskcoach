@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import test
-from taskcoachlib import gui, config
+from taskcoachlib import gui, config, persistence
 
 
 class PreferencesTest(test.wxTestCase):
@@ -41,4 +41,11 @@ class PreferencesTest(test.wxTestCase):
         self.preferences.ok()
         self.assertEqual(self.newColor, 
             eval(self.settings.get('color', 'activetasks'))[:3])
+        
+
+class SyncMLPreferencesTest(test.TestCase):
+    def testCreate(self):
+        gui.dialog.syncpreferences.SyncMLPreferences(parent=None,
+            iocontroller=gui.IOController(persistence.TaskFile(), None, None), 
+            title='Edit SyncML preferences')
         

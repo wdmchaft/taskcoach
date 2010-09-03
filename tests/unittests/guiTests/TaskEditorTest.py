@@ -2,7 +2,7 @@
 
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -29,6 +29,8 @@ class TaskEditorTestCase(test.wxTestCase):
     def setUp(self):
         super(TaskEditorTestCase, self).setUp()
         task.Task.settings = self.settings = config.Settings(load=False)
+        self.tomorrow = date.Now() + date.oneDay
+        self.yesterday = date.Now() - date.oneDay
         self.taskFile = persistence.TaskFile()
         self.taskList = self.taskFile.tasks()
         self.effortList = self.taskFile.efforts()
@@ -52,17 +54,17 @@ class TaskEditorTestCase(test.wxTestCase):
     def createCommand(self):
         raise NotImplementedError # pragma: no cover
 
-    def setSubject(self, newSubject, index=0):
-        self.editor[index][0].setSubject(newSubject)
+    def setSubject(self, newSubject):
+        self.editor._interior[0].setSubject(newSubject)
 
-    def setDescription(self, newDescription, index=0):
-        self.editor[index][0].setDescription(newDescription)
+    def setDescription(self, newDescription):
+        self.editor._interior[0].setDescription(newDescription)
 
-    def setReminder(self, newReminderDateTime, index=0):
-        self.editor[index][1].setReminder(newReminderDateTime)
+    def setReminder(self, newReminderDateTime):
+        self.editor._interior[1].setReminder(newReminderDateTime)
         
-    def setRecurrence(self, newRecurrence, index=0):
-        self.editor[index][1].setRecurrence(newRecurrence)
+    def setRecurrence(self, newRecurrence):
+        self.editor._interior[1].setRecurrence(newRecurrence)
         
         
 class EditorDisplayTest(TaskEditorTestCase):
@@ -78,17 +80,17 @@ class EditorDisplayTest(TaskEditorTestCase):
         return [self.task]
     
     def testSubject(self):
-        self.assertEqual('Task to edit', self.editor[0][0]._subjectEntry.GetValue())
+        self.assertEqual('Task to edit', self.editor._interior[0]._subjectEntry.GetValue())
 
-    def testDueDate(self):
-        self.assertEqual(date.Date(), self.editor[0][1]._dueDateEntry.get())
+    def testDueDateTime(self):
+        self.assertEqual(date.DateTime(), self.editor._interior[1]._dueDateTimeEntry.get())
         
     def testRecurrenceUnit(self):
-        choice = self.editor[0][1]._recurrenceEntry
+        choice = self.editor._interior[1]._recurrenceEntry
         self.assertEqual('Daily', choice.GetString(choice.GetSelection()))
 
     def testRecurrenceFrequency(self):
-        freq = self.editor[0][1]._recurrenceFrequencyEntry
+        freq = self.editor._interior[1]._recurrenceFrequencyEntry
         self.assertEqual(1, freq.GetValue())
         
         
@@ -119,21 +121,27 @@ class NewTaskTest(TaskEditorTestCase):
         self.assertEqual('New task', self.task.subject())
 
     def testDueDate(self):
-        self.editor[0][1]._dueDateEntry.set(date.Today()) # pylint: disable-msg=W0212
+        now = date.Now()
+        self.editor._interior[1]._dueDateTimeEntry.set(now) # pylint: disable-msg=W0212
         self.editor.ok()
-        self.assertEqual(date.Today(), self.task.dueDate())
+        self.assertAlmostEqual(now.toordinal(), 
+                               self.task.dueDateTime().toordinal(),
+                               places=2)
 
     def testSetCompleted(self):
-        self.editor[0][1]._completionDateEntry.set(date.Today()) # pylint: disable-msg=W0212
+        now = date.Now()
+        self.editor._interior[1]._completionDateTimeEntry.set(now) # pylint: disable-msg=W0212
         self.editor.ok()
-        self.assertEqual(date.Today(), self.task.completionDate())
+        self.assertAlmostEqual(now.toordinal(), 
+                               self.task.completionDateTime().toordinal(),
+                               places=2)
 
     def testSetUncompleted(self):
         # pylint: disable-msg=W0212
-        self.editor[0][1]._completionDateEntry.set(date.Today())
-        self.editor[0][1]._completionDateEntry.set(date.Date())
+        self.editor._interior[1]._completionDateTimeEntry.set(date.Now())
+        self.editor._interior[1]._completionDateTimeEntry.set(date.DateTime())
         self.editor.ok()
-        self.assertEqual(date.Date(), self.task.completionDate())
+        self.assertEqual(date.DateTime(), self.task.completionDateTime())
 
     def testSetDescription(self):
         self.setDescription('Description')
@@ -141,7 +149,7 @@ class NewTaskTest(TaskEditorTestCase):
         self.assertEqual('Description', self.task.description())
         
     def testPriority(self):
-        self.assertEqual(0, self.editor[0][0]._prioritySpinner.GetValue()) # pylint: disable-msg=W0212
+        self.assertEqual(0, self.editor._interior[0]._priorityEntry.GetValue()) # pylint: disable-msg=W0212
 
     def testSetReminder(self):
         reminderDateTime = date.DateTime(2005,1,1)
@@ -188,7 +196,7 @@ class NewTaskTest(TaskEditorTestCase):
             self.errorMessage = args[0]
         att = attachment.FileAttachment(u'tÃƒÂ©st.ÃƒÂ©')
         openAttachment = uicommand.AttachmentOpen(\
-            viewer=self.editor[0][5].viewer,
+            viewer=self.editor._interior[5].viewer,
             attachments=attachment.AttachmentList([att]))
         openAttachment.doCommand(None, showerror=onError)
         if '__WXMSW__' in wx.PlatformInfo: # pragma: no cover
@@ -205,7 +213,7 @@ class NewTaskTest(TaskEditorTestCase):
         self.failUnless(self.errorMessage.startswith(errorMessageStart))
 
     def testAddNote(self):
-        self.editor[0][6].notes.append(note.Note(subject='New note'))
+        self.editor._interior[6].notes.append(note.Note(subject='New note'))
         self.editor.ok()
         self.assertEqual(1, len(self.task.notes()))
         
@@ -214,7 +222,7 @@ class NewTaskTest(TaskEditorTestCase):
         child = note.Note(subject='Child')
         parent.addChild(child)
         child.setParent(parent)
-        self.editor[0][6].notes.extend([parent, child])
+        self.editor._interior[6].notes.extend([parent, child])
         self.editor.ok()
         # Only the parent note should be added to the notes list:
         self.assertEqual(1, len(self.task.notes())) 
@@ -274,113 +282,97 @@ class EditTaskTest(TaskEditorTestCase):
 
     # pylint: disable-msg=W0212
     
-    def testSetDueDate(self):
-        self.editor[0][1]._dueDateEntry.set(date.Tomorrow())
+    def testSetDueDateTime(self):
+        self.editor._interior[1]._dueDateTimeEntry.set(self.tomorrow)
         self.editor.ok()
-        self.assertEqual(date.Tomorrow(), self.task.dueDate())
+        self.assertAlmostEqual(self.tomorrow.toordinal(), 
+                               self.task.dueDateTime().toordinal(),
+                               places=2)
 
-    def testSetStartDate(self):
-        self.editor[0][1]._startDateEntry.set(date.Tomorrow())
+    def testSetStartDateTime(self):
+        self.editor._interior[1]._startDateTimeEntry.set(self.tomorrow)
         self.editor.ok()
-        self.assertEqual(date.Tomorrow(), self.task.startDate())
+        self.assertAlmostEqual(self.tomorrow.toordinal(), 
+                               self.task.startDateTime().toordinal(),
+                               places=2)
+
+    def testSetCompletionDateTime(self):
+        self.editor._interior[1]._completionDateTimeEntry.set(self.tomorrow)
+        self.editor.ok()
+        self.assertAlmostEqual(self.tomorrow.toordinal(), 
+                               self.task.completionDateTime().toordinal(),
+                               places=2)
         
     def testSetNegativePriority(self):
-        self.editor[0][0]._prioritySpinner.SetValue(-1)
+        self.editor._interior[0]._priorityEntry.SetValue(-1)
         self.editor.ok()
         self.assertEqual(-1, self.task.priority())
         
     def testSetHourlyFee(self):
-        self.editor[0][4]._hourlyFeeEntry.set(100)
+        self.editor._interior[4]._hourlyFeeEntry.set(100)
         self.editor.ok()
         self.assertEqual(100, self.task.hourlyFee())
 
     def testSetFixedFee(self):
-        self.editor[0][4]._fixedFeeEntry.set(100.5)
+        self.editor._interior[4]._fixedFeeEntry.set(100.5)
         self.editor.ok()
         self.assertEqual(100.5, self.task.fixedFee())
 
     def testBehaviorMarkCompleted(self):
-        self.editor[0][9]._markTaskCompletedEntry.SetStringSelection('Yes')
+        self.editor._interior[2]._markTaskCompletedEntry.SetStringSelection('Yes')
         self.editor.ok()
         self.assertEqual(True, 
                          self.task.shouldMarkCompletedWhenAllChildrenCompleted())
 
     def testAddAttachment(self):
-        self.editor[0][7].viewer.onDropFiles(None, ['filename'])
+        self.editor._interior[7].viewer.onDropFiles(None, ['filename'])
         self.editor.ok()
         # pylint: disable-msg=E1101
         self.failUnless('filename' in [att.location() for att in self.task.attachments()])
         self.failUnless('filename' in [att.subject() for att in self.task.attachments()])
         
     def testRemoveAttachment(self):
-        self.editor[0][7].viewer.presentation().removeItems([self.attachment])
+        self.editor._interior[7].viewer.presentation().removeItems([self.attachment])
         self.editor.ok()
         self.assertEqual([], self.task.attachments()) # pylint: disable-msg=E1101
-
-
-class EditMultipleTasksTest(TaskEditorTestCase):
-    def setUp(self):
-        super(EditMultipleTasksTest, self).setUp()
-        self.setSubject('TaskA', 0)
-        self.setSubject('TaskB', 1)
-
-    def createCommand(self):
-        return command.EditTaskCommand(self.taskList, [self.task1, self.task2])
-
-    def createTasks(self):
-        # pylint: disable-msg=W0201
-        self.task1 = task.Task('Task1')
-        self.task2 = task.Task('Task2')
-        return [self.task1, self.task2]
-
-    def testOk(self):
-        self.editor.ok()
-        self.assertEqual('TaskA', self.task1.subject())
-        self.assertEqual('TaskB', self.task2.subject())
-
-    def testCancel(self):
-        self.editor.cancel()
-        self.assertEqual('Task1', self.task1.subject())
-        self.assertEqual('Task2', self.task2.subject())
 
 
 class EditTaskWithChildrenTest(TaskEditorTestCase):
     def setUp(self):
         super(EditTaskWithChildrenTest, self).setUp()
-        self.setSubject('TaskA', 0)
-        self.setSubject('TaskB', 1)
+        self.setSubject('New Parent Subject')
 
     def createCommand(self):
-        return command.EditTaskCommand(self.taskList, [self.parent, self.child])
+        return command.EditTaskCommand(self.taskList, [self.parent])
 
     def createTasks(self):
         # pylint: disable-msg=W0201
-        self.parent = task.Task('Parent')
-        self.child = task.Task('Child')
+        self.parent = task.Task('Parent', startDateTime=date.Now())
+        self.child = task.Task('Child', startDateTime=date.Now())
         self.parent.addChild(self.child)
         return [self.parent] # self.child is added to tasklist automatically
 
     def testOk(self):
         self.editor.ok()
-        self.assertEqual('TaskA', self.parent.subject())
-        self.assertEqual('TaskB', self.child.subject())
+        self.assertEqual('New Parent Subject', self.parent.subject())
 
     def testCancel(self):
         self.editor.cancel()
         self.assertEqual('Parent', self.parent.subject())
-        self.assertEqual('Child', self.child.subject())
 
     # pylint: disable-msg=W0212
     
-    def testChangeDueDateOfParentHasNoEffectOnChild(self):
-        self.editor[0][1]._dueDateEntry.set(date.Yesterday())
+    def testChangeDueDateTimeOfParentHasNoEffectOnChild(self):
+        self.editor._interior[1]._dueDateTimeEntry.set(self.yesterday)
         self.editor.ok()
-        self.assertEqual(date.Date(), self.child.dueDate())
+        self.assertEqual(date.DateTime(), self.child.dueDateTime())
 
-    def testChangeStartDateOfParentHasNoEffectOnChild(self):
-        self.editor[0][1]._startDateEntry.set(date.Tomorrow())
+    def testChangeStartDateTimeOfParentHasNoEffectOnChild(self):
+        self.editor._interior[1]._startDateTimeEntry.set(self.tomorrow)
         self.editor.ok()
-        self.assertEqual(date.Today(), self.child.startDate())
+        self.assertAlmostEqual(date.Now().toordinal(), 
+                               self.child.startDateTime().toordinal(),
+                               places=2)
 
 
 class EditTaskWithEffortTest(TaskEditorTestCase):    
@@ -393,7 +385,7 @@ class EditTaskWithEffortTest(TaskEditorTestCase):
         return [self.task]
     
     def testEffortIsShown(self):
-        self.assertEqual(1, self.editor[0][5].viewer.widget.GetItemCount())
+        self.assertEqual(1, self.editor._interior[5].viewer.widget.GetItemCount())
                           
     def testCancel(self):
         self.editor.cancel()
@@ -408,12 +400,13 @@ class FocusTest(TaskEditorTestCase):
         if '__WXMAC__' not in wx.PlatformInfo and ('__WXMSW__' not in wx.PlatformInfo or sys.version_info < (2, 5)):
             wx.Yield() # pragma: no cover
         # pylint: disable-msg=W0212
-        self.assertEqual(self.editor[0][0]._subjectEntry, wx.Window_FindFocus())
+        self.assertEqual(self.editor._interior[0]._subjectEntry, wx.Window_FindFocus())
 
 
 class EffortEditorTest(TaskEditorTestCase):      
     def createCommand(self):
-        return command.EditEffortCommand(self.effortList, self.effortList)
+        sortedEfforts = effort.EffortSorter(self.effortList)
+        return command.EditEffortCommand(sortedEfforts, sortedEfforts)
         
     def createTasks(self):
         # pylint: disable-msg=W0201
@@ -431,9 +424,9 @@ class EffortEditorTest(TaskEditorTestCase):
     def testCreate(self):
         # pylint: disable-msg=W0212
         self.assertEqual(self.effort.getStart().date(), 
-            self.editor[0]._startEntry.GetValue().date())
+            self.editor._interior._startEntry.get().date())
         self.assertEqual(self.effort.task().subject(), 
-            self.editor[0]._taskEntry.GetValue())
+            self.editor._interior._taskEntry.GetValue())
 
     def testOK(self):
         stop = self.effort.getStop()
@@ -444,11 +437,11 @@ class EffortEditorTest(TaskEditorTestCase):
         self.effort.setStop(date.DateTime(1900, 1, 1))
         self.editor = self.createEditor()
         # pylint: disable-msg=W0212
-        self.editor._interior[0].preventNegativeEffortDuration()
+        self.editor._interior.preventNegativeEffortDuration()
         self.failIf(self.editor._buttonBox['OK'].IsEnabled())
         
     def testChangeTask(self):
-        self.editor[0]._taskEntry.SetStringSelection('task2') # pylint: disable-msg=W0212
+        self.editor._interior._taskEntry.SetStringSelection('task2') # pylint: disable-msg=W0212
         self.editor.ok()
         self.assertEqual(self.task2, self.effort.task())
         self.failIf(self.effort in self.task1.efforts())

@@ -1,7 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
-Copyright (C) 2007-2008 Jerome Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -32,9 +31,6 @@ class DummySettings(dict):
         
     def getboolean(self, section, setting): # pylint: disable-msg=W0613
         return self.get(setting, 'False') == 'True'
-    
-    def getint(self, section, settings):
-        return self.maxnrofbackups
 
 
 class DummyFile(object):
@@ -65,7 +61,7 @@ class DummyTaskFile(persistence.TaskFile):
         return DummyFile()
         
     def _openForWrite(self, *args, **kwargs): # pylint: disable-msg=W0613
-        return DummyFile()
+        return None, DummyFile()
     
     def save(self, *args, **kwargs):
         self.saveCalled += 1

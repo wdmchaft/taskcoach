@@ -2,8 +2,7 @@
 
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
-Copyright (C) 2007 Jérôme Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -80,27 +79,27 @@ class XMLWriterTest(test.TestCase):
     def testEmptyTaskDescriptionIsNotWritten(self):
         self.expectNotInXML('<description>')
         
-    def testTaskStartDate(self):
-        self.task.setStartDate(date.Date(2004,1,1))
-        self.expectInXML('startdate="%s"'%str(self.task.startDate()))
+    def testTaskStartDateTime(self):
+        self.task.setStartDateTime(date.DateTime(2004,1,1,11,0,0))
+        self.expectInXML('startdate="%s"'%str(self.task.startDateTime()))
         
-    def testNoStartDate(self):
-        self.task.setStartDate(date.Date())
-        self.expectNotInXML('startdate')
+    def testNoStartDateTime(self):
+        self.task.setStartDateTime(date.DateTime())
+        self.expectNotInXML('startdate=')
         
-    def testTaskDueDate(self):
-        self.task.setDueDate(date.Date(2004,1,1))
-        self.expectInXML('duedate="%s"'%str(self.task.dueDate()))
+    def testTaskDueDateTime(self):
+        self.task.setDueDateTime(date.DateTime(2004,1,1,10,5,5))
+        self.expectInXML('duedate="%s"'%str(self.task.dueDateTime()))
 
-    def testNoDueDate(self):
-        self.expectNotInXML('duedate')
+    def testNoDueDateTime(self):
+        self.expectNotInXML('duedate=')
                 
-    def testTaskCompletionDate(self):
-        self.task.setCompletionDate(date.Date(2004, 1, 1))
-        self.expectInXML('completiondate="%s"'%str(self.task.completionDate()))
+    def testTaskCompletionDateTime(self):
+        self.task.setCompletionDateTime(date.DateTime(2004,1,1,10,8,4))
+        self.expectInXML('completiondate="%s"'%str(self.task.completionDateTime()))
 
-    def testNoCompletionDate(self):
-        self.expectNotInXML('completiondate')
+    def testNoCompletionDateTime(self):
+        self.expectNotInXML('completiondate=')
         
     def testChildTask(self):
         self.task.addChild(task.Task(subject='child'))
@@ -338,14 +337,16 @@ class XMLWriterTest(test.TestCase):
 
     def testDontWriteInheritedTaskForegroundColor(self):
         self.task.setForegroundColor(wx.RED)
-        child = task.Task(subject='child', id='id', startDate=date.Date())
+        child = task.Task(subject='child', id='id',
+                          startDateTime=date.DateTime())
         self.task.addChild(child)
         self.taskList.append(child)
         self.expectInXML('<task id="id" status="1" subject="child"/>')
         
     def testDontWriteInheritedTaskBackgroundColor(self):
         self.task.setBackgroundColor(wx.RED)
-        child = task.Task(subject='child', id='id', startDate=date.Date())
+        child = task.Task(subject='child', id='id', 
+                          startDateTime=date.DateTime())
         self.task.addChild(child)
         self.taskList.append(child)
         self.expectInXML('<task id="id" status="1" subject="child"/>')
@@ -538,6 +539,14 @@ class XMLWriterTest(test.TestCase):
                          'location="whatever.txt" status="1" '
                          'subject="whatever.txt" type="file"/>'%wx.SWISS_FONT.GetNativeFontInfoDesc())
 
+    def testNonAsciiFontName(self):
+        class FakeFont(object):
+            def GetNativeFontInfoDesc(self):
+                return u'微软雅黑'
+        font = FakeFont()
+        self.task.setFont(font)
+        self.expectInXML(u'font="微软雅黑"')
+        
     def testTaskIcon(self):
         self.task.setIcon('icon')
         self.expectInXML('icon="icon"')

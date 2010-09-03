@@ -2,8 +2,7 @@
 
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
-Copyright (C) 2007-2008 Jérôme Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 Copyright (C) 2008 Rob McMullen <rob.mcmullen@gmail.com>
 Copyright (C) 2008 Thomas Sonne Olesen <tpo@sonnet.dk>
 
@@ -25,7 +24,7 @@ import wx
 from taskcoachlib import patterns, command, widgets, domain
 from taskcoachlib.domain import note
 from taskcoachlib.i18n import _
-from taskcoachlib.gui import uicommand, menu, dialog, render
+from taskcoachlib.gui import uicommand, menu, dialog
 import base, mixin
 
 class BaseNoteViewer(mixin.AttachmentDropTargetMixin, 
@@ -49,7 +48,10 @@ class BaseNoteViewer(mixin.AttachmentDropTargetMixin,
                           note.Note.selectedIconChangedEventType()):
             patterns.Publisher().registerObserver(self.onAttributeChanged, 
                                                   eventType)
-        
+
+    def onEveryMinute(self, event):
+        pass
+
     def domainObjectsToView(self):
         if self.notesToShow is None:
             return self.taskFile.notes()
@@ -165,7 +167,7 @@ class BaseNoteViewer(mixin.AttachmentDropTargetMixin,
         if self.settings.getboolean('view', 'descriptionpopups'):
             lines = [line.rstrip('\r') for line in item.description().split('\n')] 
             result = [(None, lines)] if lines and lines != [''] else [] 
-            result.append(('paperclip_icon', [unicode(attachment) for attachment in item.attachments()]))
+            result.append(('paperclip_icon', sorted([unicode(attachment) for attachment in item.attachments()])))
             return result
         else:
             return []
@@ -184,12 +186,12 @@ class BaseNoteViewer(mixin.AttachmentDropTargetMixin,
         return super(BaseNoteViewer, self).newItemDialog(*args, **kwargs)
     
     def deleteItemCommand(self):
-        return command.DeleteCommand(self.presentation(), self.curselection(),
+        return command.DeleteNoteCommand(self.presentation(), self.curselection(),
                   shadow=self.settings.getboolean('feature', 'syncml'))
         
-    def editorClass(self):
+    def itemEditorClass(self):
         return dialog.editor.NoteEditor
-    
+
     def newItemCommandClass(self):
         return command.NewNoteCommand
     

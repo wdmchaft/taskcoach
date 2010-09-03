@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -24,11 +24,15 @@ from taskcoachlib.domain import task, date
 class ReminderControllerUnderTest(gui.ReminderController):
     def __init__(self, *args, **kwargs):
         self.messages = []
+        self.userAttentionRequested = False
         super(ReminderControllerUnderTest, self).__init__(*args, **kwargs)
         
     def showReminderMessage(self, message):
         self.messages.append(message)
         return True
+    
+    def requestUserAttention(self):
+        self.userAttentionRequested = True
 
         
 class DummyWindow(wx.Frame):
@@ -36,14 +40,6 @@ class DummyWindow(wx.Frame):
         super(DummyWindow, self).__init__(None)
         self.taskFile = persistence.TaskFile()
     
-    # pylint: disable-msg=W0221
-    
-    def IsShown(self):
-        return True
-    
-    def IsActive(self):
-        return True
-
 
 class ReminderControllerTestCase(test.TestCase):
     def setUp(self):
@@ -100,7 +96,7 @@ class ReminderControllerTest(ReminderControllerTestCase):
         
     def testMarkTaskCompletedRemovesReminder(self):
         self.task.setReminder(self.reminderDateTime)
-        self.task.setCompletionDate(date.Today())
+        self.task.setCompletionDateTime(date.Now())
         self.assertEqual([], patterns.Publisher().observers(eventType=\
                 date.Clock.eventType(self.reminderDateTime)))
         
@@ -125,7 +121,7 @@ class ReminderControllerTest(ReminderControllerTestCase):
     def testOnCloseReminderResetsReminder(self):
         self.task.setReminder(self.reminderDateTime)
         self.reminderController.onCloseReminderDialog(self.dummyCloseEvent(), 
-                                                      show=False)
+                                                     show=False)
         self.assertEqual(None, self.task.reminder())
 
     def testOnCloseReminderSetsReminder(self):
@@ -138,10 +134,14 @@ class ReminderControllerTest(ReminderControllerTestCase):
 
     def testOnCloseMayOpenTask(self):
         self.task.setReminder(self.reminderDateTime)
-        dialog = self.reminderController.onCloseReminderDialog(\
+        frame = self.reminderController.onCloseReminderDialog(\
             self.dummyCloseEvent(openAfterClose=True), show=False)
-        self.failUnless(dialog)
-                       
+        self.failUnless(frame)
+        
+    def testOnWakeDoesNotRequestUserAttentionWhenThereAreNoReminders(self):
+        self.reminderController.onWake(None)
+        self.failIf(self.reminderController.userAttentionRequested)
+        
 
 class ReminderControllerTest_TwoTasksWithSameReminderDateTime(ReminderControllerTestCase):
     def setUp(self):

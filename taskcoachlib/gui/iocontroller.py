@@ -2,8 +2,7 @@
 
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
-Copyright (C) 2008 Jérôme Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -27,7 +26,7 @@ from taskcoachlib.thirdparty import lockfile
 try:
     from taskcoachlib.syncml import sync
     from taskcoachlib.widgets import conflict
-except ImportError:
+except ImportError: # pragma: no cover
     # Unsupported platform.
     pass
 
@@ -337,7 +336,14 @@ class IOController(object):
         
     def __askUserForFile(self, title, fileDialogOpts=None, flags=wx.OPEN):
         fileDialogOpts = fileDialogOpts or self.__tskFileDialogOpts
-        return wx.FileSelector(title, flags=flags, **fileDialogOpts) # pylint: disable-msg=W0142
+        filename = wx.FileSelector(title, flags=flags, **fileDialogOpts) # pylint: disable-msg=W0142
+        if flags == wx.SAVE:
+            # On Ubuntu, the default extension is not added automatically to
+            # a filename typed by the user. Add the extension if necessary.
+            extension = os.path.extsep + fileDialogOpts['default_extension']
+            if not filename.endswith(extension):
+                filename += extension
+        return filename
 
     def __saveUnsavedChanges(self):
         result = wx.MessageBox(_('You have unsaved changes.\n'
@@ -351,8 +357,15 @@ class IOController(object):
         return True
     
     def __askBreakLock(self, filename):
-        result = wx.MessageBox(_('Cannot open %s because it is locked.\n'
-            'Break the lock?')%filename, _('%s: file locked')%meta.name,
+        result = wx.MessageBox(_('''Cannot open %s because it is locked.
+
+This means either that another instance of TaskCoach
+is running and has this file opened, or that a previous
+instance of Task Coach crashed. If no other instance is
+running, you can safely break the lock.
+
+Break the lock?''') % filename,
+            _('%s: file locked')%meta.name,
             style=wx.YES_NO|wx.ICON_QUESTION|wx.NO_DEFAULT)
         return result == wx.YES
     

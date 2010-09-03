@@ -1,6 +1,7 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2008 Jerome Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
+Copyright (C) 2010 Frank Niessink <frank@niessink.com>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -58,9 +59,9 @@ class IntegerField(FieldMixin, wx.SpinCtrl):
         self.SetValue(value)
 
 
-class DateField(FieldMixin, datectrl.DateCtrl):
+class DateTimeField(FieldMixin, datectrl.DateTimeCtrl):
     def __init__(self, parent, *args, **kwargs):
-        super(DateField, self).__init__(parent, self.OnChange, *args, **kwargs)
+        super(DateTimeField, self).__init__(parent, None, self.OnChange, *args, **kwargs)
 
     def ChangeValue(self, value):
         # FIXME: under  WXGTK at  least (didn't try  other platforms),
@@ -195,21 +196,21 @@ class TaskConflictPanel(BaseConflictPanel):
                                                       MultipleLinesTextField,
                                                       self.local.description(),
                                                       self.remote.description())
-        if self.flags & TaskSource.CONFLICT_STARTDATE:
-            self.idStartDate = self.AddConflictItem(_('Start date'),
-                                                    DateField,
-                                                    self.local.startDate(),
-                                                    self.remote.startDate())
-        if self.flags & TaskSource.CONFLICT_DUEDATE:
-            self.idDueDate = self.AddConflictItem(_('Due date'),
-                                                  DateField,
-                                                  self.local.dueDate(),
-                                                  self.remote.dueDate())
-        if self.flags & TaskSource.CONFLICT_COMPLETIONDATE:
-            self.idCompletionDate = self.AddConflictItem(_('Completion date'),
-                                                         DateField,
-                                                         self.local.completionDate(),
-                                                         self.remote.completionDate())
+        if self.flags & TaskSource.CONFLICT_STARTDATETIME:
+            self.idStartDateTime = self.AddConflictItem(_('Start date'),
+                                                        DateTimeField,
+                                                        self.local.startDateTime(),
+                                                        self.remote.startDateTime())
+        if self.flags & TaskSource.CONFLICT_DUEDATETIME:
+            self.idDueDateTime = self.AddConflictItem(_('Due date'),
+                                                      DateTimeField,
+                                                      self.local.dueDateTime(),
+                                                      self.remote.dueDateTime())
+        if self.flags & TaskSource.CONFLICT_COMPLETIONDATETIME:
+            self.idCompletionDateTime = self.AddConflictItem(_('Completion date'),
+                                                             DateTimeField,
+                                                             self.local.completionDateTime(),
+                                                             self.remote.completionDateTime())
         if self.flags & TaskSource.CONFLICT_PRIORITY:
             self.idPriority = self.AddConflictItem(_('Priority'),
                                                    IntegerField,
@@ -231,21 +232,21 @@ class TaskConflictPanel(BaseConflictPanel):
         if self.flags & TaskSource.CONFLICT_DESCRIPTION:
             localWidget, remoteWidget, fusionWidget, btnFusion = self.fields[self.idDescription]
             resolved['description'] = fusionWidget.GetValue()
-        if self.flags & TaskSource.CONFLICT_STARTDATE:
-            localWidget, remoteWidget, fusionWidget, btnFusion = self.fields[self.idStartDate]
-            resolved['startDate'] = fusionWidget.GetValue()
-        if self.flags & TaskSource.CONFLICT_DUEDATE:
-            localWidget, remoteWidget, fusionWidget, btnFusion = self.fields[self.idDueDate]
-            resolved['dueDate'] = fusionWidget.GetValue()
+        if self.flags & TaskSource.CONFLICT_STARTDATETIME:
+            localWidget, remoteWidget, fusionWidget, btnFusion = self.fields[self.idStartDateTime]
+            resolved['startDateTime'] = fusionWidget.GetValue()
+        if self.flags & TaskSource.CONFLICT_DUEDATETIME:
+            localWidget, remoteWidget, fusionWidget, btnFusion = self.fields[self.idDueDateTime]
+            resolved['dueDateTime'] = fusionWidget.GetValue()
         if self.flags & TaskSource.CONFLICT_PRIORITY:
             localWidget, remoteWidget, fusionWidget, btnFusion = self.fields[self.idPriority]
             resolved['priority'] = fusionWidget.GetValue()
         if self.flags & TaskSource.CONFLICT_CATEGORIES:
             localWidget, remoteWidget, fusionWidget, btnFusion = self.fields[self.idCategories]
             resolved['categories'] = fusionWidget.GetValue()
-        if self.flags & TaskSource.CONFLICT_COMPLETIONDATE:
-            localWidget, remoteWidget, fusionWidget, btnFusion = self.fields[self.idCompletionDate]
-            resolved['completionDate'] = fusionWidget.GetValue()
+        if self.flags & TaskSource.CONFLICT_COMPLETIONDATETIME:
+            localWidget, remoteWidget, fusionWidget, btnFusion = self.fields[self.idCompletionDateTime]
+            resolved['completionDateTime'] = fusionWidget.GetValue()
 
         return resolved
 

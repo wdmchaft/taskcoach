@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -47,25 +47,30 @@ class DummyEvent(object):
         pass
 
 
+class MainWindow(gui.MainWindow):
+    def canCreateTaskBarIcon(self):
+        return False
+    
+    
 class ViewerContainerTest(test.wxTestCase):
     def setUp(self):
         super(ViewerContainerTest, self).setUp()
         self.events = []
-        self.settings = config.Settings(load=False)
+        task.Task.settings = self.settings = config.Settings(load=False)
         self.settings.set('view', 'viewerwithdummywidgetcount', '2', new=True)
-        self.settings.setboolean('view', 'tabbedmainwindow', True)
         self.taskFile = persistence.TaskFile()
-        self.notebook = widgets.Notebook(self.frame)
-        self.container = gui.viewer.ViewerContainer(self.notebook, 
+        self.mainWindow = MainWindow(None, self.taskFile, self.settings)
+        self.container = gui.viewer.ViewerContainer(self.mainWindow, 
             self.settings, 'mainviewer')
-        self.viewer1 = self.createViewer()
+        self.viewer1 = self.createViewer('taskviewer1')
         self.container.addViewer(self.viewer1)
-        self.viewer2 = self.createViewer()
+        self.viewer2 = self.createViewer('taskviewer2')
         self.container.addViewer(self.viewer2)
 
-    def createViewer(self):
-        return dummy.ViewerWithDummyWidget(self.notebook,
-            self.taskFile, self.settings, settingsSection='taskviewer')
+    def createViewer(self, settingsSection):
+        self.settings.add_section(settingsSection)
+        return dummy.ViewerWithDummyWidget(self.mainWindow, self.taskFile, 
+            self.settings, settingsSection=settingsSection)
             
     def onEvent(self, event):
         self.events.append(event)
@@ -76,6 +81,9 @@ class ViewerContainerTest(test.wxTestCase):
     def testAddTask(self):
         self.taskFile.tasks().append(task.Task())
         self.assertEqual(1, self.container.size())
+
+    def testDefaultActiveViewer(self):
+        self.assertEqual(self.viewer1, self.container.activeViewer())
         
     def testChangePage_ChangesActiveViewer(self):
         self.container.onPageChanged(DummyEvent(1))
@@ -118,8 +126,4 @@ class ViewerContainerTest(test.wxTestCase):
             eventSource=self.container)
         self.container.onPageClosed(DummyEvent(window=self.viewer2))
         self.failUnless(self.events)
-
-    def testActiveViewerAfterChangingToAuiManagedFrame(self):
-        self.settings.setboolean('view', 'tabbedmainwindow', False)
-        self.assertEqual(self.viewer1, self.container.activeViewer())
 

@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -72,12 +72,14 @@ class TaskSorterSettingsTest(test.TestCase):
     def setUp(self):
         self.taskList = task.TaskList()
         self.sorter = task.sorter.Sorter(self.taskList)        
-        self.task1 = task.Task(subject='A', dueDate=date.Tomorrow())
-        self.task2 = task.Task(subject='B', dueDate=date.Today())
+        self.task1 = task.Task(subject='A', startDateTime=date.Now(),
+                               dueDateTime=date.Now() + date.oneDay)
+        self.task2 = task.Task(subject='B', startDateTime=date.Now(),
+                               dueDateTime=date.Now() + date.oneHour)
         self.taskList.extend([self.task1, self.task2])
 
-    def testSortDueDate(self):
-        self.sorter.sortBy('dueDate')
+    def testSortDueDateTime(self):
+        self.sorter.sortBy('dueDateTime')
         self.assertEqual([self.task2, self.task1], list(self.sorter))
         
     def testSortBySubject(self):
@@ -86,15 +88,15 @@ class TaskSorterSettingsTest(test.TestCase):
         
     def testSortBySubject_TurnOff(self):
         self.sorter.sortBy('subject')
-        self.sorter.sortBy('dueDate')
+        self.sorter.sortBy('dueDateTime')
         self.assertEqual([self.task2, self.task1], list(self.sorter))
         
     def testSortByCompletionStatus(self):
-        self.task2.setCompletionDate(date.Today())
+        self.task2.setCompletionDateTime(date.Now())
         self.assertEqual([self.task1, self.task2], list(self.sorter))
         
     def testSortByInactiveStatus(self):
-        self.task2.setStartDate(date.Tomorrow())
+        self.task2.setStartDateTime(date.Now() + date.oneDay)
         self.assertEqual([self.task1, self.task2], list(self.sorter))
     
     def testSortBySubjectDescending(self):
@@ -102,33 +104,33 @@ class TaskSorterSettingsTest(test.TestCase):
         self.sorter.sortAscending(False)
         self.assertEqual([self.task2, self.task1], list(self.sorter))
         
-    def testSortByStartDate(self):
-        self.sorter.sortBy('startDate')
-        self.task1.setDueDate(date.Yesterday())
-        self.task2.setStartDate(date.Yesterday())
+    def testSortByStartDateTime(self):
+        self.sorter.sortBy('startDateTime')
+        self.task1.setDueDateTime(date.Now() - date.oneDay)
+        self.task2.setStartDateTime(date.Now() - date.oneDay)
         self.assertEqual([self.task2, self.task1], list(self.sorter))
         
     def testDescending(self):
-        self.sorter.sortBy('dueDate')
+        self.sorter.sortBy('dueDateTime')
         self.sorter.sortAscending(False)
         self.assertEqual([self.task1, self.task2], list(self.sorter))
         
     def testByDueDateWithoutFirstSortingByStatus(self):
-        self.sorter.sortBy('dueDate')
+        self.sorter.sortBy('dueDateTime')
         self.sorter.sortByTaskStatusFirst(False)
-        self.task2.setCompletionDate(date.Today())
+        self.task2.setCompletionDateTime(date.Now())
         self.assertEqual([self.task2, self.task1], list(self.sorter))
 
     def testSortBySubjectWithFirstSortingByStatus(self):
         self.sorter.sortByTaskStatusFirst(True)
         self.sorter.sortBy('subject')
-        self.task1.setCompletionDate(date.Today())
+        self.task1.setCompletionDateTime(date.Now())
         self.assertEqual([self.task2, self.task1], list(self.sorter))
         
     def testSortBySubjectWithoutFirstSortingByStatus(self):
         self.sorter.sortByTaskStatusFirst(False)
         self.sorter.sortBy('subject')
-        self.task1.setCompletionDate(date.Today())
+        self.task1.setCompletionDateTime(date.Now())
         self.assertEqual([self.task1, self.task2], list(self.sorter))
                 
     def testSortCaseSensitive(self):
@@ -139,6 +141,7 @@ class TaskSorterSettingsTest(test.TestCase):
         self.assertEqual([self.task1, self.task2, task3], list(self.sorter))
 
     def testSortCaseInsensitive(self):
+        self.sorter.sortByTaskStatusFirst(False)
         self.sorter.sortCaseSensitive(False)
         self.sorter.sortBy('subject')
         task3 = task.Task('a')
@@ -181,24 +184,24 @@ class TaskSorterSettingsTest(test.TestCase):
             date.DateTime(2005,1,1,10,0,0), date.DateTime(2005,1,1,11,0,0)))
         self.assertEqual([self.task1, self.task2], list(self.sorter))
 
-    def testAlwaysKeepSubscriptionToCompletionDate(self):
-        ''' TaskSorter should keep a subscription to task.completionDate 
+    def testAlwaysKeepSubscriptionToCompletionDateTime(self):
+        ''' TaskSorter should keep a subscription to task.completionDateTime 
             even when the completion date is not the sort key, because sorting
             on task status (active, completed, etc.) depends on the completion
             date. '''
-        self.sorter.sortBy('completionDate')
+        self.sorter.sortBy('completionDateTime')
         self.sorter.sortBy('subject')
-        self.task1.setCompletionDate()
+        self.task1.setCompletionDateTime()
         self.assertEqual([self.task2, self.task1], list(self.sorter))
 
-    def testAlwaysKeepSubscriptionToStartDate(self):
-        ''' TaskSorter should keep a subscription to task.startDate 
+    def testAlwaysKeepSubscriptionToStartDateTime(self):
+        ''' TaskSorter should keep a subscription to task.startDateTime 
             even when the start date is not the sort key, because sorting
             on task status (active, completed, etc.) depends on the start
             date. '''
-        self.sorter.sortBy('startDate')
+        self.sorter.sortBy('startDateTime')
         self.sorter.sortBy('subject')
-        self.task1.setStartDate(date.Tomorrow())
+        self.task1.setStartDateTime(date.Now() + date.oneDay)
         self.assertEqual([self.task2, self.task1], list(self.sorter))
         
 
@@ -219,9 +222,9 @@ class TaskSorterTreeModeTest(test.TestCase):
         self.assertEqual([self.parent1, self.child1, self.parent2, self.child2],
             list(self.sorter))
         
-    def testSortByDueDate(self):
-        self.sorter.sortBy('dueDate')
-        self.child2.setDueDate(date.Today())
+    def testSortByDueDateTime(self):
+        self.sorter.sortBy('dueDateTime')
+        self.child2.setDueDateTime(date.Now().endOfDay())
         self.failUnless(list(self.sorter).index(self.parent2) < \
             list(self.sorter).index(self.parent1))
 

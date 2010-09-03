@@ -11,12 +11,16 @@ class wxSchedulerPrint( wxSchedulerCore ):
 		
 		self.SetDc( dc )
 		
-	def Draw( self ):
+	def Draw( self, page ):
 		"""
 		Draw object on DC
 		"""
 		self.DrawBuffer()
-		self.OnPaint()
+		if page is not None:
+			self.pageNumber = page
+			self.DrawBuffer()
+
+		self._dc.DrawBitmap(self._bitmap, 0, 0, False)
 		
 	def GetSize( self ):
 		"""

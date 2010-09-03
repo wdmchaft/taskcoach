@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -54,7 +54,17 @@ class DateTimeTest(test.TestCase):
     def testEndOfWeek(self):
         endOfWeek = date.DateTime(2005,4,3,23,59,59,999999)
         midweek = date.DateTime(2005,3,31,12,30,15,400)
-        self.assertEqual(endOfWeek, midweek.endOfWeek())      
+        self.assertEqual(endOfWeek, midweek.endOfWeek())
+        
+    def testEndOfWorkWeek(self):
+        endOfWorkWeek = date.DateTime(2010,5,7,23,59,59,999999)
+        midweek = date.DateTime(2010,5,5,12,30,15,200000)
+        self.assertEqual(endOfWorkWeek, midweek.endOfWorkWeek())
+
+    def testEndOfWorkWeek_OnSaturday(self):
+        endOfWorkWeek = date.DateTime(2010,5,7,23,59,59,999999)
+        midweek = date.DateTime(2010,5,1,12,30,15,200000)
+        self.assertEqual(endOfWorkWeek, midweek.endOfWorkWeek())
         
     def testStartOfMonth(self):
         startOfMonth = date.DateTime(2005,4,1)
@@ -65,6 +75,15 @@ class DateTimeTest(test.TestCase):
         endOfMonth = date.DateTime(2005,4,30).endOfDay()
         midMonth = date.DateTime(2005,4,15,12,45,1,999999)
         self.assertEqual(endOfMonth, midMonth.endOfMonth())
+
+    def testEndOfYear_AtMidYear(self):
+        endOfYear = date.DateTime(2010,12,31,23,59,59,999999)
+        midYear = date.DateTime(2010,6,30,0,0,0)
+        self.assertEqual(endOfYear, midYear.endOfYear())
+
+    def testEndOfYear_AtEndOfYear(self):
+        endOfYear = date.DateTime(2010,12,31,23,59,59,999999)
+        self.assertEqual(endOfYear, endOfYear.endOfYear())
         
     def testOrdinalOfDateTimeAtMidnightEqualsOrdinalOfDate(self):
         self.assertEqual(date.Date(2000, 1, 1).toordinal(), 

@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -25,6 +25,13 @@ class DateTime(datetime.datetime):
     hoursPerDay = 24
     secondsPerHour = minutesPerHour * secondsPerMinute
     secondsPerDay = hoursPerDay * secondsPerHour
+
+    def __new__(class_, *args, **kwargs):
+        if not args and not kwargs:
+            max = datetime.datetime.max
+            args = (max.year, max.month, max.day, 
+                    max.hour, max.minute, max.second, max.microsecond)
+        return datetime.datetime.__new__(class_, *args, **kwargs)
     
     def weeknumber(self):
         return self.isocalendar()[1]
@@ -46,6 +53,12 @@ class DateTime(datetime.datetime):
         
     def endOfDay(self):
         return self.replace(hour=23, minute=59, second=59, microsecond=999999)
+    
+    def endOfTomorrow(self):
+        return self.endOfDay() + timedelta.TimeDelta(days=1)
+
+    def endOfYesterday(self):
+        return self.endOfDay() - timedelta.TimeDelta(days=1)
 
     def startOfWeek(self):
         days = self.weekday()
@@ -56,7 +69,14 @@ class DateTime(datetime.datetime):
         days = self.weekday()
         sunday = self + timedelta.TimeDelta(days=7-days)
         return DateTime(sunday.year, sunday.month, sunday.day).endOfDay()
-        
+    
+    def endOfWorkWeek(self):
+        days = 5 - self.weekday()
+        if days < 0:
+            days += 7
+        friday = self + timedelta.TimeDelta(days=days)
+        return DateTime(friday.year, friday.month, friday.day).endOfDay()
+            
     def startOfMonth(self):
         return DateTime(self.year, self.month, 1)
         
@@ -66,29 +86,44 @@ class DateTime(datetime.datetime):
                 return DateTime(self.year, self.month, lastday).endOfDay()
             except ValueError:
                 pass
+            
+    def endOfYear(self):
+        return DateTime(self.year, 12, 31).endOfDay()
                 
     def __sub__(self, other):
-        ''' Make sure substraction returns a TimeDelta and not a datetime.timedelta '''
+        ''' Make sure substraction returns instances of the right classes. '''
+        if self == DateTime() and isinstance(other, datetime.datetime):
+            max = timedelta.TimeDelta.max
+            return timedelta.TimeDelta(max.days, max.seconds, max.microseconds)
         result = super(DateTime, self).__sub__(other)
         if isinstance(result, datetime.timedelta):
-            result = timedelta.TimeDelta(result.days, result.seconds, result.microseconds)
+            result = timedelta.TimeDelta(result.days, result.seconds, 
+                                         result.microseconds)
+        elif isinstance(result, datetime.datetime):
+            result = self.__class__(result.year, result.month, result.day, 
+                                    result.hour, result.minute, result.second, 
+                                    result.microsecond)
         return result
 
     def __add__(self, other):
         result = super(DateTime, self).__add__(other)
         return self.__class__(result.year, result.month, result.day, 
             result.hour, result.minute, result.second, result.microsecond)
-
+        
 
 DateTime.max = DateTime(datetime.datetime.max.year, 12, 31).endOfDay()
 DateTime.min = DateTime(datetime.datetime.min.year, 1, 1).startOfDay()
 
 
-def parseDateTime(string):
+def parseDateTime(string, *timeDefaults):
     if string in ('', 'None'):
         return None
     else:
         args = [int(arg) for arg in re.split('[-:. ]', string)]
+        if len(args) == 3: # We parsed a date, no time
+            args.extend(timeDefaults)
         return DateTime(*args) # pylint: disable-msg=W0142
         
 
+def Now():
+    return DateTime.now()

@@ -1,7 +1,8 @@
+# -*- coding: utf-8 -*-
+
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
-Copyright (C) 2007-2008 Jerome Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -51,28 +52,13 @@ class EffortCommand(base.BaseCommand): # pylint: disable-msg=W0223
         self.stopTracking()
 
 
-class PasteIntoTaskCommand(base.PasteCommand, base.CompositeMixin):
-    def name(self):
-        return _('Paste into task')
-
-    def setParentOfPastedItems(self): # pylint: disable-msg=W0221
-        newParent = self.items[0]
-        super(PasteIntoTaskCommand, self).setParentOfPastedItems(newParent)
-
-    def getItemsToSave(self):
-        parents = [parent for parent in [self.items[0]] if parent.completed()]
-        return parents + self.getAncestors(parents) + \
-            super(PasteIntoTaskCommand, self).getItemsToSave()
-
-
 class DragAndDropTaskCommand(base.DragAndDropCommand):
-    def name(self):
-        return _('Drag and drop task')
+    plural_name = _('Drag and drop tasks')
 
 
 class DeleteTaskCommand(base.DeleteCommand, EffortCommand):
-    def name(self):
-        return _('Delete task')
+    plural_name = _('Delete tasks')
+    singular_name = _('Delete task "%s"')
 
     def tasksToStopTracking(self):
         return self.items
@@ -94,60 +80,48 @@ class DeleteTaskCommand(base.DeleteCommand, EffortCommand):
         self.stopTracking()
 
 
-class NewTaskCommand(base.BaseCommand):
-    def name(self):
-        return _('New task')
-
+class NewTaskCommand(base.NewItemCommand):
+    singular_name = _('New task')
+    
     def __init__(self, *args, **kwargs):
         subject = kwargs.pop('subject', _('New task'))
         description = kwargs.pop('description', '')
         attachments = kwargs.pop('attachments', [])
         categories = kwargs.pop('categories', [])
+        startDateTime = kwargs.pop('startDateTime', date.Now())
         super(NewTaskCommand, self).__init__(*args, **kwargs)
         self.items = [task.Task(subject=subject, description=description, 
                                 attachments=attachments, categories=categories,
-                                **kwargs)]
-
-    def do_command(self):
-        self.list.extend(self.items)
-
-    def undo_command(self):
-        self.list.removeItems(self.items)
-
-    def redo_command(self):
-        self.list.extend(self.items)
+                                startDateTime=startDateTime, **kwargs)]
 
 
-class NewSubTaskCommand(base.BaseCommand, SaveTaskStateMixin):
-    def name(self):
-        return _('New subtask')
+class NewSubTaskCommand(base.NewSubItemCommand, SaveTaskStateMixin):
+    plural_name = _('New subtasks')
+    singular_name = _('New subtask of "%s"')
 
     def __init__(self, *args, **kwargs):
         super(NewSubTaskCommand, self).__init__(*args, **kwargs)
         subject = kwargs.pop('subject', _('New subtask'))
         self.items = [parent.newChild(subject=subject, **kwargs) for parent in self.items]
         self.saveStates(self.getTasksToSave())
-        
+    
     def getTasksToSave(self):
         # FIXME: can be simplified to: return self.getAncestors(self.items) ?
         parents = [item.parent() for item in self.items if item.parent()]
         return parents + self.getAncestors(parents)
 
-    def do_command(self):
-        self.list.extend(self.items)
-
     def undo_command(self):
-        self.list.removeItems(self.items)
+        super(NewSubTaskCommand, self).undo_command()
         self.undoStates()
 
     def redo_command(self):
-        self.list.extend(self.items)
+        super(NewSubTaskCommand, self).redo_command()
         self.redoStates()
 
 
 class EditTaskCommand(base.EditCommand):
-    def name(self):
-        return _('Edit task')
+    plural_name = _('Edit tasks')
+    singular_name = _('Edit task "%s"')
     
     def __init__(self, *args, **kwargs):
         super(EditTaskCommand, self).__init__(*args, **kwargs)
@@ -179,24 +153,24 @@ class EditTaskCommand(base.EditCommand):
 
 
 class MarkCompletedCommand(EditTaskCommand, EffortCommand):
-    def name(self):
-        return _('Mark completed')
+    plural_name = _('Mark tasks completed')
+    singular_name = _('Mark "%s" completed')
 
     def do_command(self):
         super(MarkCompletedCommand, self).do_command()
         for item in self.items:
             if item.completed():
-                item.setCompletionDate(date.Date())
+                item.setCompletionDateTime(date.DateTime())
             else:
-                item.setCompletionDate()
+                item.setCompletionDateTime()
 
     def tasksToStopTracking(self):
         return self.items
 
 
 class StartEffortCommand(EffortCommand):
-    def name(self):
-        return _('Start tracking')
+    plural_name = _('Start tracking')
+    singular_name = _('Start tracking "%s"')
 
     def __init__(self, *args, **kwargs):
         super(StartEffortCommand, self).__init__(*args, **kwargs)
@@ -225,12 +199,11 @@ class StartEffortCommand(EffortCommand):
             
         
 class StopEffortCommand(EffortCommand):
-    def name(self):
-        return _('Stop tracking')
+    plural_name = _('Stop tracking')
+    singular_name = _('Stop tracking "%s"')
                   
     def canDo(self):
-        return True    
-
+        return True # No selected items needed.
 
 
 class ExtremePriorityCommand(base.BaseCommand): # pylint: disable-msg=W0223
@@ -242,7 +215,7 @@ class ExtremePriorityCommand(base.BaseCommand): # pylint: disable-msg=W0223
         self.oldExtremePriority = self.getOldExtremePriority()
         
     def getOldExtremePriority(self):
-        raise NotImplementedError
+        raise NotImplementedError # pragma: no cover
 
     def setNewExtremePriority(self):
         newExtremePriority = self.oldExtremePriority + self.delta 
@@ -267,8 +240,8 @@ class ExtremePriorityCommand(base.BaseCommand): # pylint: disable-msg=W0223
 
 
 class MaxPriorityCommand(ExtremePriorityCommand):
-    def name(self):
-        return _('Maximize priority')
+    plural_name = _('Maximize priority')
+    singular_name = _('Maximize priority of "%s"')
     
     delta = +1
     
@@ -277,8 +250,8 @@ class MaxPriorityCommand(ExtremePriorityCommand):
     
 
 class MinPriorityCommand(ExtremePriorityCommand):
-    def name(self):
-        return _('Minimize priority')
+    plural_name = _('Minimize priority')
+    singular_name = _('Minimize priority of "%s"')
     
     delta = -1
                     
@@ -307,20 +280,18 @@ class ChangePriorityCommand(base.BaseCommand): # pylint: disable-msg=W0223
 
 
 class IncPriorityCommand(ChangePriorityCommand):
-    def name(self):
-        return _('Increase priority')
-
+    plural_name = _('Increase priority')
+    singular_name = _('Increase priority of "%s"')
+    
     delta = +1
 
 
 class DecPriorityCommand(ChangePriorityCommand):
-    def name(self):
-        return _('Decrease priority')
+    plural_name = _('Decrease priority')
+    singular_name = _('Decrease priority of "%s"')
 
     delta = -1
     
     
 class AddTaskNoteCommand(base.AddNoteCommand):
-    def name(self):
-        return _('Add note to task')
-
+    plural_name = _('Add note to tasks')

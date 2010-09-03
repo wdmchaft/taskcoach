@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -90,11 +90,11 @@ class ViewFilterTestCase(test.TestCase):
         self.list = task.TaskList()
         self.filter = task.filter.ViewFilter(self.list, treeMode=self.treeMode)
         self.task = task.Task(subject='task')
-        self.dueToday = task.Task(subject='due today', dueDate=date.Today())
+        self.dueToday = task.Task(subject='due today', dueDateTime=date.Now().endOfDay())
         self.dueTomorrow = task.Task(subject='due tomorrow', 
-            dueDate=date.Tomorrow())
+            dueDateTime=date.Now().endOfTomorrow())
         self.dueYesterday = task.Task(subject='due yesterday', 
-            dueDate=date.Yesterday())
+            dueDateTime=date.Now().endOfYesterday())
         self.child = task.Task(subject='child')
 
 
@@ -107,14 +107,14 @@ class ViewFilterTests(object):
         self.assertEqual(1, len(self.filter))
         
     def testFilterCompletedTask(self):
-        self.task.setCompletionDate()
+        self.task.setCompletionDateTime()
         self.filter.append(self.task)
         self.assertEqual(1, len(self.filter))
         self.filter.hideCompletedTasks()
         self.assertEqual(0, len(self.filter))
         
     def testFilterCompletedTask_RootTasks(self):
-        self.task.setCompletionDate()
+        self.task.setCompletionDateTime()
         self.filter.append(self.task)
         self.filter.hideCompletedTasks()
         self.assertEqual(0, len(self.filter.rootItems()))
@@ -122,33 +122,33 @@ class ViewFilterTests(object):
     def testMarkTaskCompleted(self):
         self.filter.hideCompletedTasks()
         self.list.append(self.task)
-        self.task.setCompletionDate()
+        self.task.setCompletionDateTime()
         self.assertEqual(0, len(self.filter))
 
     def testMarkTaskUncompleted(self):
         self.filter.hideCompletedTasks()
-        self.task.setCompletionDate()
+        self.task.setCompletionDateTime()
         self.list.append(self.task)
-        self.task.setCompletionDate(date.Date())
+        self.task.setCompletionDateTime(date.DateTime())
         self.assertEqual(1, len(self.filter))
         
     def testChangeCompletionDateOfAlreadyCompletedTask(self):
         self.filter.hideCompletedTasks()
-        self.task.setCompletionDate()
+        self.task.setCompletionDateTime()
         self.list.append(self.task)
-        self.task.setCompletionDate(date.Tomorrow())
+        self.task.setCompletionDateTime(date.Now() + date.oneDay)
         self.assertEqual(0, len(self.filter))
 
     def testFilterDueToday(self):
         self.filter.extend([self.task, self.dueToday])
         self.assertEqual(2, len(self.filter))
-        self.filter.setFilteredByDueDate('Today')
+        self.filter.setFilteredByDueDateTime('Today')
         self.assertEqual(1, len(self.filter))
 
     def testFilterDueToday_ChildDueToday(self):
         self.task.addChild(self.dueToday)
         self.list.append(self.task)
-        self.filter.setFilteredByDueDate('Today')
+        self.filter.setFilteredByDueDateTime('Today')
         if self.filter.treeMode():
             self.assertEqual(2, len(self.filter))
         else:
@@ -156,26 +156,26 @@ class ViewFilterTests(object):
             
     def testFilterDueToday_ShouldIncludeOverdueTasks(self):
         self.filter.append(self.dueYesterday)
-        self.filter.setFilteredByDueDate('Today')
+        self.filter.setFilteredByDueDateTime('Today')
         self.assertEqual(1, len(self.filter))
 
     def testFilterDueToday_ShouldIncludeCompletedTasks(self):
         self.filter.append(self.dueToday)
-        self.dueToday.setCompletionDate()
-        self.filter.setFilteredByDueDate('Today')
+        self.dueToday.setCompletionDateTime()
+        self.filter.setFilteredByDueDateTime('Today')
         self.assertEqual(1, len(self.filter))
 
     def testFilterDueTomorrow(self):
         self.filter.extend([self.task, self.dueTomorrow, self.dueToday])
         self.assertEqual(3, len(self.filter))
-        self.filter.setFilteredByDueDate('Tomorrow')
+        self.filter.setFilteredByDueDateTime('Tomorrow')
         self.assertEqual(2, len(self.filter))
     
     def testFilterDueWeekend(self):
-        dueNextWeek = task.Task(dueDate=date.Today() + \
+        dueNextWeek = task.Task(dueDateTime=date.Now() + \
             date.TimeDelta(days=8))
         self.filter.extend([self.dueToday, dueNextWeek])
-        self.filter.setFilteredByDueDate('Workweek')
+        self.filter.setFilteredByDueDateTime('Workweek')
         self.assertEqual(1, len(self.filter))
 
 
@@ -192,7 +192,7 @@ class ViewFilterInTreeModeTest(ViewFilterTests, ViewFilterTestCase):
         self.task.addChild(child)
         child.setParent(self.task)
         self.list.append(self.task)
-        self.task.setCompletionDate()
+        self.task.setCompletionDateTime()
         self.assertEqual(0, len(self.filter))
         
 

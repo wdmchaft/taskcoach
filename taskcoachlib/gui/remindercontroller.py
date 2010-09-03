@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -42,18 +42,6 @@ class ReminderController(object):
         self.settings = settings
         self.taskList = taskList
 
-    def onWake(self, event):
-        # Reminders set for when the computer was asleep must be
-        # bumped
-
-        now = date.DateTime.today()
-
-        for task, reminderDateTime in self.__tasksWithReminders.items():
-            if reminderDateTime <= now:
-                if self.showReminderMessage(task):
-                    self.__removeReminder(task)
-        self.requestUserAttention()
-
     def onAddTask(self, event):
         self.__registerRemindersForTasks(event.values())
                 
@@ -65,31 +53,29 @@ class ReminderController(object):
         self.__removeRemindersForTasks(tasks)
         self.__registerRemindersForTasks(tasks)
         
+    def onWake(self, event):
+        self.showReminderMessages(date.DateTime.now())
+        
     def onReminder(self, event):
-        now = event.value() + date.TimeDelta(seconds=1)
+        self.showReminderMessages(event.value())
+        
+    def showReminderMessages(self, now):
+        now += date.TimeDelta(seconds=5) # Be sure not to miss reminders 
+        requestUserAttention = False
         for task, reminderDateTime in self.__tasksWithReminders.items():
             if reminderDateTime <= now:
+                requestUserAttention = True
                 if self.showReminderMessage(task):
                     self.__removeReminder(task)
-        self.requestUserAttention()
-        
-    def requestUserAttention(self):
-        notifier = self.settings.get('feature', 'notifier')
-        if notifier != 'Native' and notify.AbstractNotifier.get(notifier) is not None:
-            # When using Growl/Snarl, this is not necessary. Even when not using Growl, it's
-            # annoying as hell. Anyway.
-            return
-        self.__mainWindowWasHidden = not self.__mainWindow.IsShown()
-        if self.__mainWindowWasHidden:
-            self.__mainWindow.Show()
-        if not self.__mainWindow.IsActive():
-            self.__mainWindow.RequestUserAttention()
+        if requestUserAttention:
+            self.requestUserAttention()        
         
     def showReminderMessage(self, task):
         notifier = self.settings.get('feature', 'notifier')
-        if notifier != 'Native' and notify.AbstractNotifier.get(notifier) is not None:
+        if notifier != 'Task Coach' and notify.AbstractNotifier.get(notifier) is not None:
             notify.AbstractNotifier.get(notifier).notify(_('%s Reminder') % meta.name, task.subject(),
-                                                         wx.ArtProvider.GetBitmap('taskcoach', size=wx.Size(32, 32)))
+                                                         wx.ArtProvider.GetBitmap('taskcoach', size=wx.Size(32, 32)),
+                                                         windowId=self.__mainWindow.GetHandle())
             self.__removeReminder(task)
             task.setReminder(None)
             return False
@@ -97,7 +83,6 @@ class ReminderController(object):
         reminderDialog = reminder.ReminderDialog(task, self.taskList, self.settings, self.__mainWindow)
         reminderDialog.Bind(wx.EVT_CLOSE, self.onCloseReminderDialog)        
         reminderDialog.Show()
-
         return True
         
     def onCloseReminderDialog(self, event, show=True):
@@ -126,6 +111,18 @@ class ReminderController(object):
         if self.__mainWindowWasHidden:
             self.__mainWindow.Hide()
         return editTask # For unit testing purposes
+
+    def requestUserAttention(self):
+        notifier = self.settings.get('feature', 'notifier')
+        if notifier != 'Native' and notify.AbstractNotifier.get(notifier) is not None:
+            # When using Growl/Snarl, this is not necessary. Even when not using Growl, it's
+            # annoying as hell. Anyway.
+            return
+        self.__mainWindowWasHidden = not self.__mainWindow.IsShown()
+        if self.__mainWindowWasHidden:
+            self.__mainWindow.Show()
+        if not self.__mainWindow.IsActive():
+            self.__mainWindow.RequestUserAttention()
             
     def __registerRemindersForTasks(self, tasks):
         for task in tasks:

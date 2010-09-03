@@ -419,7 +419,7 @@ class AuiDefaultDockArt(object):
             dc.SetBrush(wx.WHITE_BRUSH)
             dc.DrawRectangle(rect.x, rect.y, rect.width, rect.height)
 
-        DrawGradientRectangle(dc, rect, self._background_colour,
+        DrawGradientRectangle(dc, rect, self._background_brush.GetColour(),
                               self._background_gradient_colour,
                               AUI_GRADIENT_HORIZONTAL, rect.x, 700)
 

@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -41,22 +41,16 @@ class EffortAggregator(patterns.SetDecorator,
             eventType=task.Task.addChildEventType())
         patterns.Publisher().registerObserver(self.onEffortStartChanged, 
             eventType='effort.start')
-        
+    
+    @patterns.eventSource    
     def extend(self, efforts, event=None): # pylint: disable-msg=W0221
-        notify = event is None
-        event = event or patterns.Event()
         for effort in efforts:
-            effort.task().addEffort(effort, event)
-        if notify:
-            event.send()
-            
+            effort.task().addEffort(effort, event=event)
+
+    @patterns.eventSource            
     def removeItems(self, efforts, event=None): # pylint: disable-msg=W0221
-        notify = event is None
-        event = event or patterns.Event()
         for effort in efforts:
-            effort.task().removeEffort(effort, event)
-        if notify:
-            event.send()
+            effort.task().removeEffort(effort, event=event)
             
     def extendSelf(self, tasks, event=None):
         ''' extendSelf is called when an item is added to the observed
@@ -69,18 +63,15 @@ class EffortAggregator(patterns.SetDecorator,
             newComposites.extend(self.createComposites(task, task.efforts()))
         super(EffortAggregator, self).extendSelf(newComposites, event)
 
+    @patterns.eventSource
     def removeItemsFromSelf(self, tasks, event=None):
         ''' removeItemsFromSelf is called when an item is removed from the 
             observed list. The default behavior of removeItemsFromSelf is to 
             remove the item from the observing list (i.e. this list)
             unchanged. We override the default behavior to remove the 
             tasks' efforts from the CompositeEfforts they are part of. '''
-        notify = event is None
-        event = event or patterns.Event()
         for task in tasks: # pylint: disable-msg=W0621
-            self.removeComposites(task, task.efforts(), event)
-        if notify:
-            event.send()
+            self.removeComposites(task, task.efforts(), event=event)
 
     def onEffortAddedToTask(self, event):
         newComposites = []

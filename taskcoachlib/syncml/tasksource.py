@@ -1,7 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2008 Jerome Laheurte <fraca7@free.fr>
-Copyright (C) 2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -27,13 +26,13 @@ from taskcoachlib.i18n import _
 import wx, inspect
 
 class TaskSource(basesource.BaseSource):
-    CONFLICT_STARTDATE        = 0x01
-    CONFLICT_DUEDATE          = 0x02
-    CONFLICT_DESCRIPTION      = 0x04
-    CONFLICT_SUBJECT          = 0x08
-    CONFLICT_PRIORITY         = 0x10
-    CONFLICT_CATEGORIES       = 0x20
-    CONFLICT_COMPLETIONDATE   = 0x40
+    CONFLICT_STARTDATETIME      = 0x01
+    CONFLICT_DUEDATETIME        = 0x02
+    CONFLICT_DESCRIPTION        = 0x04
+    CONFLICT_SUBJECT            = 0x08
+    CONFLICT_PRIORITY           = 0x10
+    CONFLICT_CATEGORIES         = 0x20
+    CONFLICT_COMPLETIONDATETIME = 0x40
 
     def __init__(self, callback, taskList, categoryList, *args, **kwargs):
         super(TaskSource, self).__init__(callback, taskList, *args, **kwargs)
@@ -42,25 +41,25 @@ class TaskSource(basesource.BaseSource):
 
     def updateItemProperties(self, item, task):
         item.data = 'BEGIN:VCALENDAR\r\nVERSION: 1.0\r\n' + \
-                    vcal.VCalFromTask(task) + \
+                    ical.VCalFromTask(task) + \
                     'END:VCALENDAR'
         item.dataType = 'text/x-vcalendar'
 
     def compareItemProperties(self, local, remote):
         result = 0
 
-        if local.startDate() != remote.startDate():
-            result |= self.CONFLICT_STARTDATE
-        if local.dueDate() != remote.dueDate():
-            result |= self.CONFLICT_DUEDATE
+        if local.startDateTime() != remote.startDateTime():
+            result |= self.CONFLICT_STARTDATETIME
+        if local.dueDateTime() != remote.dueDateTime():
+            result |= self.CONFLICT_DUEDATETIME
         if local.description() != remote.description():
             result |= self.CONFLICT_DESCRIPTION
         if local.subject() != remote.subject():
             result |= self.CONFLICT_SUBJECT
         if local.priority() != remote.priority():
             result |= self.CONFLICT_PRIORITY
-        if local.completionDate() != remote.completionDate():
-            result |= self.CONFLICT_COMPLETIONDATE
+        if local.completionDateTime() != remote.completionDateTime():
+            result |= self.CONFLICT_COMPLETIONDATETIME
 
         localCategories = map(unicode, local.categories(True))
         remoteCategories = map(unicode, remote.categories())
@@ -98,12 +97,12 @@ class TaskSource(basesource.BaseSource):
         return 201
 
     def doUpdateItem(self, task, local):
-        local.setStartDate(task.startDate())
-        local.setDueDate(task.dueDate())
+        local.setStartDateTime(task.startDateTime())
+        local.setDueDateTime(task.dueDateTime())
         local.setDescription(task.description())
         local.setSubject(task.subject())
         local.setPriority(task.priority())
-        local.setCompletionDate(task.completionDate())
+        local.setCompletionDateTime(task.completionDateTime())
 
         for category in local.categories():
             category.removeCategorizable(local)
@@ -122,14 +121,14 @@ class TaskSource(basesource.BaseSource):
             local.setSubject(resolved['subject'])
         if resolved.has_key('description'):
             local.setDescription(resolved['description'])
-        if resolved.has_key('startDate'):
-            local.setStartDate(resolved['startDate'])
-        if resolved.has_key('dueDate'):
-            local.setDueDate(resolved['dueDate'])
+        if resolved.has_key('startDateTime'):
+            local.setStartDateTime(resolved['startDateTime'])
+        if resolved.has_key('dueDateTime'):
+            local.setDueDateTime(resolved['dueDateTime'])
         if resolved.has_key('priority'):
             local.setPriority(resolved['priority'])
-        if resolved.has_key('completionDate'):
-            local.setCompletionDate(resolved['completionDate'])
+        if resolved.has_key('completionDateTime'):
+            local.setCompletionDateTime(resolved['completionDateTime'])
         if resolved.has_key('categories'):
             # Ahah,      tricky       part.      This      is      why
             # callback.resolvedXXXConflict return dictionaries instead

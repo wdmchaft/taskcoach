@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -27,14 +27,12 @@ class EditorWithCommandUnderTest(gui.dialog.editor.EditorWithCommand):
         super(EditorWithCommandUnderTest, self).__init__(*args, **kwargs)
         self.cancelCalled = False
         
-    def addPage(self, item):
-        page = wx.Panel(self)
-        page.item = item
-        self._interior.AddPage(page, 'Title')
-        
-    def setFocusOnFirstEntry(self):
-        pass
-    
+    def createInterior(self):
+        interior = wx.Panel(self)
+        interior.setFocus = lambda columnName: None
+        interior.isDisplayingItemOrChildOfItem = lambda item: item == self._command.items[0]
+        return interior
+            
     def cancel(self, *args, **kwargs):
         super(EditorWithCommandUnderTest, self).cancel(*args, **kwargs)
         self.cancelCalled = True
@@ -45,20 +43,27 @@ class EditorTestCase(test.wxTestCase):
         super(EditorTestCase, self).setUp()
         task.Task.settings = self.settings = config.Settings(load=False)
         self.taskFile = persistence.TaskFile()
-        self.taskList = self.taskFile.tasks()
+        self.taskList = task.filter.ViewFilter(self.taskFile.tasks())
         self.task = task.Task('task')
         self.taskList.append(self.task)
         self.editor = self.createEditor()
         
     def createEditor(self):
-        return EditorWithCommandUnderTest(self.frame, 
-            self.createCommand(), self.taskList, raiseDialog=False)
+        return EditorWithCommandUnderTest(self.frame, self.createCommand(), 
+                                          self.settings, self.taskList, 
+                                          self.taskFile, raiseDialog=False)
         
     def createCommand(self):
-        return command.EditTaskCommand(self.taskList, self.taskList)
+        sortedTasks = task.sorter.Sorter(self.taskList)[:]
+        return command.EditTaskCommand(sortedTasks, sortedTasks)
 
     def testCloseEditorWhenItemIsDeleted(self):
         self.failIf(self.editor.cancelCalled)
         self.taskList.remove(self.task)
         self.failUnless(self.editor.cancelCalled)
         
+    def testDontCloseEditorWhenItemIsFiltered(self):
+        self.failIf(self.editor.cancelCalled)
+        self.task.setCompletionDateTime()
+        self.taskList.hideCompletedTasks()
+        self.failIf(self.editor.cancelCalled)

@@ -2,8 +2,7 @@
 
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
-Copyright (C) 2008-2009 Jérôme Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -23,7 +22,8 @@ import wx
 from taskcoachlib import meta, patterns, widgets, help # pylint: disable-msg=W0622
 from taskcoachlib.i18n import _
 from taskcoachlib.gui.threads import DeferredCallMixin, synchronized
-from taskcoachlib.gui.dialog.iphone import IPhoneSyncTypeDialog, IPhoneSyncDialog
+from taskcoachlib.gui.dialog.iphone import IPhoneSyncTypeDialog
+from taskcoachlib.gui.iphone import IPhoneSyncFrame
 from taskcoachlib.powermgt import PowerStateMixin
 import taskcoachlib.thirdparty.aui as aui
 import viewer, toolbar, uicommand, remindercontroller, artprovider
@@ -49,7 +49,10 @@ class WindowDimensionsTracker(object):
                 # show it.
                 self._window.Show()
             self._window.Iconize(True)
-            wx.CallAfter(self._window.Hide)
+            if wx.Platform != '__WXMAC__':
+                # Seems like hiding the window after it's been
+                # iconized actually closes it on Mac OS...
+                wx.CallAfter(self._window.Hide)
 
     def startIconized(self):
         startIconized = self._settings.get(self._section, 'starticonized')
@@ -169,11 +172,7 @@ class MainWindow(DeferredCallMixin, PowerStateMixin, widgets.AuiManagedFrameWith
         self.createReminderController()
         
     def createViewerContainer(self):
-        tabbed = self.__usingTabbedMainWindow = self.settings.getboolean('view', 
-            'tabbedmainwindow') 
-        containerWidget = widgets.AUINotebook(self) if tabbed else self
-        self.viewer = viewer.ViewerContainer(containerWidget,
-            self.settings, 'mainviewer') 
+        self.viewer = viewer.ViewerContainer(self, self.settings, 'mainviewer') 
         
     def createStatusBar(self):
         import status
@@ -205,8 +204,7 @@ class MainWindow(DeferredCallMixin, PowerStateMixin, widgets.AuiManagedFrameWith
         # We use CallAfter because otherwise the statusbar will appear at the 
         # top of the window when it is initially hidden and later shown.
         wx.CallAfter(self.onShowStatusBar)
-        if not self.__usingTabbedMainWindow:
-            self.restorePerspective()
+        self.restorePerspective()
             
     def restorePerspective(self):
         perspective = self.settings.get('view', 'perspective')
@@ -316,7 +314,7 @@ class MainWindow(DeferredCallMixin, PowerStateMixin, widgets.AuiManagedFrameWith
             self.settings.set('view', key, str(value))
             
     def savePerspective(self):
-        perspective = '' if self.__usingTabbedMainWindow else self.manager.SavePerspective()
+        perspective = self.manager.SavePerspective()
         self.settings.set('view', 'perspective', perspective)
         
     def onClose(self, event):
@@ -328,11 +326,11 @@ class MainWindow(DeferredCallMixin, PowerStateMixin, widgets.AuiManagedFrameWith
             self.quit()
 
     def restore(self, event): # pylint: disable-msg=W0613
+        self.Iconize(False)
         self.Show()
         self.Raise()
         self.Refresh() # This is not necessary on Windows/Linux Ubuntu/Mac but
                        # might help to fix bug 1429540 (Linux Mandrake)
-        self.Iconize(False)
 
     def onIconify(self, event):
         if event.Iconized() and self.settings.getboolean('window', 
@@ -371,7 +369,7 @@ class MainWindow(DeferredCallMixin, PowerStateMixin, widgets.AuiManagedFrameWith
         # controls. Immediately after you click on a text control the focus
         # is removed. We work around it by not having AUI manage the toolbar
         # on Mac OS X:
-        if '__WXMAC__' in wx.PlatformInfo or self.__usingTabbedMainWindow:
+        if '__WXMAC__' in wx.PlatformInfo:
             if self.GetToolBar():
                 self.GetToolBar().Destroy()
             if size is not None:
@@ -403,8 +401,10 @@ class MainWindow(DeferredCallMixin, PowerStateMixin, widgets.AuiManagedFrameWith
     # iPhone-related methods. These are called from the asyncore thread so they're deferred.
 
     @synchronized
-    def createIPhoneProgressDialog(self):
-        return IPhoneSyncDialog(self.settings, self, wx.ID_ANY, _('iPhone/iPod'), size=wx.Size(400, 300))
+    def createIPhoneProgressFrame(self):
+        return IPhoneSyncFrame(self.settings, _('iPhone/iPod'),
+                               icon=wx.ArtProvider.GetBitmap('taskcoach', wx.ART_FRAME_ICON, (16, 16)),
+                               parent=self)
 
     @synchronized
     def getIPhoneSyncType(self, guid):
@@ -474,12 +474,17 @@ class MainWindow(DeferredCallMixin, PowerStateMixin, widgets.AuiManagedFrameWith
         effort.setStop(ended)
 
     @synchronized
-    def modifyIPhoneTask(self, task, subject, description, startDate, dueDate, completionDate, categories):
+    def modifyIPhoneTask(self, task, subject, description, startDateTime, 
+                         dueDateTime, completionDateTime, reminderDateTime,
+                         recurrence, priority, categories):
         task.setSubject(subject)
         task.setDescription(description)
-        task.setStartDate(startDate)
-        task.setDueDate(dueDate)
-        task.setCompletionDate(completionDate)
+        task.setStartDateTime(startDateTime)
+        task.setDueDateTime(dueDateTime)
+        task.setCompletionDateTime(completionDateTime)
+        task.setReminder(reminderDateTime)
+        task.setRecurrence(recurrence)
+        task.setPriority(priority)
 
         if categories is not None: # Protocol v2
             for category in task.categories():

@@ -2,8 +2,7 @@
 
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
-Copyright (C) 2007-2010 Jérôme Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 Copyright (C) 2008 Rob McMullen <rob.mcmullen@gmail.com>
 Copyright (C) 2008 Thomas Sonne Olesen <tpo@sonnet.dk>
 
@@ -27,7 +26,8 @@ from taskcoachlib.domain import task, date
 from taskcoachlib.i18n import _
 from taskcoachlib.gui import uicommand, menu, render, dialog
 from taskcoachlib.thirdparty.calendar import wxSCHEDULER_NEXT, wxSCHEDULER_PREV, \
-    wxSCHEDULER_TODAY, wxSCHEDULER_HORIZONTAL, wxSCHEDULER_TODAY, wxFancyDrawer
+    wxSCHEDULER_TODAY, wxSCHEDULER_HORIZONTAL, wxSCHEDULER_TODAY, wxSCHEDULER_MONTHLY, \
+    wxFancyDrawer
 import base, mixin
 
 
@@ -71,9 +71,9 @@ class BaseTaskViewer(mixin.SearchableViewerMixin,
                 self.settings, self.taskFile.efforts(), self.taskFile,  
                 bitmap=bitmap)
             
-    def editorClass(self):
+    def itemEditorClass(self):
         return dialog.editor.TaskEditor
-
+    
     def newItemCommandClass(self):
         return command.NewTaskCommand
     
@@ -144,7 +144,7 @@ class BaseTaskViewer(mixin.SearchableViewerMixin,
     def __registerForAppearanceChanges(self):
         colorSettings = ['color.%s'%setting for setting in 'activetasks',\
             'inactivetasks', 'completedtasks', 'duesoontasks', 'overduetasks'] 
-        colorSettings.append('behavior.duesoondays')
+        colorSettings.append('behavior.duesoonhours')
         for colorSetting in colorSettings:
             patterns.Publisher().registerObserver(self.onColorSettingChange, 
                 eventType=colorSetting)
@@ -152,7 +152,9 @@ class BaseTaskViewer(mixin.SearchableViewerMixin,
                           task.Task.backgroundColorChangedEventType(),
                           task.Task.fontChangedEventType(),
                           task.Task.iconChangedEventType(),
-                          task.Task.selectedIconChangedEventType()):
+                          task.Task.selectedIconChangedEventType(),
+                          task.Task.percentageCompleteChangedEventType(),
+                          task.Task.totalPercentageCompleteChangedEventType()):
             patterns.Publisher().registerObserver(self.onAttributeChanged,
                                                   eventType=eventType)
         patterns.Publisher().registerObserver(self.atMidnight,
@@ -161,7 +163,7 @@ class BaseTaskViewer(mixin.SearchableViewerMixin,
             eventType='powermgt.on')
 
     def atMidnight(self, event): # pylint: disable-msg=W0613
-        self.refresh()
+        pass
 
     def onWake(self, event):
         self.refresh()
@@ -171,7 +173,7 @@ class BaseTaskViewer(mixin.SearchableViewerMixin,
 
     def iconName(self, item, isSelected):
         return item.selectedIcon(recursive=True) if isSelected else item.icon(recursive=True)
-        
+
     def getItemTooltipData(self, task):
         if not self.settings.getboolean('view', 'descriptionpopups'):
             return []
@@ -181,10 +183,10 @@ class BaseTaskViewer(mixin.SearchableViewerMixin,
             result.append((None, map(lambda x: x.rstrip('\n'),
                                  task.description().split('\n'))))
         if task.notes():
-            result.append(('note_icon', [note.subject() for note in task.notes()]))
+            result.append(('note_icon', sorted([note.subject() for note in task.notes()])))
         if task.attachments():
             result.append(('paperclip_icon',
-                [unicode(attachment) for attachment in task.attachments()]))
+                sorted([unicode(attachment) for attachment in task.attachments()])))
         return result
 
     def label(self, task):
@@ -239,7 +241,7 @@ class SquareMapRootNode(RootNode):
 class TimelineRootNode(RootNode):
     def children(self, recursive=False):
         children = super(TimelineRootNode, self).children(recursive)
-        children.sort(key=lambda task: task.startDate())
+        children.sort(key=lambda task: task.startDateTime())
         return children
     
     def parallel_children(self, recursive=False):
@@ -248,19 +250,19 @@ class TimelineRootNode(RootNode):
     def sequential_children(self):
         return []
 
-    def startDate(self, recursive=False):
-        startDates = [item.startDate(recursive=True) for item in self.parallel_children()]
-        startDates = [aDate for aDate in startDates if aDate != date.Date()]
-        if not startDates:
-            startDates.append(date.Today())
-        return min(startDates)
+    def startDateTime(self, recursive=False):
+        startDateTimes = [item.startDateTime(recursive=True) for item in self.parallel_children()]
+        startDateTimes = [dt for dt in startDateTimes if dt != date.DateTime()]
+        if not startDateTimes:
+            startDateTimes.append(date.Now())
+        return min(startDateTimes)
     
-    def dueDate(self, recursive=False):
-        dueDates = [item.dueDate(recursive=True) for item in self.parallel_children()]
-        dueDates = [aDate for aDate in dueDates if aDate != date.Date()]
-        if not dueDates:
-            dueDates.append(date.Tomorrow())    
-        return max(dueDates)
+    def dueDateTime(self, recursive=False):
+        dueDateTimes = [item.dueDateTime(recursive=True) for item in self.parallel_children()]
+        dueDatetimes = [dt for dt in dueDateTimes if dt != date.DateTime()]
+        if not dueDateTimes:
+            dueDateTimes.append(date.Now() + date.oneDay)    
+        return max(dueDateTimes)
     
 
 class TimelineViewer(BaseTaskViewer):
@@ -270,8 +272,8 @@ class TimelineViewer(BaseTaskViewer):
     def __init__(self, *args, **kwargs):
         kwargs.setdefault('settingsSection', 'timelineviewer')
         super(TimelineViewer, self).__init__(*args, **kwargs)
-        for eventType in (task.Task.subjectChangedEventType(), 'task.startDate',
-            'task.dueDate', 'task.completionDate'):
+        for eventType in (task.Task.subjectChangedEventType(), 'task.startDateTime',
+            'task.dueDateTime', 'task.completionDateTime'):
             self.registerObserver(self.onAttributeChanged, eventType)
         
     def createWidget(self):
@@ -306,8 +308,8 @@ class TimelineViewer(BaseTaskViewer):
  
     def start(self, item, recursive=False):
         try:
-            start = item.startDate(recursive=recursive)
-            if start == date.Date():
+            start = item.startDateTime(recursive=recursive)
+            if start == date.DateTime():
                 return None
         except AttributeError:
             start = item.getStart()
@@ -316,10 +318,10 @@ class TimelineViewer(BaseTaskViewer):
     def stop(self, item, recursive=False):
         try:
             if item.completed():
-                stop = item.completionDate(recursive=recursive)
+                stop = item.completionDateTime(recursive=recursive)
             else:
-                stop = item.dueDate(recursive=recursive)
-            if stop == date.Date():
+                stop = item.dueDateTime(recursive=recursive)
+            if stop == date.DateTime():
                 return None   
             else:
                 stop += date.oneDay
@@ -339,7 +341,7 @@ class TimelineViewer(BaseTaskViewer):
         try:
             children = [child for child in item.children(recursive=recursive) \
                         if child in self.presentation()]
-            children.sort(key=lambda task: task.startDate())
+            children.sort(key=lambda task: task.startDateTime())
             return children
         except AttributeError:
             return []
@@ -358,7 +360,7 @@ class TimelineViewer(BaseTaskViewer):
         return wx.ArtProvider_GetIcon(bitmap, wx.ART_MENU, (16,16))
     
     def now(self):
-        return date.Today().toordinal()
+        return date.Now().toordinal()
     
     def nowlabel(self):
         return _('Now')
@@ -388,8 +390,8 @@ class SquareTaskViewer(BaseTaskViewer):
         super(SquareTaskViewer, self).__init__(*args, **kwargs)
         self.orderBy(self.settings.get(self.settingsSection(), 'sortby'))
         self.orderUICommand.setChoice(self.__orderBy)
-        for eventType in (task.Task.subjectChangedEventType(), 'task.dueDate',
-            'task.startDate', 'task.completionDate'):
+        for eventType in (task.Task.subjectChangedEventType(), 'task.dueDateTime',
+            'task.startDateTime', 'task.completionDateTime'):
             self.registerObserver(self.onAttributeChanged, eventType)
 
     def curselectionIsInstanceOf(self, class_):
@@ -491,6 +493,7 @@ class SquareTaskViewer(BaseTaskViewer):
     
 
 class CalendarViewer(mixin.AttachmentDropTargetMixin,
+                     mixin.SortableViewerForTasksMixin,
                      BaseTaskViewer):
     defaultTitle = _('Calendar')
     defaultBitmap = 'calendar_icon'
@@ -500,11 +503,16 @@ class CalendarViewer(mixin.AttachmentDropTargetMixin,
         super(CalendarViewer, self).__init__(*args, **kwargs)
 
         self.widget.SetViewType(self.settings.getint(self.settingsSection(), 'viewtype'))
-        self.widget.SetStyle(wxSCHEDULER_HORIZONTAL)
+        self.widget.SetStyle(self.settings.getint(self.settingsSection(), 'vieworientation'))
+        self.widget.SetPeriodCount(self.settings.getint(self.settingsSection(), 'periodcount'))
 
+        self.periodCountUICommand.setValue(self.settings.getint(self.settingsSection(), 'periodcount'))
+        self.periodCountUICommand.enable(self.widget.GetViewType() != wxSCHEDULER_MONTHLY)
         self.typeUICommand.setChoice(self.settings.getint(self.settingsSection(), 'viewtype'))
+        self.orientationUICommand.setChoice(self.settings.getint(self.settingsSection(), 'vieworientation'))
         self.filterChoiceUICommand.setChoice((self.settings.getboolean(self.settingsSection(), 'shownostart'),
-                                              self.settings.getboolean(self.settingsSection(), 'shownodue')))
+                                              self.settings.getboolean(self.settingsSection(), 'shownodue'),
+                                              self.settings.getboolean(self.settingsSection(), 'showunplanned')))
 
         start = self.settings.get(self.settingsSection(), 'viewdate')
         if start:
@@ -517,12 +525,13 @@ class CalendarViewer(mixin.AttachmentDropTargetMixin,
 
         self.widget.SetShowNoStartDate(self.settings.getboolean(self.settingsSection(), 'shownostart'))
         self.widget.SetShowNoDueDate(self.settings.getboolean(self.settingsSection(), 'shownodue'))
+        self.widget.SetShowUnplanned(self.settings.getboolean(self.settingsSection(), 'showunplanned'))
 
         for eventType in ('view.efforthourstart', 'view.efforthourend'):
             self.registerObserver(self.onWorkingHourChanged, eventType)
 
-        for eventType in (task.Task.subjectChangedEventType(), 'task.startDate',
-                          'task.dueDate', 'task.completionDate',
+        for eventType in (task.Task.subjectChangedEventType(), 'task.startDateTime',
+                          'task.dueDateTime', 'task.completionDateTime',
                           task.Task.attachmentsChangedEventType(),
                           task.Task.notesChangedEventType()):
             self.registerObserver(self.onAttributeChanged, eventType)
@@ -530,13 +539,11 @@ class CalendarViewer(mixin.AttachmentDropTargetMixin,
     def onEverySecond(self, event): # pylint: disable-msg=W0221,W0613
         pass # Too expensive
 
-    def atMidnight(self, event): # pylint: disable-msg=W0613
+    def atMidnight(self, event):
         if not self.settings.get(self.settingsSection(), 'viewdate'):
             # User has selected the "current" date/time; it may have
             # changed now
             self.SetViewType(wxSCHEDULER_TODAY)
-
-        super(CalendarViewer, self).atMidnight(event)
 
     def onWake(self, event):
         self.atMidnight(event)
@@ -562,23 +569,33 @@ class CalendarViewer(mixin.AttachmentDropTargetMixin,
         edit = uicommand.TaskEdit(taskList=self.presentation(), viewer=self)
         edit(item)
 
-    def onCreate(self, date):
-        create = uicommand.TaskNew(taskList=self.presentation(), settings=self.settings,
-                                   taskKeywords=dict(startDate=date, dueDate=date))
+    def onCreate(self, dateTime):
+        create = uicommand.TaskNew(taskList=self.presentation(), 
+                                   settings=self.settings,
+                                   taskKeywords=dict(startDateTime=dateTime, 
+                                                     dueDateTime=dateTime))
         create(None)
 
     def getToolBarUICommands(self):
         ''' UI commands to put on the toolbar of this viewer. '''
         toolBarUICommands = super(CalendarViewer, self).getToolBarUICommands()
         toolBarUICommands.insert(-2, None) # Separator
+        self.periodCountUICommand = uicommand.CalendarViewerPeriodCount(viewer=self)
         self.typeUICommand = uicommand.CalendarViewerTypeChoice(viewer=self)
+        self.orientationUICommand = uicommand.CalendarViewerOrientationChoice(viewer=self)
+        toolBarUICommands.insert(-2, self.periodCountUICommand)
         toolBarUICommands.insert(-2, self.typeUICommand)
+        toolBarUICommands.insert(-2, self.orientationUICommand)
         toolBarUICommands.insert(-2, uicommand.CalendarViewerPreviousPeriod(viewer=self))
         toolBarUICommands.insert(-2, uicommand.CalendarViewerToday(viewer=self))
         toolBarUICommands.insert(-2, uicommand.CalendarViewerNextPeriod(viewer=self))
         self.filterChoiceUICommand = uicommand.CalendarViewerTaskFilterChoice(viewer=self)
         toolBarUICommands.insert(-2, self.filterChoiceUICommand)
         return toolBarUICommands
+
+    def SetPeriodCount(self, count):
+        self.settings.set(self.settingsSection(), 'periodcount', str(count))
+        self.widget.SetPeriodCount(count)
 
     def SetViewType(self, type_):
         if type_ not in [wxSCHEDULER_NEXT, wxSCHEDULER_TODAY, wxSCHEDULER_PREV]:
@@ -593,6 +610,15 @@ class CalendarViewer(mixin.AttachmentDropTargetMixin,
                 toSave = dt.Format()
             self.settings.set(self.settingsSection(), 'viewdate', toSave)
 
+        # Overriding enabled() does not seem to work on controls,
+        # neither does EnableTool
+
+        self.periodCountUICommand.enable(type_ != wxSCHEDULER_MONTHLY)
+
+    def SetViewOrientation(self, orientation):
+        self.settings.set(self.settingsSection(), 'vieworientation', str(orientation))
+        self.widget.SetStyle(orientation)
+
     def SetShowNoStartDate(self, doShow):
         self.settings.setboolean(self.settingsSection(), 'shownostart', doShow)
         self.widget.SetShowNoStartDate(doShow)
@@ -600,6 +626,10 @@ class CalendarViewer(mixin.AttachmentDropTargetMixin,
     def SetShowNoDueDate(self, doShow):
         self.settings.setboolean(self.settingsSection(), 'shownodue', doShow)
         self.widget.SetShowNoDueDate(doShow)
+
+    def SetShowUnplanned(self, doShow):
+        self.settings.setboolean(self.settingsSection(), 'showunplanned', doShow)
+        self.widget.SetShowUnplanned(doShow)
 
     # We need to override these because BaseTaskViewer is a tree viewer, but
     # CalendarViewer is not. There is probably a better solution...
@@ -653,7 +683,8 @@ class TaskViewer(mixin.AttachmentDropTargetMixin,
                       resizeCallback=self.onResizeColumn)
         columns = [widgets.Column('subject', _('Subject'), 
                 task.Task.subjectChangedEventType(), 
-                'task.completionDate', 'task.dueDate', 'task.startDate',
+                'task.completionDateTime', 'task.dueDateTime', 
+                'task.startDateTime',
                 task.Task.trackStartEventType(), task.Task.trackStopEventType(), 
                 sortCallback=uicommand.ViewerSortByCommand(viewer=self,
                     value='subject'),
@@ -705,12 +736,12 @@ class TaskViewer(mixin.AttachmentDropTargetMixin,
                                   'hourlyFee', 'fixedFee', 'totalFixedFee',
                                   'revenue', 'totalRevenue']
         for name, columnHeader, renderCallback, eventType in [
-            ('startDate', _('Start date'), lambda task: render.date(task.startDate()), None),
-            ('dueDate', _('Due date'), lambda task: render.date(task.dueDate()), None),
-            ('completionDate', _('Completion date'), lambda task: render.date(task.completionDate()), None),
+            ('startDateTime', _('Start date'), lambda task: render.dateTime(task.startDateTime()), None),
+            ('dueDateTime', _('Due date'), lambda task: render.dateTime(task.dueDateTime()), None),
+            ('completionDateTime', _('Completion date'), lambda task: render.dateTime(task.completionDateTime()), None),
             ('percentageComplete', _('% complete'), lambda task: render.percentage(task.percentageComplete()), None),
             ('totalPercentageComplete', _('Overall % complete'), lambda task: render.percentage(task.percentageComplete(recursive=True)), None),
-            ('timeLeft', _('Days left'), lambda task: render.daysLeft(task.timeLeft(), task.completed()), None),
+            ('timeLeft', _('Time left'), lambda task: render.timeLeft(task.timeLeft(), task.completed()), None),
             ('recurrence', _('Recurrence'), lambda task: render.recurrence(task.recurrence()), None),
             ('budget', _('Budget'), lambda task: render.budget(task.budget()), None),
             ('totalBudget', _('Total budget'), lambda task: render.budget(task.budget(recursive=True)), None),
@@ -742,27 +773,27 @@ class TaskViewer(mixin.AttachmentDropTargetMixin,
             (_('&Dates'),
              uicommand.ViewColumns(menuText=_('All date columns'),
                 helpText=_('Show/hide all date-related columns'),
-                setting=['startDate', 'dueDate', 'timeLeft', 'completionDate',
-                         'recurrence'],
+                setting=['startDateTime', 'dueDateTime', 'timeLeft', 
+                         'completionDateTime', 'recurrence'],
                 viewer=self),
              None,
              uicommand.ViewColumn(menuText=_('&Start date'),
                  helpText=_('Show/hide start date column'),
-                 setting='startDate', viewer=self),
+                 setting='startDateTime', viewer=self),
              uicommand.ViewColumn(menuText=_('&Due date'),
                  helpText=_('Show/hide due date column'),
-                 setting='dueDate', viewer=self),
+                 setting='dueDateTime', viewer=self),
              uicommand.ViewColumn(menuText=_('Co&mpletion date'),
                  helpText=_('Show/hide completion date column'),
-                 setting='completionDate', viewer=self),
+                 setting='completionDateTime', viewer=self),
              uicommand.ViewColumn(menuText=_('&Percentage complete'),
                  helpText=_('Show/hide percentage complete column'),
                  setting='percentageComplete', viewer=self),
              uicommand.ViewColumn(menuText=_('&Overall percentage complete'),
                  helpText=_('Show/hide overall percentage complete column'),
                  setting='totalPercentageComplete', viewer=self),
-             uicommand.ViewColumn(menuText=_('D&ays left'),
-                 helpText=_('Show/hide days left column'),
+             uicommand.ViewColumn(menuText=_('&Time left'),
+                 helpText=_('Show/hide time left column'),
                  setting='timeLeft', viewer=self),
              uicommand.ViewColumn(menuText=_('&Recurrence'),
                  helpText=_('Show/hide recurrence column'),

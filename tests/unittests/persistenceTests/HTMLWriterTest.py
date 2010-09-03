@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@ class HTMLWriterTestCase(test.wxTestCase):
         self.fd = StringIO.StringIO()
         self.writer = persistence.HTMLWriter(self.fd, self.filename)
         self.taskFile = persistence.TaskFile()
-        self.task = task.Task('Task subject')
+        self.task = task.Task('Task subject', startDateTime=date.Now())
         self.taskFile.tasks().append(self.task)
         self.viewer = self.createViewer()
         
@@ -111,24 +111,24 @@ class TaskTestsMixin(CommonTestsMixin):
         self.expectInHTML('      .completed {color: #FF0000}\n')
         
     def testOverdueTask(self):
-        self.task.setDueDate(date.Yesterday())
+        self.task.setDueDateTime(date.Now() - date.oneDay)
         fragment = '<tr class="overdue">' if self.filename else '<font color="#FF0000">Task subject</font>'
         self.expectInHTML(fragment)
 
     def testCompletedTask(self):
-        self.task.setCompletionDate()
+        self.task.setCompletionDateTime()
         if self.filename:
             self.expectInHTML('<tr class="completed">')
         else:
             self.expectInHTML('<font color="#00FF00">Task subject</font>')
 
     def testTaskDueSoon(self):
-        self.task.setDueDate(date.Today())
+        self.task.setDueDateTime(date.Now() + date.oneHour)
         fragment = '<tr class="duesoon">' if self.filename else '<font color="#FF8000">Task subject</font>' 
         self.expectInHTML(fragment)
         
     def testInactiveTask(self):
-        self.task.setStartDate(date.Tomorrow())
+        self.task.setStartDateTime(date.Now() + date.oneDay)
         fragment = '<tr class="inactive">' if self.filename else '<font color="#C0C0C0">Task subject</font>'
         self.expectInHTML(fragment)
 
@@ -156,6 +156,11 @@ class TaskTestsMixin(CommonTestsMixin):
             self.expectInHTML('<link href="filename.css" rel="stylesheet" type="text/css" media="screen">')
         else:
             self.expectNotInHTML('stylesheet')
+            
+    def testOSErrorWhileWritingCSS(self):
+        def open(*args): # pylint: disable-msg=W0613,W0622
+            raise IOError
+        self.writer._writeCSS(open=open) # pylint: disable-msg=W0212
         
 
 class TaskListTestsMixin(object):

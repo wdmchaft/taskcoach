@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -195,19 +195,17 @@ class CommonTestsMixin(object):
         
     def testSearch(self):
         self.viewer.setSearchFilter('Task2')
-        if self.aggregation == 'details':
-            expectedNumberOfItems = 1
-        else:
-            expectedNumberOfItems = 2
-        self.assertEqual(expectedNumberOfItems, self.viewer.size())
-
+        self.assertEqual(1, self.viewer.size())
+        
+    def testSearchDescription(self):
+        self.task.efforts()[0].setDescription('Description')
+        self.viewer.setSearchFilter('Description', searchDescription=True)
+        self.assertEqual(1, self.viewer.size())
+        
     def testDelete(self):
         self.viewer.widget.select([self.task.efforts()[-1]])
         self.viewer.deleteUICommand.doCommand(None)
-        if self.aggregation == 'details':
-            expectedNumberOfItems = self.expectedNumberOfItems - 1
-        else:
-            expectedNumberOfItems = self.expectedNumberOfItems - 3
+        expectedNumberOfItems = self.expectedNumberOfItems - (1 if self.aggregation == 'details' else 3)
         self.assertEqual(expectedNumberOfItems, self.viewer.size())
     
     def testDeleteTask(self):
@@ -251,10 +249,7 @@ class CommonTestsMixin(object):
     def testShowTotalColumnsWhenSwitchingToAggregatedView(self):
         self.viewer.showColumnByName('totalTimeSpent')
         self.viewer.showEffortAggregation(self.aggregation)
-        if self.aggregation == 'details':
-            expectedColumnCount = 4
-        else:
-            expectedColumnCount = 5
+        expectedColumnCount = 4 if self.aggregation == 'details' else 5
         self.assertEqual(expectedColumnCount, 
                          self.viewer.widget.GetColumnCount())
         
@@ -267,12 +262,13 @@ class CommonTestsMixin(object):
         self.task2.efforts()[0].setStop(date.DateTime.max) # Make active
         self.switchAggregation()    
         self.viewer.onEverySecond(None) # Simulate clock firing
-        if self.aggregation == 'details': # Before the switch
-            expectedNrOfTrackedItems = 2
-        else:
-            expectedNrOfTrackedItems = 1
+        expectedNrOfTrackedItems = 2 if self.aggregation == 'details' else 1
         self.assertEqual(expectedNrOfTrackedItems, 
                          len(self.viewer.currentlyTrackedItems()))
+        
+    def testIsShowingAggregatedEffort(self):
+        isAggregating = self.aggregation != 'details'
+        self.assertEqual(isAggregating, self.viewer.isShowingAggregatedEffort())
     
 
 class EffortViewerWithoutAggregationTest(CommonTestsMixin, 
@@ -287,7 +283,7 @@ class EffortViewerWithAggregationPerDayTest(CommonTestsMixin,
                                             EffortViewerAggregationTestCase):
     aggregation = 'day'
     expectedNumberOfItems = 7 # 4 day/task combinations on 3 days (== 3 total rows) 
-    expectedPeriodRendering = gui.render.date(date.Date(2008,7,23))
+    expectedPeriodRendering = gui.render.date(date.DateTime(2008,7,23))
 
 
 class EffortViewerWithAggregationPerWeekTest(CommonTestsMixin, 
@@ -301,5 +297,5 @@ class EffortViewerWithAggregationPerMonthTest(CommonTestsMixin,
                                               EffortViewerAggregationTestCase):
     aggregation = 'month'
     expectedNumberOfItems = 3 # 2 month/task combinations in 1 month (== 1 total row)
-    expectedPeriodRendering = gui.render.month(date.Date(2008,07,01))
+    expectedPeriodRendering = gui.render.month(date.DateTime(2008,07,01))
 

@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -107,13 +107,13 @@ class EffortTest(test.TestCase, asserts.Mixin):
     def testNotificationForStartTracking(self):
         patterns.Publisher().registerObserver(self.onEvent,
             eventType=self.effort.trackStartEventType())
-        self.effort.setStop(date.Date())
+        self.effort.setStop(date.DateTime())
         self.assertEqual(self.effort.trackStartEventType(), self.events[0].type())
 
     def testNotificationForStopTracking(self):
         patterns.Publisher().registerObserver(self.onEvent,
             eventType=self.effort.trackStopEventType())
-        self.effort.setStop(date.Date())
+        self.effort.setStop(date.DateTime())
         self.effort.setStop(date.DateTime.now())
         self.assertEqual(self.effort.trackStopEventType(), self.events[0].type())
 

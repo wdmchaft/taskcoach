@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -40,8 +40,8 @@ class TaskViewerTestCase(test.wxTestCase):
     def setUp(self):
         super(TaskViewerTestCase, self).setUp()
         task.Task.settings = self.settings = config.Settings(load=False)
-        self.task = task.Task(subject='task')
-        self.child = task.Task(subject='child')
+        self.task = task.Task(subject='task', startDateTime=date.Now())
+        self.child = task.Task(subject='child', startDateTime=date.Now())
         self.child.setParent(self.task)
         self.taskFile = persistence.TaskFile()
         self.taskList = self.taskFile.tasks()
@@ -157,9 +157,9 @@ class CommonTestsMixin(object):
         self.assertEqual([self.task], self.viewer.curselection())
         
     def testChildOrder(self):
-        child1 = task.Task(subject='1')
+        child1 = task.Task(subject='1', startDateTime=date.Now())
         self.task.addChild(child1)
-        child2 = task.Task(subject='2')
+        child2 = task.Task(subject='2', startDateTime=date.Now())
         self.task.addChild(child2)
         self.taskList.append(self.task)
         if self.viewer.isTreeViewer():
@@ -188,25 +188,25 @@ class CommonTestsMixin(object):
         task2 = task.Task(subject='task2')
         self.taskList.extend([self.task, task2])
         self.assertItems(self.task, task2)
-        self.task.setCompletionDate()
+        self.task.setCompletionDateTime()
         self.assertItems(task2, self.task)
         
     def testMakeInactive(self):
-        task2 = task.Task(subject='task2')
+        task2 = task.Task(subject='task2', startDateTime=date.Now())
         self.taskList.extend([self.task, task2])
         self.assertItems(self.task, task2)
-        self.task.setStartDate(date.Tomorrow())
+        self.task.setStartDateTime(date.Now() + date.oneDay)
         self.assertItems(task2, self.task)
                         
     def testViewDueTodayHidesTasksNotDueToday(self):
-        self.viewer.setFilteredByDueDate('Today')
+        self.viewer.setFilteredByDueDateTime('Today')
         self.task.addChild(self.child)
         self.taskList.append(self.task)
         self.assertItems()
         
     def testViewDueTodayShowsTasksWhoseChildrenAreDueToday(self):
-        self.viewer.setFilteredByDueDate('Today')
-        child = task.Task(subject='child', dueDate=date.Today())
+        self.viewer.setFilteredByDueDateTime('Today')
+        child = task.Task(subject='child', dueDateTime=date.Now().replace(hour=12))
         self.task.addChild(child)
         self.taskList.append(self.task)
         if self.viewer.isTreeViewer():
@@ -216,8 +216,8 @@ class CommonTestsMixin(object):
         
     def testFilterCompletedTasks(self):
         self.viewer.hideCompletedTasks()
-        completedChild = task.Task(completionDate=date.Today())
-        notCompletedChild = task.Task()
+        completedChild = task.Task(completionDateTime=date.Now() - date.oneHour)
+        notCompletedChild = task.Task(startDateTime=date.Now())
         self.task.addChild(notCompletedChild)
         self.task.addChild(completedChild)
         self.taskList.append(self.task)
@@ -256,7 +256,7 @@ class CommonTestsMixin(object):
         self.assertEqual(3, self.viewer.widget.GetColumnCount())
     
     def testTurnOffStartDateColumn(self):
-        self.showColumn('startDate', False)
+        self.showColumn('startDateTime', False)
         self.assertEqual(_('Due date'), self.viewer.widget.GetColumn(1).GetText())
         self.assertEqual(2, self.viewer.widget.GetColumnCount())
         
@@ -266,7 +266,7 @@ class CommonTestsMixin(object):
     
     def testForegroundColorWhenTaskIsCompleted(self):
         self.taskList.append(self.task)
-        self.task.setCompletionDate()
+        self.task.setCompletionDateTime()
         newColor = self.task.statusColor()
         newColor = wx.Colour(newColor.Red(), newColor.Green(), newColor.Blue())
         self.assertColor(newColor)
@@ -330,7 +330,7 @@ class CommonTestsMixin(object):
         self.assertEqual('', self.getItemText(0,3))
 
     def testRenderPercentageComplete_100(self):
-        completedTask = task.Task(completionDate=date.Today())
+        completedTask = task.Task(completionDateTime=date.Now() - date.oneHour)
         self.taskList.append(completedTask)
         self.showColumn('percentageComplete')
         self.assertEqual('100%', self.getItemText(0,3))
@@ -353,16 +353,17 @@ class CommonTestsMixin(object):
 
     def testOneDayLeft(self):
         self.showColumn('timeLeft')
-        self.task.setDueDate(date.Tomorrow())
+        timeLeft = date.TimeDelta(hours=25, seconds=30)
         self.taskList.append(self.task)
-        self.assertEqual(render.daysLeft(self.task.timeLeft(), False), 
-            self.getItemText(0, 3))
+        self.task.setDueDateTime(date.Now() + timeLeft)
+        self.assertEqual(render.timeLeft(timeLeft, False), 
+                         self.getItemText(0, 3))
         
     def testReverseSortOrderWithGrandchildren(self):
         self.task.addChild(self.child)
-        grandchild = task.Task(subject='grandchild')
+        grandchild = task.Task(subject='grandchild', startDateTime=date.Now())
         self.child.addChild(grandchild)
-        task2 = task.Task(subject='zzz')
+        task2 = task.Task(subject='zzz', startDateTime=date.Now())
         self.taskList.extend([self.task, task2])
         self.viewer.setSortOrderAscending(False)
         if self.viewer.isTreeViewer():
@@ -372,7 +373,7 @@ class CommonTestsMixin(object):
                 
     def testReverseSortOrder(self):
         self.task.addChild(self.child)
-        task2 = task.Task(subject='zzz')
+        task2 = task.Task(subject='zzz', startDateTime=date.Now())
         self.taskList.extend([self.task, task2])
         self.viewer.setSortOrderAscending(False)
         if self.viewer.isTreeViewer():
@@ -382,8 +383,8 @@ class CommonTestsMixin(object):
 
     def testSortByDueDate(self):
         self.task.addChild(self.child)
-        task2 = task.Task(subject='zzz')
-        child2 = task.Task(subject='child 2')
+        task2 = task.Task(subject='zzz', startDateTime=date.Now())
+        child2 = task.Task(subject='child 2', startDateTime=date.Now())
         task2.addChild(child2)
         child2.setParent(task2)
         self.taskList.extend([self.task, task2])
@@ -391,36 +392,36 @@ class CommonTestsMixin(object):
             self.assertItems((self.task, 1), self.child, (task2, 1), child2)
         else:
             self.assertItems(self.child, child2, self.task, task2) 
-        child2.setDueDate(date.Today())
-        self.viewer.sortBy('dueDate')
+        child2.setDueDateTime(date.Now().endOfDay())
+        self.viewer.sortBy('dueDateTime')
         if self.viewer.isTreeViewer():
             self.assertItems((task2, 1), child2, (self.task, 1), self.child)
         else:    
             self.assertItems(child2, self.child, self.task, task2)
     
     def testChangeActiveTaskForegroundColor(self):
-        self.taskList.append(task.Task(subject='test'))
+        self.taskList.append(task.Task(subject='test', startDateTime=date.Now()))
         self.setColor('activetasks')
         self.assertColor()
     
     def testChangeInactiveTaskForegroundColor(self):
         self.setColor('inactivetasks')
-        self.taskList.append(task.Task(startDate=date.Tomorrow()))
+        self.taskList.append(task.Task(startDateTime=date.Now() + date.oneDay))
         self.assertColor()
     
     def testChangeCompletedTaskForegroundColor(self):
         self.setColor('completedtasks')
-        self.taskList.append(task.Task(completionDate=date.Today()))
+        self.taskList.append(task.Task(completionDateTime=date.Now()))
         self.assertColor()
 
     def testChangeDueSoonTaskForegroundColor(self):
         self.setColor('duesoontasks')
-        self.taskList.append(task.Task(dueDate=date.Today()))
+        self.taskList.append(task.Task(dueDateTime=date.Now().endOfDay()))
         self.assertColor()
 
     def testChangeOverDueTaskForegroundColor(self):
         self.setColor('overduetasks')
-        self.taskList.append(task.Task(dueDate=date.Yesterday()))
+        self.taskList.append(task.Task(dueDateTime=date.Now() - date.oneDay))
         self.assertColor()
             
     def testStatusMessage_EmptyTaskList(self):
@@ -460,21 +461,10 @@ class CommonTestsMixin(object):
     def testNewItem(self):
         self.taskFile.categories().append(category.Category('cat', filtered=True))
         dialog = self.viewer.newItemDialog(bitmap='new')
-        tree = dialog[0][3].viewer.widget
+        tree = dialog._interior[3].viewer.widget
         firstChild = tree.GetFirstChild(tree.GetRootItem())[0]
         self.failUnless(firstChild.IsChecked())
         
-    def testMidnightStatusUpdate(self):
-        self.taskList.append(task.Task(subject='test', dueDate=date.Tomorrow()))
-        tomorrow = date.Tomorrow()
-        midnight = date.DateTime(tomorrow.year, tomorrow.month, tomorrow.day)
-        originalToday = date.Today
-        date.Today = date.Tomorrow # Make it tomorrow
-        date.Clock().notifyMidnightObservers(now=midnight)
-        expectedColor = wx.Colour(255,128,0)
-        self.assertColor(expectedColor)
-        date.Today = originalToday
-
     def testFont(self):
         self.taskList.append(task.Task(font=wx.SWISS_FONT))
         self.assertEqual(wx.SWISS_FONT, self.getFirstItemFont())
@@ -487,10 +477,7 @@ class TreeOrListModeTestsMixin(object):
 
     def testRenderSubject(self):
         self.task.addChild(self.child)
-        if self.treeMode:
-            expectedSubject = 'child'
-        else:
-            expectedSubject = 'task -> child'
+        expectedSubject = 'child' if self.treeMode else 'task -> child'
         self.assertEqual(expectedSubject, self.viewer.renderSubject(self.child))
                          
     def testItemOrder(self):
@@ -522,6 +509,10 @@ class TreeOrListModeTestsMixin(object):
             
 
 class ColumnsTestsMixin(object):        
+    def assertEventFired(self, type_):
+        self.failUnless(type_ in self.viewer.events[0].types(),
+                        '"%s" not in %s' % (type_, self.viewer.events))
+
     def testGetTimeSpent(self):
         self.taskList.append(self.task)
         self.task.addEffort(effort.Effort(self.task, date.DateTime(2000,1,1),
@@ -560,38 +551,55 @@ class ColumnsTestsMixin(object):
         self.assertEqual(task.Task.subjectChangedEventType(), 
                          self.viewer.events[0].type())
 
-    def testChangeStartDateWhileColumnShown(self):
+    def testChangeStartDateTimeWhileColumnShown(self):
         self.taskList.append(self.task)
-        self.task.setStartDate(date.Yesterday())
-        self.assertEqual('task.startDate', self.viewer.events[0].type())
+        self.task.setStartDateTime(date.Now() - date.oneDay)
+        self.assertEqual('task.startDateTime', self.viewer.events[0].type())
 
     def testStartTracking(self):
         self.taskList.append(self.task)
         self.task.addEffort(effort.Effort(self.task))
         self.assertEqual(self.task.trackStartEventType(), self.viewer.events[0].type())
 
-    def testChangeStartDateWhileColumnNotShown(self):
+    def testChangeStartDateTimeWhileColumnNotShown(self):
         self.taskList.append(self.task)
         self.showColumn('startDate', False)
-        self.task.setStartDate(date.Yesterday())
+        self.task.setStartDateTime(date.Now() - date.oneDay)
         self.assertEqual(1, len(self.viewer.events))
 
     def testChangeDueDate(self):
         self.taskList.append(self.task)
-        self.task.setDueDate(date.Today())
-        self.assertEqual('task.dueDate', self.viewer.events[0].type())
+        self.task.setDueDateTime(date.Now().endOfDay())
+        self.assertEqual('task.dueDateTime', self.viewer.events[0].type())
 
     def testChangeCompletionDateWhileColumnNotShown(self):
         self.taskList.append(self.task)
-        self.task.setCompletionDate(date.Today())
+        self.task.setCompletionDateTime(date.Now())
         # We still get an event for the subject column:
-        self.assertEqual('task.completionDate', self.viewer.events[0].type())
+        self.assertEventFired('task.completionDateTime')
+        self.assertEventFired('task.percentageComplete')
+        self.assertEventFired('task.totalPercentageComplete')
 
     def testChangeCompletionDateWhileColumnShown(self):
         self.taskList.append(self.task)
         self.showColumn('completionDate')
-        self.task.setCompletionDate(date.Today())
-        self.assertEqual('task.completionDate', self.viewer.events[0].type())
+        self.task.setCompletionDateTime(date.Now())
+        self.assertEventFired('task.completionDateTime')
+        self.assertEventFired('task.percentageComplete')
+        self.assertEventFired('task.totalPercentageComplete')
+
+    def testChangePercentageCompleteWhileColumnNotShown(self):
+        self.taskList.append(self.task)
+        self.task.setPercentageComplete(50)
+        self.assertEventFired('task.percentageComplete')
+        self.assertEventFired('task.totalPercentageComplete')
+
+    def testChangePercentageCompleteWhileColumnShown(self):
+        self.taskList.append(self.task)
+        self.showColumn('percentageComplete')
+        self.task.setPercentageComplete(50)
+        self.assertEventFired('task.percentageComplete')
+        self.assertEventFired('task.totalPercentageComplete')
 
     def testChangePriorityWhileColumnNotShown(self):
         self.taskList.append(self.task)
@@ -651,4 +659,24 @@ class TaskViewerInListModeTest(CommonTestsMixin, ColumnsTestsMixin,
                                TreeOrListModeTestsMixin, TaskViewerTestCase):
     treeMode = False
         
+        
+        
+class TaskCalendarViewerTest(test.wxTestCase):
+    def testCreate(self):
+        task.Task.settings = self.settings = config.Settings(load=False)
+        self.taskFile = persistence.TaskFile()
+        gui.viewer.task.CalendarViewer(self.frame, self.taskFile, self.settings)
 
+
+class TaskSquareMapViewerTest(test.wxTestCase):
+    def testCreate(self):
+        task.Task.settings = self.settings = config.Settings(load=False)
+        self.taskFile = persistence.TaskFile()
+        gui.viewer.task.SquareTaskViewer(self.frame, self.taskFile, self.settings)
+        
+        
+class TaskTimelineViewerTest(test.wxTestCase):
+    def testCreate(self):
+        task.Task.settings = self.settings = config.Settings(load=False)
+        self.taskFile = persistence.TaskFile()
+        gui.viewer.task.TimelineViewer(self.frame, self.taskFile, self.settings)

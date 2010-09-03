@@ -1,7 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
-Copyright (C) 2008 Jerome Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -60,7 +59,7 @@ class AutoBackup(patterns.Observer):
                 remove(self.leastUniqueBackupFile(backupFiles))
             except OSError:
                 pass # Ignore errors
-
+                
     def numberOfExtraneousBackupFiles(self, backupFiles):
         return max(0, len(backupFiles) - self.maxNrOfBackupFiles(backupFiles))
 

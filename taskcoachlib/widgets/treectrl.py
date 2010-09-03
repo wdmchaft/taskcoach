@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -175,6 +175,7 @@ class TreeListCtrl(itemctrl.CtrlWithItemsMixin, itemctrl.CtrlWithColumnsMixin,
         self.__dontStartEditingLabelBecauseUserDoubleClicked = False
         self.__defaultFont = wx.SystemSettings_GetFont(wx.SYS_DEFAULT_GUI_FONT)
         super(TreeListCtrl, self).__init__(parent, style=self.getStyle(), 
+            agwStyle=self.getAgwStyle(),
             columns=columns, resizeableColumn=0, itemPopupMenu=itemPopupMenu,
             columnPopupMenu=columnPopupMenu, *args, **kwargs)
         self.bindEventHandlers(selectCommand, editCommand, dragAndDropCommand,
@@ -232,9 +233,10 @@ class TreeListCtrl(itemctrl.CtrlWithItemsMixin, itemctrl.CtrlWithColumnsMixin,
             self._refreshTargetObjects(childItem, *targetObjects)
             childItem, cookie = self.GetNextChild(parentItem, cookie)
             
-    def _refreshObjectCompletely(self, *args):
+    def _refreshObjectCompletely(self, item, *args):
         self._refreshAspects(('ItemType', 'Columns', 'Font', 'Colors',
-                              'Selection'), *args)
+                              'Selection'), item, check=True, *args)
+        self.GetMainWindow().RefreshLine(item)
         
     def _addObjectRecursively(self, parentItem, parentObject=None):
         for childObject in self.__adapter.children(parentObject):
@@ -249,46 +251,57 @@ class TreeListCtrl(itemctrl.CtrlWithItemsMixin, itemctrl.CtrlWithColumnsMixin,
                 # (EVT_TREE_ITEM_EXPANDING/EXPANDED) being sent
                 childItem.Expand()
 
-    def _refreshObjectMinimally(self, *args):
-        self._refreshAspects(('Columns', 'Colors', 'Font', 'Selection'), *args)
+    def _refreshObjectMinimally(self, *args, **kwargs):
+        self._refreshAspects(('Columns', 'Colors', 'Font', 'Selection'), *args, **kwargs)
 
-    def _refreshAspects(self, aspects, *args):
+    def _refreshAspects(self, aspects, *args, **kwargs):
         for aspect in aspects:
             refreshAspect = getattr(self, '_refresh%s'%aspect)
-            refreshAspect(*args)
+            refreshAspect(*args, **kwargs)
         
-    def _refreshItemType(self, item, domainObject):
-        self.SetItemType(item, self.getItemCTType(domainObject))
+    def _refreshItemType(self, item, domainObject, check=False):
+        ctType = self.getItemCTType(domainObject)
+        if not check or (check and ctType != self.GetItemType(item)):
+            self.SetItemType(item, ctType)
         
-    def _refreshColumns(self, item, domainObject):
+    def _refreshColumns(self, item, domainObject, check=False):
         for columnIndex in range(self.GetColumnCount()):
-            self._refreshColumn(item, domainObject, columnIndex)
+            self._refreshColumn(item, domainObject, columnIndex, check=check)
                 
-    def _refreshColumn(self, *args):
-        self._refreshAspects(('Text', 'Image'), *args)
+    def _refreshColumn(self, *args, **kwargs):
+        self._refreshAspects(('Text', 'Image'), *args, **kwargs)
             
-    def _refreshText(self, item, domainObject, columnIndex):
+    def _refreshText(self, item, domainObject, columnIndex, check=False):
         text = self.__adapter.getItemText(domainObject, columnIndex)
-        item.SetText(columnIndex, text)
+        if text.count('\n') > 3:
+            text = '\n'.join(text.split('\n')[:4]) + u' ...'
+        if not check or (check and text != item.GetText(columnIndex)):
+            item.SetText(columnIndex, text)
                 
-    def _refreshImage(self, item, domainObject, columnIndex):
+    def _refreshImage(self, item, domainObject, columnIndex, check=False):
         for which in (wx.TreeItemIcon_Expanded, wx.TreeItemIcon_Normal):
             image = self.__adapter.getItemImage(domainObject, which, columnIndex)
             image = image if image >= 0 else -1
-            item.SetImage(columnIndex, image, which)
+            if not check or (check and image != item.GetImage(which, columnIndex)):
+                item.SetImage(columnIndex, image, which)
 
-    def _refreshColors(self, item, domainObject):
+    def _refreshColors(self, item, domainObject, check=False):
         bgColor = domainObject.backgroundColor(recursive=True) or wx.NullColour
-        self.SetItemBackgroundColour(item, bgColor)
+        if not check or (check and bgColor != self.GetItemBackgroundColour(item)):
+            self.SetItemBackgroundColour(item, bgColor)
         fgColor = domainObject.foregroundColor(recursive=True) or wx.NullColour
-        self.SetItemTextColour(item, fgColor)
+        if not check or (check and fgColor != self.GetItemTextColour(item)):
+            self.SetItemTextColour(item, fgColor)
         
-    def _refreshFont(self, item, domainObject):
+    def _refreshFont(self, item, domainObject, check=False):
         font = domainObject.font(recursive=True) or self.__defaultFont
-        self.SetItemFont(item, font)
+        if not check or (check and font != self.GetItemFont(item)):
+            self.SetItemFont(item, font)
         
-    def _refreshSelection(self, item, domainObject):
-        item.SetHilight(domainObject in self.__selection)
+    def _refreshSelection(self, item, domainObject, check=False):
+        select = domainObject in self.__selection
+        if not check or (check and select != item.IsSelected()):
+            item.SetHilight(select)
 
     # Event handlers
     
@@ -360,9 +373,16 @@ class TreeListCtrl(itemctrl.CtrlWithItemsMixin, itemctrl.CtrlWithColumnsMixin,
     # Extend TreeMixin with TreeListCtrl specific behaviour:
 
     def getStyle(self):
-        return (wx.TR_DEFAULT_STYLE | wx.TR_HIDE_ROOT | wx.TR_MULTIPLE \
-            | wx.TR_EDIT_LABELS | wx.TR_HAS_BUTTONS | wx.TR_FULL_ROW_HIGHLIGHT | wx.WANTS_CHARS \
-            | customtree.TR_HAS_VARIABLE_ROW_HEIGHT) & ~hypertreelist.TR_NO_HEADER 
+        return wx.WANTS_CHARS 
+            
+    def getAgwStyle(self):
+        agwStyle = wx.TR_DEFAULT_STYLE | wx.TR_HIDE_ROOT | wx.TR_MULTIPLE \
+            | wx.TR_EDIT_LABELS | wx.TR_HAS_BUTTONS | wx.TR_FULL_ROW_HIGHLIGHT \
+            | customtree.TR_HAS_VARIABLE_ROW_HEIGHT
+        if wx.Platform == '__WXMAC__':
+            agwStyle |= wx.TR_NO_LINES
+        agwStyle &= ~hypertreelist.TR_NO_HEADER
+        return agwStyle
 
     # pylint: disable-msg=W0221
     
@@ -394,7 +414,7 @@ class CheckTreeCtrl(TreeListCtrl):
             selectCommand, editCommand, dragAndDropCommand, 
             itemPopupMenu, *args, **kwargs)
         self.checkCommand = checkCommand
-        self.Bind(hypertreelist.EVT_TREE_ITEM_CHECKED, self.onItemChecked)
+        self.Bind(customtree.EVT_TREE_ITEM_CHECKED, self.onItemChecked)
         self.getIsItemChecked = parent.getIsItemChecked
         self.getItemParentHasExclusiveChildren = parent.getItemParentHasExclusiveChildren
         

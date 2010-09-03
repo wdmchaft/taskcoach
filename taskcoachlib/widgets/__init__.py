@@ -1,7 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
-Copyright (C) 2007 Jerome Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -17,17 +16,15 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from notebook import Notebook, Choicebook, Listbook, AUINotebook, BookPage, \
-    BoxedBookPage, AuiManagedFrameWithNotebookAPI
-from dialog import Dialog, NotebookDialog, ListbookDialog, HTMLDialog, \
-    AttachmentSelector
+from notebook import Notebook, BookPage, AuiManagedFrameWithNotebookAPI
+from dialog import Dialog, NotebookDialog, HTMLDialog, AttachmentSelector
 from buttonbox import ButtonBox
 from itemctrl import Column
 from listctrl import ListCtrl
 from treectrl import CheckTreeCtrl, TreeListCtrl
 from squaremap import SquareMap
 from timeline import Timeline
-from datectrl import DateCtrl, DateTimeCtrl, DatePickerCtrl
+from datectrl import DateTimeCtrl, DatePickerCtrl
 from textctrl import SingleLineTextCtrl, SingleLineTextCtrlWithEnterButton, \
     MultiLineTextCtrl, StaticTextWithToolTip
 from panel import PanelWithBoxSizer, BoxWithFlexGridSizer, BoxWithBoxSizer

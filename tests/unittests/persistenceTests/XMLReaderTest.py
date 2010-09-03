@@ -2,8 +2,7 @@
 
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
-Copyright (C) 2007 Jérôme Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -27,7 +26,7 @@ from taskcoachlib.domain import date
 
 class XMLReaderTestCase(test.TestCase):
     tskversion = 'Subclass responsibility'
-
+            
     def writeAndRead(self, xmlContents):
         # pylint: disable-msg=W0201
         self.fd = StringIO.StringIO()
@@ -380,29 +379,7 @@ class XMLReaderVersion20Test(XMLReaderTestCase):
         <tasks>
             <task subject="???"/>
         </tasks>\n''')
-        self.assertEqual('???', tasks[0].subject())
-        
-    def testStartDate(self):
-        tasks = self.writeAndReadTasks('''
-        <tasks>
-            <task startdate="2005-04-17"/>
-        </tasks>\n''')
-        self.assertEqual(date.Date(2005,4,17), tasks[0].startDate())
-        
-    def testDueDate(self):
-        tasks = self.writeAndReadTasks('''
-        <tasks>
-            <task duedate="2005-04-17"/>
-        </tasks>\n''')
-        self.assertEqual(date.Date(2005,4,17), tasks[0].dueDate())
-        
-    def testCompletionDate(self):
-        tasks = self.writeAndReadTasks('''
-        <tasks>
-            <task completiondate="2005-01-01"/>
-        </tasks>\n''')
-        self.assertEqual(date.Date(2005,1,1), tasks[0].completionDate())
-        self.failUnless(tasks[0].completed())
+        self.assertEqual('???', tasks[0].subject())        
         
     def testBudget(self):
         tasks = self.writeAndReadTasks('''
@@ -1228,3 +1205,139 @@ class XMLReaderVersion29Test(XMLReaderTestCase):
             '<attachment type="file" location="whatever" selectedIcon="icon"/>'
             '</task></tasks>')
         self.assertEqual('icon', tasks[0].attachments()[0].selectedIcon())
+
+
+class XMLReaderVersion30Test(XMLReaderTestCase):
+    tskversion = 30 # New in release 1.1.0.
+    
+    def testStartDateTime(self):
+        tasks = self.writeAndReadTasks('''
+        <tasks>
+            <task startdate="2005-04-17 10:05:11"/>
+        </tasks>\n''')
+        self.assertEqual(date.DateTime(2005,4,17,10,5,11), 
+                         tasks[0].startDateTime())
+
+    def testStartDateTimeWithoutTime(self):
+        tasks = self.writeAndReadTasks('''
+        <tasks>
+            <task startdate="2005-04-17"/>
+        </tasks>\n''')
+        self.assertEqual(date.DateTime(2005,4,17), tasks[0].startDateTime())
+
+    def testNoStartDateTime(self):
+        tasks = self.writeAndReadTasks('''
+        <tasks>
+            <task />
+        </tasks>\n''')
+        self.assertEqual(date.DateTime(), tasks[0].startDateTime())
+
+    def testStartDateTimeWithMicroseconds(self):
+        tasks = self.writeAndReadTasks('''
+        <tasks>
+            <task startdate="2005-01-01 22:01:30.456"/>
+        </tasks>\n''')
+        self.assertEqual(date.DateTime(2005,1,1,22,1,30,456), 
+                         tasks[0].startDateTime())
+        
+    def testDueDateTime(self):
+        tasks = self.writeAndReadTasks('''
+        <tasks>
+            <task duedate="2005-04-17 13:05:59"/>
+        </tasks>\n''')
+        self.assertEqual(date.DateTime(2005,4,17,13,5,59), 
+                         tasks[0].dueDateTime())
+
+    def testDueDateTimeWithoutTime(self):
+        tasks = self.writeAndReadTasks('''
+        <tasks>
+            <task duedate="2005-04-17"/>
+        </tasks>\n''')
+        self.assertEqual(date.DateTime(2005,4,17,23,59,59,999999), 
+                         tasks[0].dueDateTime())
+
+    def testDueDateTimeWithoutTimeWhenEndHourIs24(self):
+        tasks = self.writeAndReadTasks('''
+        <tasks>
+            <task duedate="2005-04-17"/>
+        </tasks>\n''')
+        self.assertEqual(date.DateTime(2005,4,17,23,59,59,999999), 
+                         tasks[0].dueDateTime())
+
+    def testNoDueDateTime(self):
+        tasks = self.writeAndReadTasks('''
+        <tasks>
+            <task />
+        </tasks>\n''')
+        self.assertEqual(date.DateTime(), tasks[0].dueDateTime())
+
+    def testDueDateTimeWithMicroseconds(self):
+        tasks = self.writeAndReadTasks('''
+        <tasks>
+            <task duedate="2005-01-01 22:01:30.456000"/>
+        </tasks>\n''')
+        self.assertEqual(date.DateTime(2005,1,1,22,1,30,456000), 
+                         tasks[0].dueDateTime())
+        
+    def testCompletionDateTime(self):
+        tasks = self.writeAndReadTasks('''
+        <tasks>
+            <task completiondate="2005-01-01 22:01:30"/>
+        </tasks>\n''')
+        self.assertEqual(date.DateTime(2005,1,1,22,1,30), 
+                         tasks[0].completionDateTime())
+        self.failUnless(tasks[0].completed())
+
+    def testCompletionDateTimeWithMicroseconds(self):
+        tasks = self.writeAndReadTasks('''
+        <tasks>
+            <task completiondate="2005-01-01 22:01:30.456000"/>
+        </tasks>\n''')
+        self.assertEqual(date.DateTime(2005,1,1,22,1,30,456000), 
+                         tasks[0].completionDateTime())
+        self.failUnless(tasks[0].completed())
+
+    def testNoCompletionDateTime(self):
+        tasks = self.writeAndReadTasks('''
+        <tasks>
+            <task />
+        </tasks>\n''')
+        self.assertEqual(date.DateTime(), tasks[0].completionDateTime())
+
+    def testCompletionDateTimeWithoutTime(self):
+        tasks = self.writeAndReadTasks('''
+        <tasks>
+            <task completiondate="2005-01-01"/>
+        </tasks>\n''')
+        self.assertEqual(date.DateTime(2005,1,1,23,59,59,999999), 
+                         tasks[0].completionDateTime())
+        self.failUnless(tasks[0].completed())
+
+    def testEmptyFontDescription(self):
+        tasks = self.writeAndReadTasks('''
+        <tasks>
+            <task font=""/>
+        </tasks>\n''')
+        self.assertEqual(None, tasks[0].font())
+        
+    def testHelveticaMacFont(self):
+        tasks = self.writeAndReadTasks('''
+        <tasks>
+            <task font="0;11;70;90;90;0;Helvetica Neue Light;0"/>
+        </tasks>\n''')
+        size = tasks[0].font().GetPointSize()
+        if '__WXMAC__' == wx.Platform: # pragma: no cover
+            self.assertEqual(11, size)
+        else: # pragma: no cover
+            self.failUnless(size > 0)
+        
+    def testSans9LinuxFont(self):
+        tasks = self.writeAndReadTasks('''
+        <tasks>
+            <task font="Sans 9"/>
+        </tasks>\n''')
+        if '__WXMAC__' == wx.Platform: # pragma: no cover
+            self.assertEqual(None, tasks[0].font())
+        else: # pragma: no cover
+            expectedFontSize = 9 if '__WXGTK__' == wx.Platform else 8
+            self.assertEqual(expectedFontSize, tasks[0].font().GetPointSize())

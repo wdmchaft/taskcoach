@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -31,10 +31,10 @@ class VersionChecker(threading.Thread):
     def run(self):
         latestVersionString = self.getLatestVersion()
         latestVersion = self.tupleVersion(latestVersionString)
-        lastVersionNotified = self.tupleVersion(self.settings.get('version', 'notified'))
+        lastVersionNotified = self.tupleVersion(self.getLastVersionNotified())
         currentVersion = self.tupleVersion(data.version)
         if latestVersion > lastVersionNotified and latestVersion > currentVersion:
-            self.settings.set('version', 'notified', latestVersionString)
+            self.setLastVersionNotified(latestVersionString)
             self.notifyUser(latestVersionString)
             
     def getLatestVersion(self):
@@ -42,13 +42,7 @@ class VersionChecker(threading.Thread):
             versionText = self.parseVersionFile(self.retrieveVersionFile())
             return versionText.strip()
         except:
-            return self.settings.get('version', 'notified') # pylint: disable-msg=W0702
-
-    def parseVersionFile(self, versionFile):
-        return versionFile.readline()
-
-    def retrieveVersionFile(self):
-        return urllib2.urlopen(data.version_url)
+            return self.getLastVersionNotified()
 
     def notifyUser(self, latestVersion):
         # Must use CallAfter because this is a non-GUI thread
@@ -62,6 +56,20 @@ class VersionChecker(threading.Thread):
                                version=latestVersion, settings=self.settings)
         dialog.Show()
         return dialog
+    
+    def getLastVersionNotified(self):
+        return self.settings.get('version', 'notified')
+    
+    def setLastVersionNotified(self, lastVersionNotifiedString):
+        self.settings.set('version', 'notified', lastVersionNotifiedString)
+
+    @staticmethod
+    def parseVersionFile(versionFile):
+        return versionFile.readline()
+
+    @staticmethod
+    def retrieveVersionFile():
+        return urllib2.urlopen(data.version_url)
 
     @staticmethod
     def tupleVersion(versionString):

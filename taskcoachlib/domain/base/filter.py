@@ -1,7 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
-Copyright (C) 2008 Jerome Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -48,17 +47,14 @@ class Filter(patterns.SetDecorator):
                 itemsToRemove.update(item.children(recursive=True))
         itemsToRemove = [item for item in itemsToRemove if item in self]
         super(Filter, self).removeItemsFromSelf(itemsToRemove, event)
-        
+    
+    @patterns.eventSource    
     def reset(self, event=None):
-        notify = event is None
-        event = event or patterns.Event()
         filteredItems = self.filter(self.observable())
         itemsToAdd = [item for item in filteredItems if item not in self]
         itemsToRemove = [item for item in self if item not in filteredItems]
         self.removeItemsFromSelf(itemsToRemove, event)
         self.extendSelf(itemsToAdd, event)
-        if notify:
-            event.send()
             
     def filter(self, items):
         ''' filter returns the items that pass the filter. '''
@@ -74,15 +70,12 @@ class SelectedItemsFilter(Filter):
         self.__includeSubItems = kwargs.pop('includeSubItems', True)
         super(SelectedItemsFilter, self).__init__(*args, **kwargs)
 
+    @patterns.eventSource
     def removeItemsFromSelf(self, items, event=None):
-        notify = event is None
-        event = event or patterns.Event()
         super(SelectedItemsFilter, self).removeItemsFromSelf(items, event)
         self.__selectedItems.difference_update(set(items))
         if not self.__selectedItems:
             self.extendSelf(self.observable(), event)
-        if notify:
-            event.send()
                
     def filter(self, items):
         if self.__selectedItems:
