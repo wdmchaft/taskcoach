@@ -5,75 +5,69 @@ Upstream-Source: http://www.taskcoach.org/
 Upstream-Name: TaskCoach 
 
 Files: *
-Copyright: 2004-2009, Frank Niessink and Jerome Laheurte <developers@taskcoach.org>
+Copyright: 2004-2010, Task Coach developers <developers@taskcoach.org>
 License: GPL-3+
 
-Files: taskcoachlib/domain/effort/composite.py
-Copyright: 2004-2009, Frank Niessink <frank@niessink.com>
-           2008, Thomas Sonne Olesen <tpo@sonnet.dk>
+Files: taskcoachlib/domain/effort/effort.py,
+       taskcoachlib/domain/effort/composite.py,
+       taskcoachlib/domain/effort/base.py
+Copyright: 2008, Thomas Sonne Olesen <tpo@sonnet.dk>
+           2004-2010, Task Coach developers <developers@taskcoach.org>
 License: GPL-3+
 
 Files: taskcoachlib/domain/task/tasklist.py,
-       taskcoachlib/gui/taskbaricon.py,
-Copyright: 2004-2009, Frank Niessink <frank@niessink.com>
-           2008, João Alexandre de Toledo <jtoledo@griffo.com.br>
+       taskcoachlib/gui/taskbaricon.py
+Copyright: 2008, João Alexandre de Toledo <jtoledo@griffo.com.br>
 License: GPL-3+
 
-Files: taskcoachlib/gui/viewer/attachment.py,
-       taskcoachlib/gui/viewer/task.py,
-       taskcoachlib/gui/viewer/effort.py,
-       taskcoachlib/gui/viewer/note.py,
-       taskcoachlib/gui/viewer/base.py,
-       taskcoachlib/gui/viewer/mixin.py,
-       taskcoachlib/gui/viewer/category.py
-Copyright: 2004-2009, Frank Niessink <frank@niessink.com>
-           2008, Thomas Sonne Olesen <tpo@sonnet.dk>
-           2004-2009, Jerome Laheurte <fraca7@free.fr>
-           2008, Rob McMullen <rob.mcmullen@gmail.com>
+Files: taskcoachlib/widgets/calendar.py,
+       taskcoachlib/widgets/conflict.py
+Copyright: 2010, Frank Niessink <frank@niessink.com>
 License: GPL-3+
 
-Files: taskcoachlib/gui/printer.py,
-       taskcoachlib/gui/dialog/preferences.py,
-       taskcoachlib/gui/uicommand.py,
-       taskcoachlib/config/defaults.py
-Copyright: 2004-2009, Frank Niessink <frank@niessink.com>
-           2004-2009, Jerome Laheurte <fraca7@free.fr>
-           2008, Rob McMullen <rob.mcmullen@gmail.com>
-License: GPL-3+
-
-Files: taskcoachlib/bin.in/linux/_pysyncml.so
-Copyright: 2008, Jérôme Laheurte <fraca7@free.fr>
-License: LGPL-2
-
-Files: taskcoachlib/thirdparty/chardet/*
-Copyright: 1998-2005, Mark Pilgrim <mark@diveintomark.org>
-License: LGPL-2
-
-Files: taskcoachlib/gui/dialog/entry.py,
+Files: taskcoachlib/widgets/spinctrl.py,
        taskcoachlib/gui/dialog/editor.py,
-       taskcoachlib/widgets/spinctrl.py
-Copyright: 2004-2009, Frank Niessink <frank@niessink.com>
-           2008, Carl Zmola <zmola@acm.org>
-           2004-2009, Jerome Laheurte <fraca7@free.fr>
+       taskcoachlib/gui/dialog/entry.py
+Copyright: 2008, Carl Zmola <zmola@acm.org>
+           2004-2010 Task Coach developers <developers@taskcoach.org>
            2008, Rob McMullen <rob.mcmullen@gmail.com>
 License: GPL-3+
 
 Files: taskcoachlib/widgets/datectrl.py
-Copyright: 2004-2009, Frank Niessink <frank@niessink.com>
+Copyright: 2008, Rob McMullen <rob.mcmullen@gmail.com>
+License: GPL-3+
+
+Files: taskcoachlib/gui/viewer/category.py,
+       taskcoachlib/gui/viewer/effort.py,
+       taskcoachlib/gui/viewer/mixin.py,
+       taskcoachlib/gui/viewer/note.py,
+       taskcoachlib/gui/viewer/task.py,
+       taskcoachlib/gui/viewer/base.py,
+       taskcoachlib/gui/viewer/attachment.py
+Copyright: 2008, Thomas Sonne Olesen <tpo@sonnet.dk>,
+           2004-2010, Task Coach developers <developers@taskcoach.org>
            2008, Rob McMullen <rob.mcmullen@gmail.com>
 License: GPL-3+
 
-Files: taskcoachlib/thirdparty/guid.py
-Copyright: 2006, Conan C. Albrecht
-License: MIT
+Files: taskcoachlib/gui/uicommand.py,
+       taskcoachlib/gui/printer.py,
+       taskcoachlib/gui/dialog/preferences.py,
+       taskcoachlib/config/defaults.py
+Copyright: 2008, Rob McMullen <rob.mcmullen@gmail.com>
+           2004-2010, Task Coach developers <developers@taskcoach.org>
+License: GPL-3+
+
+Files: taskcoachlib/thirdparty/desktop/*
+Copyright: 2005-2007, Paul Boddie <paul@boddie.org.uk>
+License: LGPL-2
 
 Files: taskcoachlib/thirdparty/pybonjour.py
 Copyright: 2007-2008, Christopher J. Stawarz
 License: MIT
 
-Files: taskcoachlib/thirdparty/desktop/*
-Copyright: 2005-2007, Paul Boddie <paul@boddie.org.uk>
-License: LGPL-2
+Files: taskcoachlib/thirdparty/Growl.py
+Copyright: 2003 Mark Rowe <bdash@users.sourceforge.net>
+License: BSD
 
 Files: taskcoachlib/thirdparty/sized_controls.py
 Copyright: 2006, Kevin Ollivier
@@ -122,6 +116,34 @@ License: MIT
     FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
     OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
     DEALINGS IN THE SOFTWARE.
+
+License: BSD
+  Copyright (c) The Regents of the University of California.
+  All rights reserved.
+  .
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+  1. Redistributions of source code must retain the above copyright
+	  notice, this list of conditions and the following disclaimer.
+  2. Redistributions in binary form must reproduce the above copyright
+	  notice, this list of conditions and the following disclaimer in the
+	  documentation and/or other materials provided with the distribution.
+  3. Neither the name of the University nor the names of its contributors
+	  may be used to endorse or promote products derived from this software
+	  without specific prior written permission.
+  .
+  THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+  ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+  FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+  OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+  HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+  SUCH DAMAGE.
 
 License: wxwindows
                 wxWindows Library Licence, Version 3.1
