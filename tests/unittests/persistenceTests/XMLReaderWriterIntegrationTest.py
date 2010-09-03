@@ -2,8 +2,7 @@
 
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
-Copyright (C) 2007 Jérôme Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -70,15 +69,17 @@ class IntegrationTest(IntegrationTestCase):
         # pylint: disable-msg=W0201
         self.description = 'Description\nLine 2'
         self.task = task.Task(subject='Subject', description=self.description, 
-            startDate=date.Yesterday(), dueDate=date.Tomorrow(), 
-            completionDate=date.Yesterday(), budget=date.TimeDelta(hours=1), 
+            startDateTime=date.Now() - date.TimeDelta(days=1), 
+            dueDateTime=date.Now() + date.TimeDelta(days=1), 
+            completionDateTime=date.Now() - date.TimeDelta(days=1), 
+            budget=date.TimeDelta(hours=1), 
             priority=4, hourlyFee=100.5, fixedFee=1000, 
             recurrence=date.Recurrence('weekly', max=10, count=5, amount=2),
             reminder=date.DateTime(2004,1,1), fgColor=wx.BLUE, bgColor=wx.RED,
             font=wx.NORMAL_FONT, expandedContexts=['viewer1'], icon='icon',
             selectedIcon='selectedIcon',
             shouldMarkCompletedWhenAllChildrenCompleted=True,
-            percentageComplete=2/3.)
+            percentageComplete=67)
         self.child = task.Task()
         self.task.addChild(self.child)
         self.grandChild = task.Task()
@@ -134,14 +135,14 @@ class IntegrationTest(IntegrationTestCase):
     def testExpansionState(self):
         self.assertAttributeWrittenAndRead(self.task, 'isExpanded')
          
-    def testStartDate(self):
-        self.assertAttributeWrittenAndRead(self.task, 'startDate')
+    def testStartDateTime(self):
+        self.assertAttributeWrittenAndRead(self.task, 'startDateTime')
                 
-    def testDueDate(self):
-        self.assertAttributeWrittenAndRead(self.task, 'dueDate')
+    def testDueDateTime(self):
+        self.assertAttributeWrittenAndRead(self.task, 'dueDateTime')
  
-    def testCompletionDate(self):
-        self.assertAttributeWrittenAndRead(self.task, 'completionDate')
+    def testCompletionDateTime(self):
+        self.assertAttributeWrittenAndRead(self.task, 'completionDateTime')
         
     def testPercentageComplete(self):
         self.assertAttributeWrittenAndRead(self.task, 'percentageComplete')

@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -30,20 +30,19 @@ class Sorter(base.TreeSorter):
         self.__treeMode = kwargs.pop('treeMode', False)
         self.__sortByTaskStatusFirst = kwargs.pop('sortByTaskStatusFirst', True)
         super(Sorter, self).__init__(*args, **kwargs)
-        for eventType in ('task.startDate', 'task.completionDate'):
+        for eventType in ('task.startDateTime', 'task.completionDateTime'):
             patterns.Publisher().registerObserver(self.onAttributeChanged, 
                                                   eventType=eventType)
-            
-    def setTreeMode(self, treeMode=True):
+    
+    @patterns.eventSource       
+    def setTreeMode(self, treeMode=True, event=None):
         self.__treeMode = treeMode
         try:
             self.observable().setTreeMode(treeMode)
         except AttributeError:
             pass
-        event = patterns.Event()
-        self.reset(event)
-        event.addSource(self, type=self.sortEventType()) # force notification
-        event.send() 
+        self.reset(event=event)
+        event.addSource(self, type=self.sortEventType()) # force notification 
 
     def treeMode(self):
         return self.__treeMode
@@ -54,7 +53,7 @@ class Sorter(base.TreeSorter):
         
     def extendSelf(self, items, event=None):
         self._invalidateRootItemCache()
-        return super(Sorter, self).extendSelf(items, event)
+        return super(Sorter, self).extendSelf(items, event=event)
 
     def removeItemsFromSelf(self, itemsToRemove, event=None):
         self._invalidateRootItemCache()
@@ -63,7 +62,7 @@ class Sorter(base.TreeSorter):
             for item in itemsToRemove.copy():
                 itemsToRemove.update(item.children(recursive=True)) 
         itemsToRemove = [item for item in itemsToRemove if item in self]
-        return super(Sorter, self).removeItemsFromSelf(itemsToRemove, event)
+        return super(Sorter, self).removeItemsFromSelf(itemsToRemove, event=event)
 
     def rootItems(self):
         if self.__rootItems is None:
@@ -117,12 +116,12 @@ class Sorter(base.TreeSorter):
         # sorting by status depends on those two attributes, hence we don't
         # need to subscribe to these two attributes when they become the sort
         # key.
-        if attribute not in ('completionDate', 'startDate'):
+        if attribute not in ('completionDateTime', 'startDateTime'):
             super(Sorter, self)._registerObserverForAttribute(attribute)
             
     def _removeObserverForAttribute(self, attribute):
          # See comment at _registerObserverForAttribute.
-        if attribute not in ('completionDate', 'startDate'):
+        if attribute not in ('completionDateTime', 'startDateTime'):
             super(Sorter, self)._removeObserverForAttribute(attribute)
         
     def _createEventTypeFromAttribute(self, attribute):

@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -63,7 +63,10 @@ class TimeDelta(datetime.timedelta):
                               timeDelta.seconds, 
                               timeDelta.microseconds)
 
-        
+zeroHour = TimeDelta(hours=0)
+oneHour = TimeDelta(hours=1)
+twoHours = TimeDelta(hours=2)
+threeHours = TimeDelta(hours=3)
 oneDay = TimeDelta(days=1)
 oneYear = TimeDelta(days=365)
 

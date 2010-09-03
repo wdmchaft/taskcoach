@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ import wx
 import test
 from taskcoachlib import gui, config
 from taskcoachlib.gui import uicommand
-from taskcoachlib.domain import task, category
+from taskcoachlib.domain import task, category, date
 
 
 class MockViewerContainer(object):
@@ -278,7 +278,7 @@ class StartEffortForTaskMenuTest(test.wxTestCase):
         self.menu = gui.menu.StartEffortForTaskMenu(self.frame, self.tasks)
         
     def addTask(self):
-        newTask = task.Task(subject='Subject')
+        newTask = task.Task(subject='Subject', startDateTime=date.Now())
         self.tasks.append(newTask)
         return newTask
     

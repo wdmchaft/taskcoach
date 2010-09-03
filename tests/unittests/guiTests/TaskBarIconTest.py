@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -35,13 +35,13 @@ class TaskBarIconTestCase(test.TestCase):
             self.settings)
 
     def tearDown(self): # pragma: no cover
-        if '__WXMAC__' in wx.PlatformInfo: 
-            self.icon.RemoveIcon()
-        else:
+        if wx.Platform == '__WXMSW__':
             self.icon.Destroy()
+        else:
+            self.icon.RemoveIcon()
         super(TaskBarIconTestCase, self).tearDown()
             
-            
+
 class TaskBarIconTest(TaskBarIconTestCase):
     def testIcon_NoTasks(self):
         self.failUnless(self.icon.IsIconInstalled())
@@ -73,31 +73,31 @@ class TaskBarIconTooltipTest(TaskBarIconTooltipTestCase):
     def testNoTasks(self):
         self.assertTooltip('')
         
-    def testOneTaskNoDueDate(self):
+    def testOneTaskNoDueDateTime(self):
         self.taskList.append(task.Task())
         self.assertTooltip('')
 
     def testOneTaskDueSoon(self):
-        self.taskList.append(task.Task(dueDate=date.Today()))
+        self.taskList.append(task.Task(dueDateTime=date.Now() + date.oneHour))
         self.assertTooltip('one task due soon')
         
     def testTwoTasksDueSoon(self):
-        self.taskList.append(task.Task(dueDate=date.Today()))
-        self.taskList.append(task.Task(dueDate=date.Today()))
+        self.taskList.append(task.Task(dueDateTime=date.Now() + date.oneHour))
+        self.taskList.append(task.Task(dueDateTime=date.Now() + date.oneHour))
         self.assertTooltip('2 tasks due soon')
         
     def testOneTasksOverdue(self):
-        self.taskList.append(task.Task(dueDate=date.Yesterday()))
+        self.taskList.append(task.Task(dueDateTime=date.Now() - date.oneDay))
         self.assertTooltip('one task overdue')
         
     def testTwoTasksOverdue(self):
-        self.taskList.append(task.Task(dueDate=date.Yesterday()))
-        self.taskList.append(task.Task(dueDate=date.Yesterday()))
+        self.taskList.append(task.Task(dueDateTime=date.Now() - date.oneDay))
+        self.taskList.append(task.Task(dueDateTime=date.Now() - date.oneDay))
         self.assertTooltip('2 tasks overdue')
         
     def testOneTaskDueSoonAndOneTaskOverdue(self):
-        self.taskList.append(task.Task(dueDate=date.Yesterday()))
-        self.taskList.append(task.Task(dueDate=date.Today()))
+        self.taskList.append(task.Task(dueDateTime=date.Now() - date.oneDay))
+        self.taskList.append(task.Task(dueDateTime=date.Now() + date.oneHour))
         self.assertTooltip('one task overdue, one task due soon')
         
     def testRemoveTask(self):
@@ -107,7 +107,7 @@ class TaskBarIconTooltipTest(TaskBarIconTooltipTestCase):
         self.assertTooltip('')
         
     def testRemoveOverdueTask(self):
-        overdueTask = task.Task(dueDate=date.Yesterday())
+        overdueTask = task.Task(dueDateTime=date.Now() - date.oneDay)
         self.taskList.append(overdueTask)
         self.taskList.remove(overdueTask)
         self.assertTooltip('')
@@ -141,3 +141,4 @@ class TaskBarIconTooltipWithTrackedTaskTest(TaskBarIconTooltipTestCase):
         self.task.efforts()[0].setStop(date.DateTime(2000,1,1,10,0,0))
         self.task.setSubject('New subject')
         self.assertTooltip('')
+

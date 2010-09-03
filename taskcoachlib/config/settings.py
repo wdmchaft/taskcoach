@@ -1,7 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
-Copyright (C) 2008 Jerome Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -112,12 +111,41 @@ class Settings(patterns.Observer, UnicodeAwareConfigParser):
                 result = self.get(section, option) # recursive call
             else:
                 raise
+        result = self._fixValuesFromOldIniFiles(section, option, result)
+        result = self._ensureMinimum(section, option, result)
+
+        if section == 'feature' and option == 'notifier' and result == 'Native':
+            result = 'Task Coach'
+
+        return result
+    
+    def _ensureMinimum(self, section, option, result):
         # Some settings may have a minimum value, make sure we return at 
         # least that minimum value:
         if section in defaults.minimum and option in defaults.minimum[section]:
             result = max(result, defaults.minimum[section][option])
         return result
-                
+    
+    def _fixValuesFromOldIniFiles(self, section, option, result):
+        ''' Try to fix settings from old TaskCoach.ini files that are no longer 
+            valid. '''
+        # Starting with release 1.1.0, the date properties of tasks (startDate,
+        # dueDate and completionDate) are datetimes: 
+        taskDateColumns = ('startDate', 'dueDate', 'completionDate')
+        if option == 'sortby' and result in taskDateColumns:
+            result += 'Time'
+        elif option == 'columns':
+            columns = [(col + 'Time' if col in taskDateColumns else col) for col in eval(result)]
+            result = str(columns)
+        elif option == 'columnwidths':
+            widths = dict()
+            for column, width in eval(result).items():
+                if column in taskDateColumns:
+                    column += 'Time'
+                widths[column] = width
+            result = str(widths)
+        return result
+
     def set(self, section, option, value, new=False): # pylint: disable-msg=W0221
         if new:
             currentValue = 'a new option, so use something as current value'\
@@ -151,7 +179,7 @@ class Settings(patterns.Observer, UnicodeAwareConfigParser):
     def getint(self, section, option):
         return int(self.get(section, option))
         
-    def save(self, showerror=wx.MessageBox):
+    def save(self, showerror=wx.MessageBox, file=file): # pylint: disable-msg=W0622
         self.set('version', 'python', sys.version)
         self.set('version', 'wxpython', '%s-%s @ %s'%(wx.VERSION_STRING, wx.PlatformInfo[2], wx.PlatformInfo[1]))
         self.set('version', 'pythonfrozen', str(hasattr(sys, 'frozen')))
@@ -228,3 +256,6 @@ class Settings(patterns.Observer, UnicodeAwareConfigParser):
     def generatedIniFilename(self, forceProgramDir):
         return os.path.join(self.path(forceProgramDir), '%s.ini'%meta.filename)
 
+    def setLoadAndSave(self, loadAndSave=True):
+        ''' Turn saving and loading on and off, for testing purposes. '''
+        self.__loadAndSave = loadAndSave

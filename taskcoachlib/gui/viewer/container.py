@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -34,7 +34,6 @@ class ViewerContainer(object):
         self.bindContainerWidgetEvents()
         self._settings = settings
         self.__setting = setting
-        self.__tabbedMainWindow = settings.getboolean('view', 'tabbedmainwindow')
         self.viewers = []
         self.__currentPageNumber = 0
         # Prepare for an exception, because this setting used to be a string
@@ -61,6 +60,7 @@ class ViewerContainer(object):
     def addViewer(self, viewer):
         self.containerWidget.AddPage(viewer, viewer.title(), viewer.bitmap())
         self.viewers.append(viewer)
+        viewer.widget.Bind(wx.EVT_SET_FOCUS, self.onViewerReceivesFocus)
         if len(self.viewers) - 1 == self.__desiredPageNumber:
             # We need to use CallAfter because the AuiNotebook doesn't allow
             # PAGE_CHANGING events while the window is not active. See 
@@ -69,6 +69,16 @@ class ViewerContainer(object):
                          self.__desiredPageNumber)
         patterns.Publisher().registerObserver(self.onSelect, 
             eventType=viewer.selectEventType(), eventSource=viewer)
+
+    def onViewerReceivesFocus(self, event):
+        event.Skip()
+        for viewer in self.viewers:
+            if event.EventObject == viewer.widget:
+                # Don't activate the viewer immediately, it may cause another
+                # AuiManager.Update call which could undock a viewer that is 
+                # in the process of being docked to an automatic notebook. 
+                wx.CallAfter(self.activateViewer, viewer)
+                break
 
     @classmethod
     def selectEventType(class_):
@@ -95,12 +105,17 @@ class ViewerContainer(object):
         ''' Return the active viewer, i.e. the viewer that has the focus. '''
         # There is no pageChanged event for the AuiManager, so we have
         # to check which pane is active.
-        if not self.__tabbedMainWindow:
-            for viewer in self.viewers:
-                info = self.containerWidget.manager.GetPane(viewer)
-                if info.HasFlag(info.optionActive):
-                    return viewer
+        for viewer in self.viewers:
+            info = self.containerWidget.manager.GetPane(viewer)
+            if info.HasFlag(info.optionActive):
+                return viewer
         return self.viewers[self.__currentPageNumber]
+
+    def activateViewer(self, viewerToActivate):
+        for viewer in self.viewers:
+            info = self.containerWidget.manager.GetPane(viewer)
+            info.SetFlag(info.optionActive, viewer==viewerToActivate)
+        self.containerWidget.manager.Update()
 
     def __del__(self):
         pass # Don't forward del to one of the viewers.

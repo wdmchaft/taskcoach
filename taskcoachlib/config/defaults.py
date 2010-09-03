@@ -1,7 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
-Copyright (C) 2008 Jerome Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 Copyright (C) 2008 Rob McMullen <rob.mcmullen@gmail.com>
 
 Task Coach is free software: you can redistribute it and/or modify
@@ -45,11 +44,11 @@ defaults = { \
     'effortminuteinterval': '15',    # Generate times with this interval
     'snoozetimes': "[5, 10, 15, 30, 60, 120, 1440]",
     'perspective': '',               # The layout of the viewers in the main window
-    'tabbedmainwindow': 'False'},
+},
 'taskviewer': { \
     'title': '',                     # User supplied viewer title 
     'treemode': 'True',              # True = tree mode, False = list mode
-    'sortby': 'dueDate',
+    'sortby': 'dueDateTime',
     'sortascending': 'True',
     'sortbystatusfirst': 'True',
     'sortcasesensitive': 'True',
@@ -57,7 +56,7 @@ defaults = { \
     'searchfiltermatchcase': 'False',
     'searchfilterincludesubitems': 'False',
     'searchdescription': 'False',
-    'columns': "['startDate', 'dueDate']",
+    'columns': "['startDateTime', 'dueDateTime']",
     'columnsalwaysvisible': "['subject']",
     'columnwidths': "{'attachments': 28, 'notes': 28}",
     'columnautoresizing': 'True',
@@ -92,10 +91,13 @@ defaults = { \
 'calendarviewer': { \
     'title': '',
     'viewtype': '1',
+    'periodcount': '1',
+    'vieworientation': '1',
     'viewdate': '',
     'gradient': 'False',
     'shownostart': 'False',
     'shownodue': 'False',
+    'showunplanned': 'False',
     'searchfilterstring': '',
     'searchfiltermatchcase': 'False',
     'searchfilterincludesubitems': 'False',
@@ -104,7 +106,11 @@ defaults = { \
     'hidecompletedtasks': 'False',
     'hideinactivetasks': 'False',
     'hideactivetasks': 'False',
-    'hidecompositetasks': 'False' },
+    'hidecompositetasks': 'False',
+    'sortby': 'subject',
+    'sortascending': 'True',
+    'sortcasesensitive': 'False',
+    'sortbystatusfirst': 'True' },
 'categoryviewer': { \
     'title': '',
     'sortby': 'subject',
@@ -158,6 +164,30 @@ defaults = { \
     'columnwidths': "{'attachments': 28}",
     'columnautoresizing': 'True' },
 'noteviewerintaskeditor': {
+    'sortby': 'subject',
+    'sortascending': 'True',
+    'sortcasesensitive': 'True',
+    'columns': "['subject']",
+    'columnsalwaysvisible': "['subject']",
+    'columnwidths': "{}",
+    'columnautoresizing': 'True',
+    'searchfilterstring': '',
+    'searchfiltermatchcase': 'False',
+    'searchfilterincludesubitems': 'False',
+    'searchdescription': 'False' },
+'noteviewerincategoryeditor': {
+    'sortby': 'subject',
+    'sortascending': 'True',
+    'sortcasesensitive': 'True',
+    'columns': "['subject']",
+    'columnsalwaysvisible': "['subject']",
+    'columnwidths': "{}",
+    'columnautoresizing': 'True',
+    'searchfilterstring': '',
+    'searchfiltermatchcase': 'False',
+    'searchfilterincludesubitems': 'False',
+    'searchdescription': 'False' },
+'noteviewerinattachmenteditor': {
     'sortby': 'subject',
     'sortascending': 'True',
     'sortcasesensitive': 'True',
@@ -282,13 +312,13 @@ defaults = { \
     'notify': 'True' },
 'behavior': { \
     'markparentcompletedwhenallchildrencompleted': 'True',
-    'duesoondays': '1' },
+    'duesoonhours': '24' }, # When a task is considered to be "due soon"
 'feature': { \
     'notes': 'True',
     'effort': 'True',
     'syncml': 'False',
     'iphone': 'False',
-    'notifier': 'Native' },
+    'notifier': 'Task Coach' },
 'syncml': { \
     'url': '',
     'username': '',

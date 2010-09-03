@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -34,13 +34,10 @@ class Sorter(patterns.ListDecorator):
     def sortEventType(class_):
         return '%s.sorted'%class_
     
+    @patterns.eventSource
     def extendSelf(self, items, event=None):
-        notify = event is None
-        event = event or patterns.Event()
         super(Sorter, self).extendSelf(items, event)
-        self.reset(event)
-        if notify:
-            event.send()
+        self.reset(event=event)
 
     # We don't implement removeItemsFromSelf() because there is no need 
     # to resort when items are removed since after removing items the 
@@ -62,19 +59,15 @@ class Sorter(patterns.ListDecorator):
         self._sortCaseSensitive = caseSensitive
         self.reset()
     
+    @patterns.eventSource
     def reset(self, event=None):
         ''' reset does the actual sorting. If the order of the list changes, 
             observers are notified by means of the list-sorted event. '''
         oldSelf = self[:]
         self.sort(key=self.createSortKeyFunction(), 
                   reverse=not self._sortAscending)
-        if self == oldSelf:
-            return
-        notify = event is None
-        event = event or patterns.Event()
-        event.addSource(self, type=self.sortEventType())
-        if notify:
-            event.send()
+        if self != oldSelf:
+            event.addSource(self, type=self.sortEventType())
 
     def createSortKeyFunction(self):
         ''' createSortKeyFunction returns a function that is passed to the 

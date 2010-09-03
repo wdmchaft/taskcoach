@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -16,7 +16,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-import wx, sys
 import test
 from taskcoachlib import gui, command, config, persistence
 from taskcoachlib.domain import note, attachment
@@ -25,34 +24,28 @@ from taskcoachlib.domain import note, attachment
 class AttachmentEditorTestCase(test.wxTestCase):
     def setUp(self):
         super(AttachmentEditorTestCase, self).setUp()
+        self.settings = config.Settings(load=False)
         self.taskFile = persistence.TaskFile()
         self.attachments = attachment.AttachmentList()
         self.attachments.extend(self.createAttachments())
-        self.settings = config.Settings(load=False)
         self.editor = self.createEditor()
         
     def createEditor(self):
         return gui.dialog.editor.AttachmentEditor(self.frame, self.createCommand(),
             self.settings, self.attachments, self.taskFile, raiseDialog=False)
 
-    def tearDown(self):
-        # AttachmentEditor uses CallAfter for setting the focus, make sure those 
-        # calls are dealt with, otherwise they'll turn up in other tests
-        if '__WXMAC__' not in wx.PlatformInfo and ('__WXMSW__' not in wx.PlatformInfo or sys.version_info < (2, 5)):
-            wx.Yield() # pragma: no cover 
-        super(AttachmentEditorTestCase, self).tearDown()
-        
+
     def createCommand(self):
         raise NotImplementedError # pragma: no cover
     
     def createAttachments(self):
         return []
 
-    def setSubject(self, newSubject, index=0):
-        self.editor[index][0].setSubject(newSubject)
+    def setSubject(self, newSubject):
+        self.editor._interior[0].setSubject(newSubject)
 
-    def setDescription(self, newDescription, index=0):
-        self.editor[index][0].setDescription(newDescription)
+    def setDescription(self, newDescription):
+        self.editor._interior[0].setDescription(newDescription)
         
         
 class NewAttachmentTest(AttachmentEditorTestCase):
@@ -63,7 +56,7 @@ class NewAttachmentTest(AttachmentEditorTestCase):
 
     def testCreate(self):
         # pylint: disable-msg=W0212
-        self.assertEqual('New attachment', self.editor[0][0]._subjectEntry.GetValue())
+        self.assertEqual('New attachment', self.editor._interior[0]._subjectEntry.GetValue())
 
     def testOk(self):
         self.setSubject('Done')
@@ -81,6 +74,6 @@ class NewAttachmentTest(AttachmentEditorTestCase):
         self.assertEqual('Description', self.attachment.description())
         
     def testAddNote(self):
-        self.editor[0][1].notes.append(note.Note(subject='New note'))
+        self.editor._interior[1].notes.append(note.Note(subject='New note'))
         self.editor.ok()
         self.assertEqual(1, len(self.attachment.notes()))

@@ -1,7 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2008-2010 Jerome Laheurte <fraca7@free.fr>
-Copyright (C) 2010 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -20,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # pylint: disable-msg=W0201,E1101
  
 from taskcoachlib.patterns.network import Acceptor
-from taskcoachlib.domain.date import Date, parseDate, DateTime, parseDateTime
+from taskcoachlib.domain.date import Date, parseDate, DateTime, parseDateTime, Recurrence
 
 from taskcoachlib.domain.category import Category
 from taskcoachlib.domain.task import Task
@@ -108,10 +107,7 @@ class DataItem(BaseItem):
         self.__count = count
 
     def expect(self):
-        if self.state == 0:
-            return self.__count
-        else:
-            return None
+        return self.__count if self.state == 0 else None
 
     def feed(self, data):
         if self.state == 0:
@@ -176,16 +172,14 @@ class DateItem(FixedSizeStringItem):
         super(DateItem, self).feed(data)
 
         if self.state == 2:
-            if self.value is None:
-                self.value = Date()
-            else:
-                self.value = parseDate(self.value)
+            self.value = Date() if self.value is None else parseDate(self.value)
 
     def pack(self, value):
-        if value == Date():
-            return super(DateItem, self).pack(None)
-        else:
-            return super(DateItem, self).pack('%04d-%02d-%02d' % (value.year, value.month, value.day))
+        if isinstance(value, DateTime):
+            value = Date(value.year, value.month, value.day)
+
+        value = None if value == Date() else value.isoformat()
+        return super(DateItem, self).pack(value)
 
 
 class DateTimeItem(FixedSizeStringItem):
@@ -199,12 +193,30 @@ class DateTimeItem(FixedSizeStringItem):
                 self.value = parseDateTime(self.value)
 
     def pack(self, value):
-        if value is None:
-            return super(DateTimeItem, self).pack(None)
-        else:
-            return super(DateTimeItem, self).pack('%04d-%02d-%02d %02d:%02d:%02d' % (value.year, value.month,
-                                                                                     value.day, value.hour,
-                                                                                     value.minute, value.second))
+        if value is not None:
+            value = value.replace(microsecond=0, tzinfo=None).isoformat(sep=' ')
+        return super(DateTimeItem, self).pack(value)
+
+
+class InfiniteDateTimeItem(FixedSizeStringItem):
+    """Same as L{DateTimeItem}, but 'no date' is a DateTime() value
+    instead of None."""
+
+    def feed(self, data):
+        super(InfiniteDateTimeItem, self).feed(data)
+
+        if self.state == 2:
+            if self.value is None:
+                self.value = DateTime()
+            else:
+                self.value = parseDateTime(self.value)
+
+    def pack(self, value):
+        if value == DateTime():
+            value = None
+        if value is not None:
+            value = value.replace(microsecond=0, tzinfo=None).isoformat(sep=' ')
+        return super(InfiniteDateTimeItem, self).pack(value)
 
 
 class CompositeItem(BaseItem):
@@ -239,10 +251,7 @@ class CompositeItem(BaseItem):
 
             return expect
         else:
-            if len(self._items) == 1:
-                self.value = self.value[0]
-            else:
-                self.value = tuple(self.value)
+            self.value = self.value[0] if len(self._items) == 1 else tuple(self.value)
             return None
 
     def feed(self, data):
@@ -326,7 +335,8 @@ class ItemParser(object):
                   's': StringItem,
                   'z': FixedSizeStringItem,
                   'd': DateItem,
-                  't': DateTimeItem }
+                  't': DateTimeItem,
+                  'f': InfiniteDateTimeItem }
 
     def __init__(self):
         super(ItemParser, self).__init__()
@@ -455,6 +465,8 @@ class State(object):
 ###############################################################################
 # Actual protocol
 
+_PROTOVERSION = 5
+
 class IPhoneAcceptor(Acceptor):
     def __init__(self, window, settings, iocontroller):
         def factory(fp, addr):
@@ -487,13 +499,13 @@ class IPhoneHandler(asynchat.async_chat):
 
         self.state = BaseState(self)
 
-        self.state.setState(InitialState, 4)
+        self.state.setState(InitialState, _PROTOVERSION)
 
         random.seed(time.time())
 
     def log(self, msg, *args):
-        if self.state.dlg is not None:
-            self.state.dlg.AddLogLine(msg % args)
+        if self.state.ui is not None:
+            self.state.ui.AddLogLine(msg % args)
 
     def collect_incoming_data(self, data):
         self.state.collect_incoming_data(data)
@@ -506,12 +518,12 @@ class IPhoneHandler(asynchat.async_chat):
         self.close()
 
     def handle_error(self):
-        if self.state.dlg is not None:
+        if self.state.ui is not None:
             import traceback, StringIO
             bf = StringIO.StringIO()
             traceback.print_exc(file=bf)
 
-            self.state.dlg.AddLogLine(bf.getvalue())
+            self.state.ui.AddLogLine(bf.getvalue())
 
         asynchat.async_chat.handle_error(self)
         self.close()
@@ -523,7 +535,7 @@ class BaseState(State):
         self.oldTasks = disp.window.taskFile.tasks().copy()
         self.oldCategories = disp.window.taskFile.categories().copy()
 
-        self.dlg = None
+        self.ui = None
 
         self.syncCompleted = disp.settings.getboolean('iphone', 'synccompleted')
 
@@ -562,8 +574,8 @@ class BaseState(State):
         return False
 
     def handleClose(self):
-        if self.dlg is not None:
-            self.dlg.Finished()
+        if self.ui is not None:
+            self.ui.Finished()
 
         # Rollback
         self.disp().window.restoreTasks(self.oldCategories, self.oldTasks)
@@ -575,9 +587,9 @@ class InitialState(BaseState):
 
         super(InitialState, self).init('i', 1)
 
-        if self.version == 4:
-            self.dlg = self.disp().window.createIPhoneProgressDialog()
-            self.dlg.Started()
+        if self.version == _PROTOVERSION:
+            self.ui = self.disp().window.createIPhoneProgressFrame()
+            self.ui.Started()
 
         self.pack('i', version)
 
@@ -629,7 +641,7 @@ class DeviceNameState(BaseState):
     def handleNewObject(self, name):
         self.disp().log(_('Device name: %s'), name)
         self.deviceName = name
-        self.dlg.SetDeviceName(name)
+        self.ui.SetDeviceName(name)
         self.setState(GUIDState)
 
 
@@ -673,6 +685,24 @@ class TaskFileNameState(BaseState):
             filename = os.path.splitext(os.path.split(filename)[1])[0]
         self.disp().log(_('Sending file name: %s'), filename)
         self.pack('z', filename)
+
+    def handleNewObject(self, response):
+        if self.version < 5:
+            self.setState(TwoWayState)
+        else:
+            self.setState(DayHoursState)
+
+    def finished(self):
+        pass
+
+
+class DayHoursState(BaseState):
+    def init(self):
+        super(DayHoursState, self).init('i', 1)
+
+        self.pack('ii',
+                  self.disp().settings.getint('view', 'efforthourstart'),
+                  self.disp().settings.getint('view', 'efforthourend'))
 
     def handleNewObject(self, response):
         self.setState(TwoWayState)
@@ -731,7 +761,7 @@ class FullFromDesktopCategoryState(BaseState):
     def handleNewObject(self, code):
         self.disp().log(_('Response: %d'), code)
         self.count += 1
-        self.dlg.SetProgress(self.count, self.total)
+        self.ui.SetProgress(self.count, self.total)
         self.sendObject()
 
     def finished(self):
@@ -756,25 +786,51 @@ class FullFromDesktopTaskState(BaseState):
                           task.subject(),
                           task.id(),
                           task.description(),
-                          task.startDate(),
-                          task.dueDate(),
-                          task.completionDate(),
+                          task.startDateTime().date(),
+                          task.dueDateTime().date(),
+                          task.completionDateTime().date(),
                           [category.id() for category in task.categories()])
-            else:
+            elif self.version < 5:
                 self.pack('sssdddz[s]',
                           task.subject(),
                           task.id(),
                           task.description(),
-                          task.startDate(),
-                          task.dueDate(),
-                          task.completionDate(),
+                          task.startDateTime().date(),
+                          task.dueDateTime().date(),
+                          task.completionDateTime().date(),
                           task.parent().id() if task.parent() is not None else None,
+                          [category.id() for category in task.categories()])
+            else:
+                hasRecurrence = task.recurrence() is not None and task.recurrence().unit != ''
+                if hasRecurrence:
+                    recPeriod = {'daily': 0, 'weekly': 1, 'monthly': 2, 'yearly': 3}[task.recurrence().unit]
+                    recRepeat = task.recurrence().amount
+                    recSameWeekday = task.recurrence().sameWeekday
+                else:
+                    recPeriod = 0
+                    recRepeat = 0
+                    recSameWeekday = 0
+
+                self.pack('sssffffziiiii[s]',
+                          task.subject(),
+                          task.id(),
+                          task.description(),
+                          task.startDateTime(),
+                          task.dueDateTime(),
+                          task.completionDateTime(),
+                          task.reminder(),
+                          task.parent().id() if task.parent() is not None else None,
+                          task.priority(),
+                          hasRecurrence,
+                          recPeriod,
+                          recRepeat,
+                          recSameWeekday,
                           [category.id() for category in task.categories()])
 
     def handleNewObject(self, code):
         self.disp().log(_('Response: %d'), code)
         self.count += 1
-        self.dlg.SetProgress(self.count, self.total)
+        self.ui.SetProgress(self.count, self.total)
         self.sendObject()
 
     def finished(self):
@@ -806,11 +862,20 @@ class FullFromDesktopEffortState(BaseState):
 
     def handleNewObject(self, code):
         self.count += 1
-        self.dlg.SetProgress(self.count, self.total)
+        self.ui.SetProgress(self.count, self.total)
         self.sendObject()
 
     def finished(self):
-        self.setState(SendGUIDState)
+        if self.version < 5:
+            self.setState(SendGUIDState)
+        else:
+            self.disp().log(_('Finished.'))
+            self.disp().close_when_done()
+            self.ui.Finished()
+
+    def handleClose(self):
+        if self.version < 5:
+            super(FullFromDesktopEffortState, self).handleClose()
 
 
 class FullFromDeviceState(BaseState):
@@ -856,7 +921,7 @@ class FullFromDeviceCategoryState(BaseState):
         self.categoryMap[category.id()] = category
 
         self.count += 1
-        self.dlg.SetProgress(self.count, self.total)
+        self.ui.SetProgress(self.count, self.total)
 
     def finished(self):
         self.setState(FullFromDeviceTaskState)
@@ -867,13 +932,15 @@ class FullFromDeviceTaskState(BaseState):
         super(FullFromDeviceTaskState, self).init('ssddd[s]', self.taskCount)
 
     def handleNewObject(self, (subject, description, startDate, dueDate, completionDate, categories)):
-        task = Task(subject=subject, description=description, startDate=startDate,
-                    dueDate=dueDate, completionDate=completionDate)
+        task = Task(subject=subject, description=description, 
+                    startDateTime=DateTime(startDate.year, startDate.month, startDate.day),
+                    dueDateTime=DateTime(dueDate.year, dueDate.month, dueDate.day), 
+                    completionDateTime=DateTime(completionDate.year, completionDate.month, completionDate.day))
 
         self.disp().window.addIPhoneTask(task, [self.categoryMap[id_] for id_ in categories])
 
         self.count += 1
-        self.dlg.SetProgress(self.count, self.total)
+        self.ui.SetProgress(self.count, self.total)
 
         self.pack('s', task.id())
 
@@ -943,7 +1010,7 @@ class TwoWayNewCategoriesState(BaseState):
             name, parentId = args
             self.disp().log(_('New category (parent: %s)'), parentId)
 
-        if parentId is None:
+        if parentId is None or not self.categoryMap.has_key(parentId):
             category = Category(name)
         else:
             category = self.categoryMap[parentId].newChild(name)
@@ -969,9 +1036,12 @@ class TwoWayDeletedCategoriesState(BaseState):
             category = self.categoryMap.pop(catId)
         except KeyError:
             # Deleted on desktop
-            pass
+            if self.version >= 5:
+                self.pack('s', '')
         else:
             self.disp().log(_('Delete category %s'), category.id())
+            if self.version >= 5:
+                self.pack('s', category.id())
             self.disp().window.removeIPhoneCategory(category)
 
     def finished(self):
@@ -986,16 +1056,22 @@ class TwoWayModifiedCategoriesState(BaseState):
         try:
             category = self.categoryMap[catId]
         except KeyError:
-            pass
+            if self.version >= 5:
+                self.pack('s', '')
         else:
             self.disp().log(_('Modify category %s'), category.id())
             self.disp().window.modifyIPhoneCategory(category, name)
 
+            if self.version >= 5:
+                self.pack('s', category.id())
+
     def finished(self):
         if self.version < 4:
             self.setState(TwoWayNewTasksState)
-        else:
+        elif self.version < 5:
             self.setState(TwoWayNewTasksState4)
+        else:
+            self.setState(TwoWayNewTasksState5)
 
 
 class TwoWayNewTasksState(BaseState):
@@ -1003,10 +1079,13 @@ class TwoWayNewTasksState(BaseState):
         super(TwoWayNewTasksState, self).init('ssddd[s]', self.newTasksCount)
 
     def handleNewObject(self, (subject, description, startDate, dueDate, completionDate, categories)):
-        task = Task(subject=subject, description=description, startDate=startDate,
-                    dueDate=dueDate, completionDate=completionDate)
+        task = Task(subject=subject, description=description, 
+                    startDateTime=DateTime(startDate.year, startDate.month, startDate.day),
+                    dueDateTime=DateTime(dueDate.year, dueDate.month, dueDate.day), 
+                    completionDateTime=DateTime(completionDate.year, completionDate.month, completionDate.day))
 
-        self.disp().window.addIPhoneTask(task, [self.categoryMap[catId] for catId in categories])
+        self.disp().window.addIPhoneTask(task, [self.categoryMap[catId] for catId in categories \
+                                                    if self.categoryMap.has_key(catId)])
         self.disp().log(_('New task %s'), task.id())
 
         self.taskMap[task.id()] = task
@@ -1018,15 +1097,66 @@ class TwoWayNewTasksState(BaseState):
 
 class TwoWayNewTasksState4(BaseState):
     def init(self):
-        super(TwoWayNewTasksState4, self).init('ssdddz[s]', self.newTasksCount)
+        super(TwoWayNewTasksState4, self).init('ssddfz[s]', self.newTasksCount)
 
-    def handleNewObject(self, (subject, description, startDate, dueDate, completionDate, parentId, categories)):
+    def handleNewObject(self, (subject, description, startDate, dueDate, completionDateTime, parentId, categories)):
+        parent = self.taskMap[parentId] if parentId and self.taskMap.has_key(parentId) else None
+
+        if self.version < 5:
+            startDateTime = DateTime() if startDate == Date() else DateTime(year=startDate.year,
+                                                                            month=startDate.month,
+                                                                            day=startDate.day,
+                                                                            hour=self.disp().settings.getint('view', 'efforthourstart'))
+
+            dueDateTime = DateTime() if dueDate == Date() else DateTime(year=dueDate.year,
+                                                                        month=dueDate.month,
+                                                                        day=dueDate.day,
+                                                                        hour=self.disp().settings.getint('view', 'efforthourend'))
+
+        task = Task(subject=subject, description=description, 
+                    startDateTime=startDateTime,
+                    dueDateTime=dueDateTime, 
+                    completionDateTime=completionDateTime, 
+                    parent=parent)
+
+        self.disp().window.addIPhoneTask(task, [self.categoryMap[catId] for catId in categories \
+                                                    if self.categoryMap.has_key(catId)])
+        self.disp().log(_('New task %s'), task.id())
+
+        self.taskMap[task.id()] = task
+        self.pack('s', task.id())
+
+    def finished(self):
+        self.setState(TwoWayDeletedTasksState)
+
+
+class TwoWayNewTasksState5(BaseState):
+    def init(self):
+        super(TwoWayNewTasksState5, self).init('ssffffiiiiiz[s]', self.newTasksCount)
+
+    def handleNewObject(self, (subject, description, startDateTime, dueDateTime, completionDateTime,
+                               reminderDateTime, priority, hasRecurrence, recPeriod, recRepeat,
+                               recSameWeekday, parentId, categories)):
         parent = self.taskMap[parentId] if parentId else None
 
-        task = Task(subject=subject, description=description, startDate=startDate,
-                    dueDate=dueDate, completionDate=completionDate, parent=parent)
+        recurrence = None
+        if hasRecurrence:
+            recurrence = Recurrence(unit={0: 'daily', 1: 'weekly', 2: 'monthly', 3: 'yearly'}[recPeriod],
+                                    amount=recRepeat, sameWeekday=recSameWeekday)
 
-        self.disp().window.addIPhoneTask(task, [self.categoryMap[catId] for catId in categories])
+        task = Task(subject=subject, description=description, 
+                    startDateTime=startDateTime,
+                    dueDateTime=dueDateTime, 
+                    completionDateTime=completionDateTime, 
+                    parent=parent,
+                    recurrence=recurrence,
+                    priority=priority)
+
+        # Don't start a timer from this thread...
+        wx.CallAfter(task.setReminder, reminderDateTime)
+
+        self.disp().window.addIPhoneTask(task, [self.categoryMap[catId] for catId in categories \
+                                                    if self.categoryMap.has_key(catId)])
         self.disp().log(_('New task %s'), task.id())
 
         self.taskMap[task.id()] = task
@@ -1044,9 +1174,12 @@ class TwoWayDeletedTasksState(BaseState):
         try:
             task = self.taskMap.pop(taskId)
         except KeyError:
-            pass
+            if self.version >= 5:
+                self.pack('s', '')
         else:
             self.disp().log(_('Delete task %s'), task.id())
+            if self.version >= 5:
+                self.pack('s', task.id())
             self.disp().window.removeIPhoneTask(task)
 
     def finished(self):
@@ -1055,23 +1188,58 @@ class TwoWayDeletedTasksState(BaseState):
 
 class TwoWayModifiedTasks(BaseState):
     def init(self):
-        super(TwoWayModifiedTasks, self).init(('sssddd' if self.version < 2 else 'sssddd[s]'), self.modifiedTasksCount)
+        if self.version < 2:
+            super(TwoWayModifiedTasks, self).init('sssddd', self.modifiedTasksCount)
+        elif self.version < 5:
+            super(TwoWayModifiedTasks, self).init('sssddd[s]', self.modifiedTasksCount)
+        else:
+            super(TwoWayModifiedTasks, self).init('sssffffiiiii[s]', self.modifiedTasksCount)
 
     def handleNewObject(self, args):
+        reminderDateTime = None
+        recurrence = None
+        priority = 0
+
         if self.version < 2:
             subject, taskId, description, startDate, dueDate, completionDate = args
             categories = None
-        else:
+        elif self.version < 5:
             subject, taskId, description, startDate, dueDate, completionDate, categories = args
             categories = [self.categoryMap[catId] for catId in categories]
+        else:
+            (subject, taskId, description, startDate, dueDate, completionDate, reminderDateTime,
+             priority, hasRecurrence, recPeriod, recRepeat, recSameWeekday, categories) = args
+            categories = [self.categoryMap[catId] for catId in categories]
+
+            if hasRecurrence:
+                recurrence = Recurrence(unit={0: 'daily', 1: 'weekly', 2: 'monthly', 3: 'yearly'}[recPeriod],
+                                        amount=recRepeat, sameWeekday=recSameWeekday)
+
+        if self.version < 5:
+            startDateTime = DateTime(startDate.year, startDate.month, startDate.day,
+                self.disp().settings.getint('view', 'efforthourstart')) if startDate != Date() else DateTime()
+            dueDateTime = DateTime(dueDate.year, dueDate.month, dueDate.day,
+                self.disp().settings.getint('view', 'efforthourend')) if dueDate != Date() else DateTime()
+            completionDateTime = DateTime(completionDate.year, completionDate.month, 
+                completionDate.day) if completionDate != Date() else DateTime()
+        else:
+            startDateTime = startDate
+            dueDateTime = dueDate
+            completionDateTime = completionDate
 
         try:
             task = self.taskMap[taskId]
         except KeyError:
-            pass
+            if self.version >= 5:
+                self.pack('s', '')
         else:
             self.disp().log(_('Modify task %s'), task.id())
-            self.disp().window.modifyIPhoneTask(task, subject, description, startDate, dueDate, completionDate, categories)
+            self.disp().window.modifyIPhoneTask(task, subject, description, 
+                                                startDateTime, dueDateTime, 
+                                                completionDateTime, reminderDateTime,
+                                                recurrence, priority, categories)
+            if self.version >= 5:
+                self.pack('s', task.id())
 
     def finished(self):
         if self.version < 4:
@@ -1115,10 +1283,13 @@ class TwoWayModifiedEffortsState(BaseState):
         try:
             effort = self.effortMap[id_]
         except KeyError:
-            pass
+            if self.version >= 5:
+                self.pack('s', '')
         else:
             self.disp().log(_('Modify effort %s'), effort.id())
             self.disp().window.modifyIPhoneEffort(effort, subject, started, ended)
+            if self.version >= 5:
+                self.pack('s', effort.id())
 
     def finished(self):
         # Efforts cannot be deleted on the iPhone yet.
@@ -1138,7 +1309,7 @@ class SendGUIDState(BaseState):
     def finished(self):
         self.disp().log(_('Finished.'))
         self.disp().close_when_done()
-        self.dlg.Finished()
+        self.ui.Finished()
 
     def handleClose(self):
         pass

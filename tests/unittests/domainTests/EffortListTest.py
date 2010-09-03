@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -106,6 +106,15 @@ class EffortListTest(test.TestCase):
     def testRemoveItems(self):
         self.task.addEffort(self.effort)
         self.effortList.removeItems([self.effort])
+        self.assertEqual(0, len(self.effortList))
+        self.assertEqual(0, len(self.task.efforts()))
+        
+    def testRemoveAllItems(self):
+        self.task.addEffort(self.effort)
+        effort2 = effort.Effort(self.task, date.DateTime(2005, 1, 1), 
+                                           date.DateTime(2005, 1, 2))
+        self.task.addEffort(effort2)
+        self.effortList.removeItems([effort2, self.effort])
         self.assertEqual(0, len(self.effortList))
         self.assertEqual(0, len(self.task.efforts()))
 

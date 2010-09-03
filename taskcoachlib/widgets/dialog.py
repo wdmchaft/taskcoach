@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -48,12 +48,15 @@ class Dialog(wx.Dialog):
             wx.CallAfter(self.Raise)
         wx.CallAfter(self._panel.SetFocus)
         
-    def createButtonBox(self):
-        return buttonbox.ButtonBox(self._panel, (_('OK'), self.ok), 
-                                   (_('Cancel'), self.cancel))
+    def createInterior(self):
+        raise NotImplementedError
 
     def fillInterior(self):
         pass
+        
+    def createButtonBox(self):
+        return buttonbox.ButtonBox(self._panel, (_('OK'), self.ok), 
+                                   (_('Cancel'), self.cancel))
         
     def ok(self, event=None):
         if event:
@@ -89,9 +92,12 @@ class BookDialog(Dialog):
                 self._interior.RemovePage(pageIndex)
        
     def ok(self, *args, **kwargs):
-        for page in self._interior:
-            page.ok()
+        self.okPages()
         super(BookDialog, self).ok(*args, **kwargs)
+        
+    def okPages(self, *args, **kwargs):
+        for page in self._interior:
+            page.ok(*args, **kwargs)
 
     def addPages(self):
         raise NotImplementedError 
@@ -102,11 +108,6 @@ class NotebookDialog(BookDialog):
         return notebook.Notebook(self._panel)
 
         
-class ListbookDialog(BookDialog):
-    def createInterior(self):
-        return notebook.Listbook(self._panel)
-
-
 class HtmlWindowThatUsesWebBrowserForExternalLinks(wx.html.HtmlWindow):
     def OnLinkClicked(self, linkInfo):
         openedLinkInExternalBrowser = False
@@ -115,7 +116,7 @@ class HtmlWindowThatUsesWebBrowserForExternalLinks(wx.html.HtmlWindow):
             try:
                 webbrowser.open(linkInfo.GetHref())
                 openedLinkInExternalBrowser = True
-            except Error:
+            except webbrowser.Error:
                 pass
         if not openedLinkInExternalBrowser:
             super(HtmlWindowThatUsesWebBrowserForExternalLinks, 

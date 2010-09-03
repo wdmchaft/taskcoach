@@ -1,7 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
-Copyright (C) 2007-2008 Jerome Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -117,7 +116,11 @@ class _CtrlWithColumnPopupMenuMixin(_CtrlWithPopupMenuMixin):
         self.__popupMenu.columnIndex = columnIndex
         # Because right-clicking on column headers does not automatically give
         # focus to the control, we force the focus:
-        event.GetEventObject().MainWindow.SetFocus()
+        try:
+            window = event.GetEventObject().GetMainWindow()
+        except AttributeError:
+            window = event.GetEventObject()
+        window.SetFocus()
         self.PopupMenu(self.__popupMenu, event.GetPosition())
         event.Skip()
         
@@ -366,7 +369,11 @@ class _CtrlWithSortableColumnsMixin(_BaseCtrlWithColumnsMixin):
     def onColumnClick(self, event):
         event.Skip()
         # Make sure the window this control is in has focus:
-        event.GetEventObject().MainWindow.SetFocus()
+        try:
+            window = event.GetEventObject().GetMainWindow()
+        except AttributeError:
+            window = event.GetEventObject()
+        window.SetFocus()
         columnIndex = event.GetColumn()
         if 0 <= columnIndex < self.GetColumnCount():
             column = self._getColumn(columnIndex)

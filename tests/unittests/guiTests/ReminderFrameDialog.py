@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -22,27 +22,27 @@ from taskcoachlib import gui, config
 from taskcoachlib.domain import task, date
 
 
-class ReminderDialogTest(test.wxTestCase):
+class ReminderFrameTest(test.wxTestCase):
     def setUp(self):
-        super(ReminderDialogTest, self).setUp()
+        super(ReminderFrameTest, self).setUp()
         task.Task.settings = self.settings = config.Settings(load=False)
         self.task = task.Task('Task') 
         self.taskList = task.TaskList()
         self.taskList.append(self.task)
-        self.dialog = gui.dialog.reminder.ReminderDialog(self.task, 
+        self.frame = gui.reminder.ReminderFrame(self.task, 
             self.taskList, self.settings, self.frame)
 
     def testMarkTaskCompleted(self): 
-        self.dialog.onMarkTaskCompleted(None)
+        self.frame.onMarkTaskCompleted(None)
         self.failUnless(self.task.completed())
         
     def testMarkRecurringTaskCompleted(self):
         self.task.setRecurrence(date.Recurrence('daily'))
-        self.dialog.onMarkTaskCompleted(None)
+        self.frame.onMarkTaskCompleted(None)
         self.failIf(self.task.completed())
         
     def testMarkRecurringTaskWithReminderCompleted(self):
         self.task.setReminder(date.DateTime(2000,1,1,1,1,1))
         self.task.setRecurrence(date.Recurrence('daily'))
-        self.dialog.onMarkTaskCompleted(None)
+        self.frame.onMarkTaskCompleted(None)
         self.assertEqual(date.DateTime(2000,1,2,1,1,1), self.task.reminder())

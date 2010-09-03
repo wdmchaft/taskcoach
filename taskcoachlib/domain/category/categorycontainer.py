@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -30,26 +30,20 @@ class CategoryList(base.Collection):
     deleteItemHelpText = _('Delete the selected categories')
     newSubItemMenuText = _('New subcategory...')
     newSubItemHelpText = _('Insert a new subcategory')
-    
+
+    @patterns.eventSource    
     def extend(self, categories, event=None):
-        notify = event is None
-        event = event or patterns.Event()
-        super(CategoryList, self).extend(categories, event)
+        super(CategoryList, self).extend(categories, event=event)
         for category in self._compositesAndAllChildren(categories):
             for categorizable in category.categorizables():
                 categorizable.addCategory(category, event=event)
-        if notify:
-            event.send()
-                
+
+    @patterns.eventSource                
     def removeItems(self, categories, event=None):
-        notify = event is None
-        event = event or patterns.Event()
-        super(CategoryList, self).removeItems(categories, event)
+        super(CategoryList, self).removeItems(categories, event=event)
         for category in self._compositesAndAllChildren(categories):
             for categorizable in category.categorizables():
                 categorizable.removeCategory(category, event=event)
-        if notify:
-            event.send()
 
     def findCategoryByName(self, name):
         for category in self:

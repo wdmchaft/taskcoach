@@ -2,8 +2,7 @@
 
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
-Copyright (C) 2009 Jérôme Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -22,38 +21,37 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ''' render.py - functions to render various objects, like date, time, 
 etc. ''' # pylint: disable-msg=W0105
 
-import locale
+import locale, codecs
 from taskcoachlib.i18n import _
-
+from taskcoachlib.domain import date as datemodule
+ 
 # pylint: disable-msg=W0621
 
-def date(date): 
-    ''' render a date (of type date.Date) '''
-    if str(date) == '':
-        return ''
-    return date.strftime('%x')
-    
 def priority(priority):
     ''' Render an (integer) priority '''
     return str(priority)
-   
-def daysLeft(timeLeft, completedTask):
-    ''' Render time left (of type date.TimeDelta) in days. '''
+    
+def timeLeft(timeLeft, completedTask):
     if completedTask:
         return ''
-    from taskcoachlib.domain import date
-    if timeLeft == date.TimeDelta.max:
-        return _('Infinite') # u'∞' would be nice, but not all fonts have it
+    if timeLeft == datemodule.TimeDelta.max:
+        return _('Infinite')
+    sign = '-' if timeLeft.days < 0 else ''
+    timeLeft = abs(timeLeft)
+    if timeLeft.days > 0:
+        days = _('%d days')%timeLeft.days if timeLeft.days > 1 else _('1 day')
+        days += ', '
     else:
-        return str(timeLeft.days)
+        days = '' 
+    hours_and_minutes = ':'.join(str(timeLeft).split(':')[:-1]).split(', ')[-1]
+    return sign + days + hours_and_minutes
 
 def timeSpent(timeSpent):
     ''' render time spent (of type date.TimeDelta) as
     "<hours>:<minutes>:<seconds>" '''
-    from taskcoachlib.domain import date
-    if timeSpent == date.TimeDelta():
+    if timeSpent == datemodule.TimeDelta():
         return ''
-    if timeSpent < date.TimeDelta():
+    if timeSpent < datemodule.TimeDelta():
         sign = '-'
     else:
         sign = ''
@@ -77,11 +75,28 @@ def budget(aBudget):
     ''' render budget (of type date.TimeDelta) as
     "<hours>:<minutes>:<seconds>". '''
     return timeSpent(aBudget)
+
+try:
+    dateFormat = '%x' # Apparently, this may produce invalid utf-8 so test
+    codecs.utf_8_decode(datemodule.Now().strftime(dateFormat))
+except UnicodeDecodeError:
+    dateFormat = '%Y-%m-%d'
+timeFormat = '%H:%M' # Alas, %X includes seconds
+dateTimeFormat = ' '.join([dateFormat, timeFormat])
+
+def date(date): 
+    ''' render a date (of type date.Date) '''
+    if str(date) == '':
+        return ''
+    return date.strftime(dateFormat)   
         
 def dateTime(dateTime):
-    # Don't use %+ because it prints seconds as well.
-    return '%s %s' % (date(dateTime), time(dateTime)) if dateTime else ''
-    
+    if not dateTime or dateTime == datemodule.DateTime():
+        return ''
+    timeIsMidnight = (dateTime.hour, dateTime.minute) in ((0, 0), (23, 59))
+    format = dateFormat if timeIsMidnight else dateTimeFormat
+    return dateTime.strftime(format)
+
 def dateTimePeriod(start, stop):
     if stop is None:
         return '%s - %s'%(dateTime(start), _('now'))
@@ -91,7 +106,7 @@ def dateTimePeriod(start, stop):
         return '%s - %s'%(dateTime(start), dateTime(stop))
             
 def time(dateTime):
-    return dateTime.strftime('%H:%M')
+    return dateTime.strftime(timeFormat)
     
 def month(dateTime):
     return dateTime.strftime('%Y %B')

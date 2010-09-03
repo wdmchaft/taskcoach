@@ -2,8 +2,7 @@
 
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
-Copyright (C) 2008 Jérôme Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -52,37 +51,31 @@ class SynchronizedObject(object):
         state['status'] = self.__status
         return state
 
+    @patterns.eventSource
     def __setstate__(self, state, event=None):
-        notify = event is None
-        event = event or patterns.Event()
         try:
-            super(SynchronizedObject, self).__setstate__(state, event)
+            super(SynchronizedObject, self).__setstate__(state, event=event)
         except AttributeError:
             pass
         if state['status'] != self.__status:
             if state['status'] == self.STATUS_CHANGED:
                 self.markDirty(event=event)
             elif state['status'] == self.STATUS_DELETED:
-                self.markDeleted(event)
+                self.markDeleted(event=event)
             elif state['status'] == self.STATUS_NEW:
-                self.markNew(event)
+                self.markNew(event=event)
             elif state['status'] == self.STATUS_NONE:
-                self.cleanDirty(event)
-        if notify:
-            event.send()
+                self.cleanDirty(event=event)
 
     def getStatus(self):
         return self.__status
         
+    @patterns.eventSource
     def markDirty(self, force=False, event=None):
         if not self.setStatusDirty(force):
             return
-        notify = event is None
-        event = event or patterns.Event()
         event.addSource(self, self.__status, 
                         type=self.markNotDeletedEventType())
-        if notify:
-            event.send()
 
     def setStatusDirty(self, force=False):
         oldStatus = self.__status
@@ -92,41 +85,32 @@ class SynchronizedObject(object):
         else:
             return False
 
+    @patterns.eventSource
     def markNew(self, event=None):
         if not self.setStatusNew():
             return
-        notify = event is None
-        event = event or patterns.Event()
         event.addSource(self, self.__status,
                         type=self.markNotDeletedEventType())
-        if notify:
-            event.send()
             
     def setStatusNew(self):
         oldStatus = self.__status
         self.__status = self.STATUS_NEW
         return oldStatus == self.STATUS_DELETED
 
+    @patterns.eventSource
     def markDeleted(self, event=None):
-        notify = event is None
-        event = event or patterns.Event()
         self.setStatusDeleted()
         event.addSource(self, self.__status, type=self.markDeletedEventType())
-        if notify:
-            event.send()
 
     def setStatusDeleted(self):
         self.__status = self.STATUS_DELETED
 
+    @patterns.eventSource
     def cleanDirty(self, event=None):
         if not self.setStatusNone():
             return
-        notify = event is None
-        event = event or patterns.Event()
         event.addSource(self, self.__status, 
                         type=self.markNotDeletedEventType())
-        if notify:
-            event.send()
             
     def setStatusNone(self):
         oldStatus = self.__status
@@ -182,23 +166,20 @@ class Object(SynchronizedObject):
                           selectedIcon=self.__selectedIcon.get()))
         return state
     
+    @patterns.eventSource
     def __setstate__(self, state, event=None):
-        notify = event is None
-        event = event or patterns.Event()
         try:
-            super(Object, self).__setstate__(state, event)
+            super(Object, self).__setstate__(state, event=event)
         except AttributeError:
             pass
         self.setId(state['id'])
-        self.setSubject(state['subject'], event)
-        self.setDescription(state['description'], event)
-        self.setForegroundColor(state['fgColor'], event)
-        self.setBackgroundColor(state['bgColor'], event)
-        self.setFont(state['font'], event)
-        self.setIcon(state['icon'], event)
-        self.setSelectedIcon(state['selectedIcon'], event)
-        if notify:
-            event.send()
+        self.setSubject(state['subject'], event=event)
+        self.setDescription(state['description'], event=event)
+        self.setForegroundColor(state['fgColor'], event=event)
+        self.setBackgroundColor(state['bgColor'], event=event)
+        self.setFont(state['font'], event=event)
+        self.setIcon(state['icon'], event=event)
+        self.setSelectedIcon(state['selectedIcon'], event=event)
 
     def __getcopystate__(self):
         ''' Return a dictionary that can be passed to __init__ when creating
@@ -235,7 +216,7 @@ class Object(SynchronizedObject):
         return self.__subject.get()
     
     def setSubject(self, subject, event=None):
-        self.__subject.set(subject, event)
+        self.__subject.set(subject, event=event)
         
     def subjectChangedEvent(self, event):
         event.addSource(self, self.subject(), type=self.subjectChangedEventType())
@@ -250,7 +231,7 @@ class Object(SynchronizedObject):
         return self.__description.get()
     
     def setDescription(self, description, event=None):
-        self.__description.set(description, event)
+        self.__description.set(description, event=event)
         
     def descriptionChangedEvent(self, event):
         event.addSource(self, self.description(), 
@@ -263,7 +244,7 @@ class Object(SynchronizedObject):
     # Color:
     
     def setForegroundColor(self, color, event=None):
-        self.__fgColor.set(color, event)
+        self.__fgColor.set(color, event=event)
     
     def foregroundColor(self, recursive=False): # pylint: disable-msg=W0613
         # The 'recursive' argument isn't actually used here, but some
@@ -280,7 +261,7 @@ class Object(SynchronizedObject):
         return '%s.fgColor'%class_
     
     def setBackgroundColor(self, color, event=None):
-        self.__bgColor.set(color, event)
+        self.__bgColor.set(color, event=event)
         
     def backgroundColor(self, recursive=False): # pylint: disable-msg=W0613
         # The 'recursive' argument isn't actually used here, but some
@@ -305,7 +286,7 @@ class Object(SynchronizedObject):
         return self.__font.get()
     
     def setFont(self, font, event=None):
-        self.__font.set(font, event)
+        self.__font.set(font, event=event)
         
     def fontChangedEvent(self, event):
         event.addSource(self, self.font(), type=self.fontChangedEventType())
@@ -320,7 +301,7 @@ class Object(SynchronizedObject):
         return self.__icon.get()
 
     def setIcon(self, icon, event=None):
-        self.__icon.set(icon, event)
+        self.__icon.set(icon, event=event)
 
     def iconChangedEvent(self, event):
         event.addSource(self, self.icon(), type=self.iconChangedEventType())
@@ -333,7 +314,7 @@ class Object(SynchronizedObject):
         return self.__selectedIcon.get()
 
     def setSelectedIcon(self, icon, event=None):
-        self.__selectedIcon.set(icon, event)
+        self.__selectedIcon.set(icon, event=event)
 
     def selectedIconChangedEvent(self, event):
         event.addSource(self, self.selectedIcon(),
@@ -403,20 +384,17 @@ class CompositeObject(Object, patterns.ObservableComposite):
             expanded. ''' 
         return list(self.__expandedContexts)
     
+    @patterns.eventSource
     def expand(self, expand=True, context='None', event=None):
         ''' Expands (or collapses) the composite object in the specified 
             context. ''' 
         if expand == self.isExpanded(context):
             return
-        notify = event is None
-        event = event or patterns.Event()
         if expand:
             self.__expandedContexts.add(context)
         else:
             self.__expandedContexts.discard(context)
         self.expansionChangedEvent(event)
-        if notify:
-            event.send()
 
     @classmethod
     def expansionChangedEventType(class_):
@@ -557,38 +535,26 @@ class CompositeObject(Object, patterns.ObservableComposite):
 
     # Override SynchronizedObject methods to also mark child objects
 
+    @patterns.eventSource
     def markDeleted(self, event=None):
-        notify = event is None
-        event = event or patterns.Event()
-        super(CompositeObject, self).markDeleted(event)
+        super(CompositeObject, self).markDeleted(event=event)
         for child in self.children():
-            child.markDeleted(event)
-        if notify:
-            event.send()
-            
-    def markNew(self, event=None):
-        notify = event is None
-        event = event or patterns.Event()
-        super(CompositeObject, self).markNew(event)
-        for child in self.children():
-            child.markNew(event)
-        if notify:
-            event.send()
+            child.markDeleted(event=event)
 
+    @patterns.eventSource
+    def markNew(self, event=None):
+        super(CompositeObject, self).markNew(event=event)
+        for child in self.children():
+            child.markNew(event=event)
+
+    @patterns.eventSource
     def markDirty(self, force=False, event=None):
-        notify = event is None
-        event = event or patterns.Event()
-        super(CompositeObject, self).markDirty(force, event)
+        super(CompositeObject, self).markDirty(force, event=event)
         for child in self.children():
-            child.markDirty(force, event)
-        if notify:
-            event.send()
-            
+            child.markDirty(force, event=event)
+
+    @patterns.eventSource            
     def cleanDirty(self, event=None):
-        notify = event is None
-        event = event or patterns.Event()
-        super(CompositeObject, self).cleanDirty(event)
+        super(CompositeObject, self).cleanDirty(event=event)
         for child in self.children():
-            child.cleanDirty(event)
-        if notify:
-            event.send()
+            child.cleanDirty(event=event)

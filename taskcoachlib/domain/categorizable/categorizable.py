@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -38,13 +38,10 @@ class CategorizableCompositeObject(base.CompositeObject):
         state.update(dict(categories=self.categories()))
         return state
 
+    @patterns.eventSource
     def __setstate__(self, state, event=None):
-        notify = event is None
-        event = event or patterns.Event()
-        super(CategorizableCompositeObject, self).__setstate__(state, event)
-        self.setCategories(state['categories'], event)
-        if notify:
-            event.send()
+        super(CategorizableCompositeObject, self).__setstate__(state, event=event)
+        self.setCategories(state['categories'], event=event)
 
     def __getcopystate__(self):
         state = super(CategorizableCompositeObject, self).__getcopystate__()
@@ -62,7 +59,7 @@ class CategorizableCompositeObject(base.CompositeObject):
         return 'categorizable.category.add'
 
     def addCategory(self, *categories, **kwargs):
-        self.__categories.add(set(categories), kwargs.pop('event', None))
+        self.__categories.add(set(categories), event=kwargs.pop('event', None))
             
     def addCategoryEvent(self, event, *categories):
         event.addSource(self, *categories, **dict(type=self.categoryAddedEventType()))
@@ -83,7 +80,7 @@ class CategorizableCompositeObject(base.CompositeObject):
         return 'categorizable.category.remove'
     
     def removeCategory(self, *categories, **kwargs):
-        self.__categories.remove(set(categories), kwargs.pop('event', None))
+        self.__categories.remove(set(categories), event=kwargs.pop('event', None))
             
     def removeCategoryEvent(self, event, *categories):
         event.addSource(self, *categories, **dict(type=self.categoryRemovedEventType()))
@@ -100,7 +97,7 @@ class CategorizableCompositeObject(base.CompositeObject):
             self.iconChangedEvent(event)
             
     def setCategories(self, categories, event=None):
-        self.__categories.set(set(categories), event)
+        self.__categories.set(set(categories), event=event)
 
     def foregroundColor(self, recursive=True):
         myOwnFgColor = super(CategorizableCompositeObject, self).foregroundColor(False)

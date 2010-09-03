@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -21,22 +21,16 @@ from taskcoachlib import patterns
 
 
 class CategorizableContainer(base.Collection):
+    @patterns.eventSource
     def extend(self, items, event=None):
-        notify = event is None
-        event = event or patterns.Event()
-        super(CategorizableContainer, self).extend(items, event)
+        super(CategorizableContainer, self).extend(items, event=event)
         for item in self._compositesAndAllChildren(items):
             for category in item.categories():
                 category.addCategorizable(item, event=event)
-        if notify:
-            event.send()
-                
+
+    @patterns.eventSource                
     def removeItems(self, items, event=None):
-        notify = event is None
-        event = event or patterns.Event()
-        super(CategorizableContainer, self).removeItems(items, event)
+        super(CategorizableContainer, self).removeItems(items, event=event)
         for item in self._compositesAndAllChildren(items):
             for category in item.categories():
                 category.removeCategorizable(item, event=event)
-        if notify:
-            event.send()

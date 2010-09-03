@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -23,10 +23,10 @@ from taskcoachlib.domain import note
 
 class NoteViewerTest(test.wxTestCase):
     def testLocalNoteViewerForItemWithoutNotes(self):
-        settings = config.Settings(load=False)
         taskFile = persistence.TaskFile()
         taskFile.notes().append(note.Note())
-        viewer = gui.viewer.NoteViewer(self.frame, taskFile, settings, 
+        viewer = gui.viewer.NoteViewer(self.frame, taskFile, 
+                                       config.Settings(load=False), 
                                        notesToShow=note.NoteContainer())
         self.failIf(viewer.presentation())
         

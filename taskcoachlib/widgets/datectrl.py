@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 Copyright (C) 2008 Rob McMullen <rob.mcmullen@gmail.com>
 
 Task Coach is free software: you can redistribute it and/or modify
@@ -39,7 +39,7 @@ class Panel(wx.Panel):
         raise NotImplementedError
                 
     def _layout(self):
-        self._sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self._sizer = wx.BoxSizer(wx.HORIZONTAL) # pylint: disable-msg=W0201
         for control in self._controls:
             self._sizer.Add(control, border=2, 
                             flag=wx.RIGHT|wx.ALIGN_CENTER_VERTICAL)
@@ -64,7 +64,7 @@ class _BetterDatePickerCtrl(wx.DatePickerCtrl):
             # that might be edited by the user, are updated by the datepicker:
             self.GetParent().Navigate() 
             # Next, click the default button of the dialog:
-            button = self.getTopLevelWindow().GetDefaultItem()
+            button = self.getTopLevelWindow().GetDefaultItem() # pylint: disable-msg=E1103
             click = wx.CommandEvent()
             click.SetEventType(wx.EVT_BUTTON.typeId)
             wx.PostEvent(button, click)
@@ -79,12 +79,12 @@ class _BetterDatePickerCtrl(wx.DatePickerCtrl):
             window = window.GetParent()
         return window
 
-    def Disable(self):
+    def Disable(self): # pylint: disable-msg=W0221
         super(_BetterDatePickerCtrl, self).Disable()
         for child in self.Children:
             child.Disable()
             
-    def Enable(self, enable=True):
+    def Enable(self, enable=True): # pylint: disable-msg=W0221
         super(_BetterDatePickerCtrl, self).Enable(enable)
         for child in self.Children:
             child.Enable(enable)
@@ -97,6 +97,7 @@ class _DatePickerCtrlThatFixesAllowNoneStyle(Panel):
         super(_DatePickerCtrlThatFixesAllowNoneStyle, self).__init__(parent)
         
     def _createControls(self, callback):
+        # pylint: disable-msg=W0201
         self.__check = wx.CheckBox(self)
         self.__check.Bind(wx.EVT_CHECKBOX, self.onCheck)
         self.__datePicker = _BetterDatePickerCtrl(self, *self.__args, 
@@ -123,7 +124,7 @@ class _DatePickerCtrlThatFixesAllowNoneStyle(Panel):
             self.__datePicker.Disable()
             self.__check.SetValue(False)
 
-    def IsEnabled(self):
+    def IsEnabled(self): # pylint: disable-msg=W0221
         return self.__datePicker.IsEnabled()
 
 
@@ -184,7 +185,7 @@ class DateCtrl(Panel):
             options['size'] = (100, -1)
         elif '__WXGTK__' in wx.PlatformInfo:
             options['size'] = (110, -1)
-        return [DatePickerCtrl(self, **options)]
+        return [DatePickerCtrl(self, **options)] # pylint: disable-msg=W0142
 
     def SetValue(self, value):
         wxDate = date2wxDateTime(value)
@@ -205,17 +206,12 @@ class TimeCtrl(Panel):
         super(TimeCtrl, self).__init__(parent, callback, *args, **kwargs)
         
     def SetValue(self, time):
-        if time is None:
-            time = date.DateTime.now().time()
-        value = '%02d:%02d'%(time.hour, time.minute)
-        if self._showSeconds:
-            value += ':%02d'%time.second
-        self._controls[0].SetValue(value)
+        formattedTime = self._formatTime(date.Now() if time is None else time)
+        self._controls[0].SetValue(formattedTime)
     
     def _createControls(self, callback):
-        control = combo.ComboCtrl(self, value=self._showSeconds and '00:00:00' or '00:00',
-                              choices=self._choices(), 
-                              size=(self._showSeconds and 100 or 75,-1))
+        control = combo.ComboCtrl(self, choices=self._choices(), 
+                                  size=(100 if self._showSeconds else 75,-1))
         control.Bind(wx.EVT_TEXT, callback)
         control.Bind(wx.EVT_COMBOBOX, callback)
         return [control]
@@ -224,25 +220,29 @@ class TimeCtrl(Panel):
         choices = []
         for hour in range(self._starthour, self._endhour):
             for minute in range(0, 60, self._interval):
-                choices.append(('%02d:%02d'%(hour, minute)) + \
-                               (self._showSeconds and ':00' or ''))
+                choices.append(self._formatTime(date.Time(hour, minute)))
         return choices
+    
+    def _formatTime(self, time):
+        formattedTime = '%02d:%02d'%(time.hour, time.minute)
+        if self._showSeconds:
+            formattedTime += ':%02d'%time.second
+        return formattedTime
         
     def GetValue(self):
         value = self._controls[0].GetValue()
         try:
             timeComponents = [int(component) for component in value.split(':')]
-            time = date.Time(*timeComponents)
-        except:
-            time = date.Time()
-        return time
+            return date.Time(*timeComponents) # pylint: disable-msg=W0142
+        except ValueError:
+            return date.Time()            
     
-    def Enable(self, enable=True):
+    def Enable(self, enable=True): # pylint: disable-msg=W0221
         self._controls[0].Enable(enable)
         
 
 class DateTimeCtrl(Panel):
-    def __init__(self, parent, dateTime, callback=None, noneAllowed=True,
+    def __init__(self, parent, callback=None, noneAllowed=True,
                  starthour=8, endhour=18, interval=15, showSeconds=False,
                  *args, **kwargs):
         self._noneAllowed = noneAllowed
@@ -251,13 +251,13 @@ class DateTimeCtrl(Panel):
         self._interval = interval
         self._showSeconds = showSeconds
         super(DateTimeCtrl, self).__init__(parent, callback, *args, **kwargs)
-        self._callback = callback or self.__nullCallback
-        self.SetValue(dateTime)
+        self._callback = callback or self.__nullCallback           
         
     def __nullCallback(self, *args, **kwargs):
         pass
         
-    def _createControls(self, callback):
+    def _createControls(self, callback): 
+        # pylint: disable-msg=W0201
         self._dateCtrl = DateCtrl(self, self._dateCtrlCallback, 
             self._noneAllowed)
         self._dateCtrl.Bind(wx.EVT_CHECKBOX, self.onEnableDatePicker)
@@ -274,10 +274,6 @@ class DateTimeCtrl(Panel):
         self._callback(*args, **kwargs)
         
     def _dateCtrlCallback(self, *args, **kwargs):
-        if not self._isDateCtrlEnabled(): 
-            self._timeCtrl.SetValue(date.Time())
-        elif self._timeCtrl.GetValue() == date.Time():
-            self._timeCtrl.SetValue(date.Time.now())
         # If user disables dateCtrl, disable timeCtrl too and vice versa:
         self._timeCtrl.Enable(self._isDateCtrlEnabled())
         self._callback(*args, **kwargs)
@@ -298,7 +294,9 @@ class DateTimeCtrl(Panel):
     def GetValue(self):
         dateValue = self._dateCtrl.GetValue()
         if dateValue == date.Date():
-            return date.DateTime.max
+            return date.DateTime()
         else:
             return date.DateTime.combine(dateValue, self._timeCtrl.GetValue())
 
+    def setCallback(self, callback):
+        self._callback = callback

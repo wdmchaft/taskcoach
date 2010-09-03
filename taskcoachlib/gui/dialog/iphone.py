@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2009 Jerome Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -65,65 +65,6 @@ would you like to use?''')), 1, wx.EXPAND|wx.ALL, 5)
         self.EndModal(wx.ID_CANCEL)
 
 
-class IPhoneSyncDialog(DeferredCallMixin, wx.Dialog):
-    def __init__(self, settings, *args, **kwargs):
-        kwargs['style'] = wx.CAPTION|wx.RESIZE_BORDER|wx.CLOSE_BOX
-        super(IPhoneSyncDialog, self).__init__(*args, **kwargs)
-
-        self.settings = settings
-
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(wx.StaticText(self, wx.ID_ANY, _('Synchronizing...')),
-                  0, wx.ALL, 3)
-
-        self.gauge = wx.Gauge(self, wx.ID_ANY)
-        self.gauge.SetRange(100)
-        sizer.Add(self.gauge, 0, wx.EXPAND|wx.ALL, 3)
-
-        if settings.getboolean('iphone', 'showlog'):
-            self.log = wx.TextCtrl(self, wx.ID_ANY, u'', style=wx.TE_MULTILINE|wx.TE_READONLY)
-            sizer.Add(self.log, 1, wx.EXPAND|wx.ALL, 3)
-
-            self.btn = wx.Button(self, wx.ID_ANY, _('OK'))
-            sizer.Add(self.btn, 0, wx.ALIGN_CENTRE|wx.ALL, 3)
-            self.btn.Enable(False)
-            wx.EVT_BUTTON(self.btn, wx.ID_ANY, self.OnOK)
-
-        self.SetSizer(sizer)
-
-        if not settings.getboolean('iphone', 'showlog'):
-            self.Fit()
-
-        self.CentreOnScreen()
-
-    @synchronized
-    def SetDeviceName(self, name):
-        self.SetTitle(_('Synchronizing with %s...') % name)
-
-    @synchronized
-    def SetProgress(self, value, total):
-        self.gauge.SetValue(int(100 * value / total))
-
-    @synchronized
-    def AddLogLine(self, line):
-        if self.settings.getboolean('iphone', 'showlog'):
-            self.log.AppendText(line + u'\n')
-
-    @synchronizednb
-    def Started(self):
-        self.ShowModal()
-
-    @synchronized
-    def Finished(self):
-        if self.settings.getboolean('iphone', 'showlog'):
-            self.btn.Enable(True)
-        else:
-            self.EndModal(wx.ID_OK)
-
-    def OnOK(self, event):
-        self.EndModal(wx.ID_OK)
-
-
 class IPhoneBonjourDialog(wx.Dialog):
     def __init__(self, *args, **kwargs):
         super(IPhoneBonjourDialog, self).__init__(*args, **kwargs)
@@ -133,13 +74,13 @@ class IPhoneBonjourDialog(wx.Dialog):
                                  _('You have enabled the iPhone synchronization feature, which\n'
                                    'needs Bonjour. Bonjour does not seem to be installed on\n'
                                    'your system.')), 0, wx.ALL, 3)
-        if '__WXMSW__' in wx.PlatformInfo:
+        if '__WXMSW__' in wx.PlatformInfo: # pragma: no cover
             vsizer.Add(wx.StaticText(self, wx.ID_ANY,
                                      _('Please download and install Bonjour for Windows from\n')), 0, wx.ALL, 3)
             vsizer.Add(hl.HyperLinkCtrl(self, wx.ID_ANY,
                                         _('Apple\'s web site'),
                                         URL='http://support.apple.com/downloads/Bonjour_for_Windows'), 0, wx.ALL, 3)
-        else:
+        else: # pragma: no cover
             # MacOS does support Bonjour in all cases, so we're probably running Linux.
             vsizer.Add(wx.StaticText(self, wx.ID_ANY,
                                      _('Bonjour support for Linux is generally provided by\n'

@@ -1,7 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
-Copyright (C) 2008 Jerome Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -107,7 +106,7 @@ elif sys.argv[1] == 'py2app':
     setupOptions.update(dict(app=['taskcoach.py'], 
         setup_requires=['py2app'],
         options=dict(py2app=dict(argv_emulation=True, compressed=True,
-            dist_dir=builddir, optimize=2, iconfile='icons.in/taskcoach.icns', 
+            dist_dir=os.path.join(builddir, 'Task Coach'), optimize=2, iconfile='icons.in/taskcoach.icns', 
             # We need to explicitly include i18n modules because they 
             # are imported implicitly via __import__:
             includes=[filename[:-3].replace('/', '.') for filename \

@@ -1,7 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
-Copyright (C) 2007-2008 Jerome Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -88,7 +87,7 @@ class Attachment(base.Object, NoteOwner):
         return self.__location.get()
 
     def setLocation(self, location, event=None):
-        self.__location.set(location, event)
+        self.__location.set(location, event=event)
             
     def locationChangedEvent(self, event):
         event.addSource(self, self.location(), 
@@ -115,16 +114,13 @@ class Attachment(base.Object, NoteOwner):
         state.update(dict(location=self.location()))
         return state
 
+    @patterns.eventSource
     def __setstate__(self, state, event=None):
-        notify = event is None
-        event = event or patterns.Event()
         try:
             super(Attachment, self).__setstate__(state, event)
         except AttributeError:
             pass
         self.setLocation(state['location'], event)
-        if notify:
-            event.send()
 
     def __getcopystate__(self):
         return self.__getstate__()
@@ -189,7 +185,10 @@ class MailAttachment(Attachment):
         return self._readMail(self.location())
 
     def data(self):
-        return file(self.location(), 'rb').read()
+        try:
+            return file(self.location(), 'rb').read()
+        except IOError:
+            return None
 
 
 def AttachmentFactory(location, type_=None, *args, **kwargs):

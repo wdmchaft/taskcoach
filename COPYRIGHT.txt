@@ -1,0 +1,27 @@
+Task Coach - Your friendly task manager
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
+
+Task Coach developers are:
+Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
+Copyright (C) 2005-2010 Jérôme Laheurte <fraca7@free.fr>
+
+Portions were contributed by:
+Copyright (C) 2009 George Weeks <gcw52@telus.net>
+Copyright (C) 2008 Rob McMullen <rob.mcmullen@gmail.com>
+Copyright (C) 2008 Carl Zmola <zmola@acm.org>
+Copyright (C) 2008 Thomas Sonne Olesen <tpo@sonnet.dk>
+Copyright (C) 2008 João Alexandre de Toledo <jtoledo@griffo.com.br>
+Copyright (C) 2008 Marcin Zajaczkowski <mszpak@wp.pl>
+
+Task Coach is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Task Coach is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.

@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -92,31 +92,25 @@ class EffortList(patterns.SetDecorator, MaxDateTimeMixin,
             records.'''
         return len(self)
         
+    @patterns.eventSource
     def removeItems(self, efforts, event=None): # pylint: disable-msg=W0221
         ''' We override ObservableListObserver.removeItems because the default
             implementation is to remove the arguments from the original list,
             which in this case would mean removing efforts from a task list.
             Since that wouldn't work we remove the efforts from the tasks by
             hand. '''
-        notify = event is None
-        event = event or patterns.Event()
         for effort in efforts:
-            effort.task().removeEffort(effort, event)
-        if notify:
-            event.send()
+            effort.task().removeEffort(effort, event=event)
 
+    @patterns.eventSource
     def extend(self, efforts, event=None): # pylint: disable-msg=W0221
         ''' We override ObservableListObserver.extend because the default
             implementation is to add the arguments to the original list,
             which in this case would mean adding efforts to a task list.
             Since that wouldn't work we add the efforts to the tasks by
             hand. '''
-        notify = event is None
-        event = event or patterns.Event()
         for effort in efforts:
-            effort.task().addEffort(effort, event)
-        if notify:
-            event.send()
+            effort.task().addEffort(effort, event=event)
     
     @classmethod        
     def sortEventType(class_):

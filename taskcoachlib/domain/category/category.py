@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -72,16 +72,13 @@ class Category(attachment.AttachmentOwner, note.NoteOwner, base.CompositeObject)
                           filtered=self.__filtered),
                           exclusiveSubcategories=self.__exclusiveSubcategories)
         return state
-        
+    
+    @patterns.eventSource    
     def __setstate__(self, state, event=None):
-        notify = event is None
-        event = event or patterns.Event()
-        super(Category, self).__setstate__(state, event)
-        self.setCategorizables(state['categorizables'], event)
-        self.setFiltered(state['filtered'], event)
-        self.makeSubcategoriesExclusive(state['exclusiveSubcategories'], event)
-        if notify:
-            event.send()
+        super(Category, self).__setstate__(state, event=event)
+        self.setCategorizables(state['categorizables'], event=event)
+        self.setFiltered(state['filtered'], event=event)
+        self.makeSubcategoriesExclusive(state['exclusiveSubcategories'], event=event)
 
     def __getcopystate__(self):
         state = super(Category, self).__getcopystate__()
@@ -107,34 +104,31 @@ class Category(attachment.AttachmentOwner, note.NoteOwner, base.CompositeObject)
         return result
     
     def addCategorizable(self, *categorizables, **kwargs):
-        self.__categorizables.add(set(categorizables), kwargs.pop('event', None))
+        self.__categorizables.add(set(categorizables), event=kwargs.pop('event', None))
         
     def categorizableAddedEvent(self, event, *categorizables):
         event.addSource(self, *categorizables, 
                         **dict(type=self.categorizableAddedEventType()))
             
     def removeCategorizable(self, *categorizables, **kwargs):
-        self.__categorizables.remove(set(categorizables), kwargs.pop('event', None))
+        self.__categorizables.remove(set(categorizables), event=kwargs.pop('event', None))
         
     def categorizableRemovedEvent(self, event, *categorizables):
         event.addSource(self, *categorizables,
                         **dict(type=self.categorizableRemovedEventType()))
     
     def setCategorizables(self, categorizables, event=None):
-        self.__categorizables.set(set(categorizables), event)
+        self.__categorizables.set(set(categorizables), event=event)
             
     def isFiltered(self):
         return self.__filtered
     
+    @patterns.eventSource
     def setFiltered(self, filtered=True, event=None):
         if filtered == self.__filtered:
             return
-        notify = event is None
-        event = event or patterns.Event()
         self.__filtered = filtered
         self.filterChangedEvent(event)
-        if notify:
-            event.send()
                     
     def filterChangedEvent(self, event):
         event.addSource(self, self.isFiltered(), 
@@ -201,17 +195,14 @@ class Category(attachment.AttachmentOwner, note.NoteOwner, base.CompositeObject)
         parent = self.parent()
         return parent and parent.hasExclusiveSubcategories()
     
+    @patterns.eventSource
     def makeSubcategoriesExclusive(self, exclusive=True, event=None):
         if exclusive == self.hasExclusiveSubcategories():
             return
-        notify = event is None
-        event = event or patterns.Event()
         self.__exclusiveSubcategories = exclusive
         self.exclusiveSubcategoriesEvent(event)
         for child in self.children():
             child.setFiltered(False, event=event)
-        if notify:
-            event.send()
             
     def exclusiveSubcategoriesEvent(self, event):
         event.addSource(self, self.hasExclusiveSubcategories(), 

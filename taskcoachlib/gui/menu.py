@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -322,7 +322,7 @@ class EditMenu(Menu):
             uicommand.EditCut(viewer=viewerContainer, id=wx.ID_CUT),
             uicommand.EditCopy(viewer=viewerContainer, id=wx.ID_COPY),
             uicommand.EditPaste(),
-            uicommand.EditPasteIntoTask(viewer=viewerContainer),
+            uicommand.EditPasteAsSubItem(viewer=viewerContainer),
             None)
         # Leave sufficient room for command names in the Undo and Redo menu items:
         self.appendMenu(_('&Select')+' '*50,
@@ -675,8 +675,8 @@ class StartEffortForTaskMenu(DynamicMenu):
         for eventType in (task.Task.subjectChangedEventType(),
                           task.Task.trackStartEventType(), 
                           task.Task.trackStopEventType(),
-                          'task.startDate', 'task.dueDate', 
-                          'task.completionDate'):
+                          'task.startDateTime', 'task.dueDateTime', 
+                          'task.completionDateTime'):
             patterns.Publisher().registerObserver(self.onUpdateMenu, eventType)
     
     def updateMenuItems(self):
@@ -713,7 +713,7 @@ class TaskPopupMenu(Menu):
             uicommand.EditCut(viewer=taskViewer),
             uicommand.EditCopy(viewer=taskViewer),
             uicommand.EditPaste(),
-            uicommand.EditPasteIntoTask(viewer=taskViewer),
+            uicommand.EditPasteAsSubItem(viewer=taskViewer),
             None,
             uicommand.TaskNew(taskList=tasks, settings=settings))
         self.appendMenu(_('New task &from template'),
@@ -784,7 +784,8 @@ class CategoryPopupMenu(Menu):
         self.appendUICommands(
             uicommand.EditCut(viewer=categoryViewer),
             uicommand.EditCopy(viewer=categoryViewer),
-            uicommand.EditPaste())
+            uicommand.EditPaste(),
+            uicommand.EditPasteAsSubItem(viewer=categoryViewer))
         if not localOnly:
             self.appendUICommands(
                 None,
@@ -828,6 +829,7 @@ class NotePopupMenu(Menu):
             uicommand.EditCut(viewer=noteViewer),
             uicommand.EditCopy(viewer=noteViewer),
             uicommand.EditPaste(),
+            uicommand.EditPasteAsSubItem(viewer=noteViewer),
             None,
             uicommand.NoteNew(notes=notes, settings=settings),
             uicommand.NoteNewSubNote(viewer=noteViewer, notes=notes),
@@ -847,52 +849,44 @@ class NotePopupMenu(Menu):
             None,
             uicommand.ViewExpandSelected(viewer=noteViewer),
             uicommand.ViewCollapseSelected(viewer=noteViewer))
-       
-        
-# Column header popup menu
 
-class ColumnPopupMenu(Menu):
-    def __init__(self, window):
-        super(ColumnPopupMenu, self).__init__(window)
-        wx.CallAfter(self.appendUICommands, *self.getUICommands())
-        
+
+class ColumnPopupMenuMixin(object):
+    ''' Mixin class for column header popup menu's. These menu's get the
+        column index property set by the control popping up the menu to
+        indicate which column the user clicked. See
+        widgets._CtrlWithColumnPopupMenuMixin. '''
+
     def __setColumn(self, columnIndex):
         self.__columnIndex = columnIndex # pylint: disable-msg=W0201
-    
+
     def __getColumn(self):
         return self.__columnIndex
-    
-    # columnIndex is the index of the column clicked by the user to popup 
-    # this menu.  This property should be set by the control popping up this 
-    # menu (see widgets._CtrlWithColumnPopupMenuMixin).
-    columnIndex = property(__getColumn, __setColumn) 
-                            
-    def getUICommands(self):
-        return [uicommand.HideCurrentColumn(viewer=self._window), None] + \
-            self._window.getColumnUICommands()
-            
 
-class EffortViewerColumnPopupMenu(DynamicMenuThatGetsUICommandsFromViewer):
-    def __setColumn(self, columnIndex):
-        self.__columnIndex = columnIndex # pylint: disable-msg=W0201
-    
-    def __getColumn(self):
-        return self.__columnIndex
-    
-    # columnIndex is the index of the column clicked by the user to popup 
-    # this menu. This property should be set by the control popping up 
-    # this menu (see widgets._CtrlWithColumnPopupMenuMixin).
-    columnIndex = property(__getColumn, __setColumn) 
+    columnIndex = property(__getColumn, __setColumn)
 
-    def registerForMenuUpdate(self):
-        self._window.Bind(wx.EVT_UPDATE_UI, self.onUpdateMenu)
-                            
     def getUICommands(self):
         if not self._window: # Prevent PyDeadObject exception when running tests
             return []
         return [uicommand.HideCurrentColumn(viewer=self._window), None] + \
             self._window.getColumnUICommands()
 
+
+class ColumnPopupMenu(ColumnPopupMenuMixin, Menu):
+    ''' Column header popup menu. '''
+
+    def __init__(self, window):
+        super(ColumnPopupMenu, self).__init__(window)
+        wx.CallAfter(self.appendUICommands, *self.getUICommands())
+
+
+class EffortViewerColumnPopupMenu(ColumnPopupMenuMixin,
+                                  DynamicMenuThatGetsUICommandsFromViewer):
+    ''' Column header popup menu. '''
+    
+    def registerForMenuUpdate(self):
+        self._window.Bind(wx.EVT_UPDATE_UI, self.onUpdateMenu)
+            
 
 class AttachmentPopupMenu(Menu):
     def __init__(self, mainwindow, settings, attachments, attachmentViewer):

@@ -1,7 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
-Copyright (C) 2007-2008 Jerome Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -43,7 +42,7 @@ class FakeAttachment(base.Object):
 
 class TaskFileTestCase(test.TestCase):
     def setUp(self):
-        task.Task.settings = config.Settings(load=False)
+        self.settings = task.Task.settings = config.Settings(load=False)
         self.createTaskFiles()
         self.task = task.Task()
         self.taskFile.tasks().append(self.task)
@@ -71,7 +70,10 @@ class TaskFileTestCase(test.TestCase):
     def remove(self, *filenames):
         for filename in filenames:
             if os.path.isfile(filename):
-                os.remove(filename)
+                try:
+                    os.remove(filename)
+                except WindowsError:
+                    pass # Don't fail on random 'Access denied' errors.
 
 
 class TaskFileTest(TaskFileTestCase):
@@ -162,7 +164,37 @@ class TaskFileTest(TaskFileTestCase):
         self.taskFile.saveas(self.filename2)
         self.assertEqual(self.filename2, self.taskFile.lastFilename())
         
+    def testTaskFileContainsTask(self):
+        self.failUnless(self.task in self.taskFile)
+        
+    def testTaskFileDoesNotContainTask(self):
+        self.failIf(task.Task() in self.taskFile)
+        
+    def testTaskFileContainsNote(self):
+        newNote = note.Note()
+        self.taskFile.notes().append(newNote)
+        self.failUnless(newNote in self.taskFile)
+        
+    def testTaskFileDoesNotContainNote(self):
+        self.failIf(note.Note() in self.taskFile)
+        
+    def testTaskFileContainsCategory(self):
+        newCategory = category.Category('Category')
+        self.taskFile.categories().append(newCategory)
+        self.failUnless(newCategory in self.taskFile)
 
+    def testTaskFileDoesNotContainCategory(self):
+        self.failIf(category.Category('Category') in self.taskFile)
+
+    def testTaskFileContainsEffort(self):
+        newEffort = effort.Effort(self.task)
+        self.task.addEffort(newEffort)
+        self.failUnless(newEffort in self.taskFile)
+
+    def testTaskFileDoesNotContainEffort(self):
+        self.failIf(effort.Effort(self.task) in self.taskFile)
+        
+        
 class DirtyTaskFileTest(TaskFileTestCase):
     def setUp(self):
         super(DirtyTaskFileTest, self).setUp()
@@ -241,16 +273,16 @@ class DirtyTaskFileTest(TaskFileTestCase):
         self.task.setBackgroundColor(wx.RED)
         self.failUnless(self.taskFile.needSave())
         
-    def testNeedSave_AfterEditTaskStartDate(self):
-        self.task.setStartDate(date.Tomorrow())
+    def testNeedSave_AfterEditTaskStartDateTime(self):
+        self.task.setStartDateTime(date.Now() + date.oneHour)
         self.failUnless(self.taskFile.needSave())
 
     def testNeedSave_AfterEditTaskDueDate(self):
-        self.task.setDueDate(date.Tomorrow())
+        self.task.setDueDateTime(date.Now() + date.oneDay)
         self.failUnless(self.taskFile.needSave())
         
     def testNeedSave_AfterEditTaskCompletionDate(self):
-        self.task.setCompletionDate(date.Tomorrow())
+        self.task.setCompletionDateTime(date.Now())
         self.failUnless(self.taskFile.needSave())
 
     def testNeedSave_AfterEditPercentageComplete(self):
@@ -706,7 +738,7 @@ class TaskFileSaveAndLoadTest(TaskFileTestCase):
         
     def testSaveAndLoad(self):
         self.saveAndLoad([task.Task(subject='ABC'), 
-            task.Task(dueDate=date.Tomorrow())])
+            task.Task(dueDateTime=date.Now() + date.oneDay)])
 
     def testSaveAndLoadTaskWithChild(self):
         parentTask = task.Task()

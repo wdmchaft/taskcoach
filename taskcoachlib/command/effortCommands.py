@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -22,12 +22,15 @@ import base
 
 
 class NewEffortCommand(base.BaseCommand):
-    def name(self):
-        return _('New effort')
+    plural_name = _('New efforts')
+    singular_name = _('New effort of "%s"')
     
     def __init__(self, *args, **kwargs):
         super(NewEffortCommand, self).__init__(*args, **kwargs)
         self.items = self.efforts = [effort.Effort(task) for task in self.items]
+
+    def name_subject(self, effort):
+        return effort.task().subject()
         
     def do_command(self):
         for effort in self.efforts: # pylint: disable-msg=W0621
@@ -41,9 +44,8 @@ class NewEffortCommand(base.BaseCommand):
 
 
 class EditEffortCommand(base.BaseCommand, base.SaveStateMixin):
-    # FIXME: Duplication with EditTaskCommand
-    def name(self):
-        return _('Edit effort')
+    plural_name = _('Edit efforts')
+    singular_name = _('Edit effort "%s"')
     
     def __init__(self, *args, **kwargs):
         super(EditEffortCommand, self).__init__(*args, **kwargs)
@@ -63,3 +65,7 @@ class EditEffortCommand(base.BaseCommand, base.SaveStateMixin):
     def redo_command(self):
         self.redoStates()
     
+
+class DeleteEffortCommand(base.DeleteCommand):
+    plural_name = _('Delete efforts')
+    singular_name = _('Delete effort "%s"')

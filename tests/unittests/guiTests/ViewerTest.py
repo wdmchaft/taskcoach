@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ class ViewerTest(test.wxTestCase):
         self.taskFile = persistence.TaskFile()
         self.task = task.Task()
         self.taskFile.tasks().append(self.task)
-        self.notebook = widgets.AUINotebook(self.frame)
+        self.notebook = widgets.AuiManagedFrameWithNotebookAPI(self.frame)
         self.viewerContainer = gui.viewer.ViewerContainer(self.notebook, 
             self.settings, 'mainviewer')
         self.viewer = self.createViewer()
@@ -268,26 +268,26 @@ class FilterableViewerForTasks(test.TestCase):
         return viewer
     
     def testIsFilterByDueDate_IsUnlimitedByDefault(self):
-        self.failUnless(self.viewer.isFilteredByDueDate('Unlimited'))
+        self.failUnless(self.viewer.isFilteredByDueDateTime('Unlimited'))
         
     def testSetFilterByDueDate_ToToday(self):
-        self.viewer.setFilteredByDueDate('Today')
-        self.failUnless(self.viewer.isFilteredByDueDate('Today'))
+        self.viewer.setFilteredByDueDateTime('Today')
+        self.failUnless(self.viewer.isFilteredByDueDateTime('Today'))
         
     def testSetFilterByDueDate_SetsSetting(self):
-        self.viewer.setFilteredByDueDate('Today')
+        self.viewer.setFilteredByDueDateTime('Today')
         setting = self.settings.get(self.viewer.settingsSection(), 'tasksdue')
         self.assertEqual('Today', setting)
     
     def testSetFilterByDueDate_AffectsPresentation(self):
-        self.viewer.presentation().append(task.Task(dueDate=date.Tomorrow()))
-        self.viewer.setFilteredByDueDate('Today')
+        self.viewer.presentation().append(task.Task(dueDateTime=date.Now() + date.oneDay))
+        self.viewer.setFilteredByDueDateTime('Today')
         self.failIf(self.viewer.presentation())
         
     def testSetFilterByDueDate_BackToUnlimited(self):
-        self.viewer.presentation().append(task.Task(dueDate=date.Tomorrow()))
-        self.viewer.setFilteredByDueDate('Today')
-        self.viewer.setFilteredByDueDate('Unlimited')
+        self.viewer.presentation().append(task.Task(dueDateTime=date.Now() + date.oneDay))
+        self.viewer.setFilteredByDueDateTime('Today')
+        self.viewer.setFilteredByDueDateTime('Unlimited')
         self.failUnless(self.viewer.presentation())
 
     def testIsNotHidingInactiveTasksByDefault(self):
@@ -303,12 +303,12 @@ class FilterableViewerForTasks(test.TestCase):
                                                  'hideinactivetasks'))
 
     def testHideInactiveTasks_AffectsPresentation(self):
-        self.viewer.presentation().append(task.Task(startDate=date.Tomorrow()))
+        self.viewer.presentation().append(task.Task(startDateTime=date.Now() + date.oneDay))
         self.viewer.hideInactiveTasks()
         self.failIf(self.viewer.presentation())
     
     def testUnhideInactiveTasks(self):
-        self.viewer.presentation().append(task.Task(startDate=date.Tomorrow()))
+        self.viewer.presentation().append(task.Task(startDateTime=date.Now() + date.oneDay))
         self.viewer.hideInactiveTasks()
         self.viewer.hideInactiveTasks(False)
         self.failUnless(self.viewer.presentation())
@@ -326,12 +326,12 @@ class FilterableViewerForTasks(test.TestCase):
                                                  'hidecompletedtasks'))
     
     def testHideCompletedTasks_AffectsPresentation(self):
-        self.viewer.presentation().append(task.Task(completionDate=date.Today()))
+        self.viewer.presentation().append(task.Task(completionDateTime=date.Now()))
         self.viewer.hideCompletedTasks()
         self.failIf(self.viewer.presentation())
         
     def testUnhideCompletedTasks(self):    
-        self.viewer.presentation().append(task.Task(completionDate=date.Today()))
+        self.viewer.presentation().append(task.Task(completionDateTime=date.Now()))
         self.viewer.hideCompletedTasks()
         self.viewer.hideCompletedTasks(False)
         self.failUnless(self.viewer.presentation())
@@ -369,25 +369,25 @@ class FilterableViewerForTasks(test.TestCase):
         self.viewer.hideInactiveTasks()
         self.viewer.hideCompletedTasks()
         self.viewer.hideCompositeTasks()
-        self.viewer.setFilteredByDueDate('Today')
+        self.viewer.setFilteredByDueDateTime('Today')
         self.viewer.resetFilter()
         self.failIf(self.viewer.isHidingInactiveTasks())
         self.failIf(self.viewer.isHidingCompletedTasks())
         self.failIf(self.viewer.isHidingCompositeTasks())
-        self.failUnless(self.viewer.isFilteredByDueDate('Unlimited'))     
+        self.failUnless(self.viewer.isFilteredByDueDateTime('Unlimited'))     
         
     def testApplySettingsWhenCreatingViewer(self):
         self.settings.set(self.viewer.settingsSection(), 'hidecompletedtasks', 'True')
         anotherViewer = self.createViewer()
-        anotherViewer.presentation().append(task.Task(completionDate=date.Today()))
+        anotherViewer.presentation().append(task.Task(completionDateTime=date.Now()))
         self.failIf(anotherViewer.presentation())   
 
 
 class ViewerBaseClassTest(test.wxTestCase):
     def testNotImplementedError(self):
         try:
-            gui.viewer.base.Viewer(self.frame, persistence.TaskFile(), None, 
-                                   settingsSection='bla')
+            gui.viewer.base.Viewer(self.frame, persistence.TaskFile(), 
+                                   None, settingsSection='bla')
             self.fail('Expected NotImplementedError') # pragma: no cover
         except NotImplementedError:
             pass
@@ -406,7 +406,7 @@ class ViewerIteratorTestCase(test.wxTestCase):
         task.Task.settings = self.settings
         self.taskFile = persistence.TaskFile()
         self.taskList = self.taskFile.tasks()
-        self.notebook = widgets.AUINotebook(self.frame)
+        self.notebook = widgets.AuiManagedFrameWithNotebookAPI(self.frame)
         self.viewer = self.createViewer()
         self.viewer.showTree(self.treeMode == 'True')
         self.viewer.sortBy('subject')
@@ -476,7 +476,7 @@ class UpdatePerSecondViewerTestsMixin(object):
         task.Task.settings = self.settings
         self.settings.set('taskviewer', 'columns', "['timeSpent']")
         self.taskFile = persistence.TaskFile()
-        self.taskList = task.sorter.Sorter(self.taskFile.tasks(), sortBy='dueDate')
+        self.taskList = task.sorter.Sorter(self.taskFile.tasks(), sortBy='dueDateTime')
         self.updateViewer = self.createUpdateViewer()
         self.trackedTask = task.Task(subject='tracked')
         self.trackedEffort = effort.Effort(self.trackedTask)

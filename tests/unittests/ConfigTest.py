@@ -2,7 +2,7 @@
 
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -76,22 +76,22 @@ class SettingsTest(SettingsTestCase):
         
     def testGetNonExistingSettingFromSection1DefaultsToBaseSection(self):
         self.settings.add_section('effortviewer1')
-        self.settings.set('effortviewer', 'columnwidths', '[10]')
-        self.assertEqual([10], 
+        self.settings.set('effortviewer', 'columnwidths', 'dict(subject=10)')
+        self.assertEqual(dict(subject=10), 
             self.settings.getlist('effortviewer1', 'columnwidths'))
 
     def testGetNonExistingSettingFromSection2DefaultsToSection1(self):
         self.settings.add_section('effortviewer1')
         self.settings.add_section('effortviewer2')
-        self.settings.set('effortviewer1', 'columnwidths', '[10]')
-        self.assertEqual([10], 
+        self.settings.set('effortviewer1', 'columnwidths', 'dict(subject=10)')
+        self.assertEqual(dict(subject=10), 
             self.settings.getlist('effortviewer2', 'columnwidths'))
 
     def testGetNonExistingSettingFromSection2DefaultsToBaseSection(self):
         self.settings.add_section('effortviewer1')
         self.settings.add_section('effortviewer2')
-        self.settings.set('effortviewer', 'columnwidths', '[10]')
-        self.assertEqual([10], 
+        self.settings.set('effortviewer', 'columnwidths', 'dict(subject=10)')
+        self.assertEqual(dict(subject=10), 
             self.settings.getlist('effortviewer2', 'columnwidths'))
         
     def testGetNonExistingSettingFromSection2RaisesException(self):
@@ -101,10 +101,10 @@ class SettingsTest(SettingsTestCase):
             self.settings.getlist, 'effortviewer2', 'nonexisting')
 
     def testAddSectionAndSkipOne(self):
-        self.settings.set('effortviewer', 'columnwidths', '[10]')
+        self.settings.set('effortviewer', 'columnwidths', 'dict(subject=10)')
         self.settings.add_section('effortviewer2', 
             copyFromSection='effortviewer')
-        self.assertEqual([10], 
+        self.assertEqual(dict(subject=10), 
             self.settings.getlist('effortviewer2', 'columnwidths'))
         
 
@@ -125,6 +125,15 @@ class SettingsIOTest(SettingsTestCase):
         self.fakeFile.seek(0)
         self.settings.readfp(self.fakeFile)
         self.failUnless(self.settings.has_section('testing'))
+        
+    def testIOErrorWhileSaving(self):
+        def file(*args): # pylint: disable-msg=W0613,W0622
+            raise IOError
+        def showerror(*args, **kwargs): # pylint: disable-msg=W0613
+            self.showerror_args = args # pylint: disable-msg=W0201
+        self.settings.setLoadAndSave(True)
+        self.settings.save(showerror=showerror, file=file)
+        self.failUnless(self.showerror_args)
 
 
 class SettingsObservableTest(SettingsTestCase):

@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2008 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -21,54 +21,55 @@ from taskcoachlib.domain import category
 import base
 
 
-class NewCategoryCommand(base.BaseCommand):
-    def name(self):
-        return _('New category')
-
+class NewCategoryCommand(base.NewItemCommand):
+    singular_name = _('New category')
+    
     def __init__(self, *args, **kwargs):
-        subject = kwargs.pop('subject', self.name())
+        subject = kwargs.pop('subject', _('New category'))
         description = kwargs.pop('description', '')
         attachments = kwargs.pop('attachments', [])
         super(NewCategoryCommand, self).__init__(*args, **kwargs)
         self.items = self.createNewCategories(subject=subject, 
             description=description, attachments=attachments)
-        
+
     def createNewCategories(self, **kwargs):
         return [category.Category(**kwargs)]
         
-    def do_command(self):
-        self.list.extend(self.items)
 
-    def undo_command(self):
-        self.list.removeItems(self.items)
+class NewSubCategoryCommand(base.NewSubItemCommand):
+    plural_name = _('New subcategories')
+    singular_name = _('New subcategory of "%s"')
 
-    def redo_command(self):
-        self.list.extend(self.items)
+    def __init__(self, *args, **kwargs):
+        subject = kwargs.pop('subject', _('New subcategory'))
+        description = kwargs.pop('description', '')
+        attachments = kwargs.pop('attachments', [])
+        super(NewSubCategoryCommand, self).__init__(*args, **kwargs)
+        self.items = self.createNewCategories(subject=subject,
+            description=description, attachments=attachments)
 
-
-class NewSubCategoryCommand(NewCategoryCommand):
-    def name(self):
-        return _('New subcategory')
-            
     def createNewCategories(self, **kwargs):
         return [parent.newChild(**kwargs) for parent in self.items]
 
 
 class EditCategoryCommand(base.EditCommand):
-    def name(self):
-        return _('Edit category')
+    plural_name = _('Edit categories')
+    singular_name = _('Edit category "%s"')
     
     def getItemsToSave(self):
         return self.items
+
+
+class DeleteCategoryCommand(base.DeleteCommand):
+    plural_name = _('Delete categories')
+    singular_name = _('Delete category "%s"')
     
     
 class DragAndDropCategoryCommand(base.DragAndDropCommand):
-    def name(self):
-        return _('Drag and drop category')
+    plural_name = _('Drag and drop categories')
 
 
 class AddCategoryNoteCommand(base.AddNoteCommand):
-    def name(self):
-        return _('Add note to category')
+    plural_name = _('Add note to categories')
         
 

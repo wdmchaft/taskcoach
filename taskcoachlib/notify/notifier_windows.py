@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2010 Jerome Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -27,13 +27,13 @@ class SnarlNotifier(AbstractNotifier):
     def isAvailable(self):
         return bool(snarl.snGetVersion())
 
-    def notify(self, title, summary, bitmap):
+    def notify(self, title, summary, bitmap, **kwargs):
         # Hum. Snarl needs a file.
-        fd, filename = tempfile.mkstemp('.bmp')
+        fd, filename = tempfile.mkstemp('.png')
         os.close(fd)
         bitmap.SaveFile(filename, wx.BITMAP_TYPE_PNG)
         try:
-            snarl.snShowMessage(title, summary, iconPath=filename)
+            snarl.snShowMessage(title.encode('UTF-8'), summary.encode('UTF-8'), iconPath=filename)
         finally:
             os.remove(filename)
 

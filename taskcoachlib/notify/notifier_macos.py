@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2010 Jerome Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -51,7 +51,7 @@ class GrowlNotifier(AbstractNotifier):
     def isAvailable(self):
         return self._available
 
-    def notify(self, title, summary, bitmap):
+    def notify(self, title, summary, bitmap, **kwargs):
         # The bitmap is not actually used here...
         self._notifier.notify(noteType=u'Reminder', title=title, description=summary,
                               sticky=True)

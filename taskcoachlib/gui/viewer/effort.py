@@ -2,8 +2,7 @@
 
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
-Copyright (C) 2007-2008 Jérôme Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 Copyright (C) 2008 Rob McMullen <rob.mcmullen@gmail.com>
 Copyright (C) 2008 Thomas Sonne Olesen <tpo@sonnet.dk>
 
@@ -64,9 +63,7 @@ class EffortViewer(base.ListViewer, mixin.SortableViewerForEffortMixin,
                 tasks = selectedItemsFilter = domain.base.SelectedItemsFilter(self.taskFile.tasks(), 
                                                                               selectedItems=self.tasksToShowEffortFor)
                 self.__observersToDetach.append(selectedItemsFilter)
-            searchFilter = domain.base.SearchFilter(tasks)
-            self.__domainObjectsToView = searchFilter
-            self.__observersToDetach.append(searchFilter)
+            self.__domainObjectsToView = tasks
         return self.__domainObjectsToView
     
     def displayingNewTasks(self):
@@ -98,8 +95,8 @@ class EffortViewer(base.ListViewer, mixin.SortableViewerForEffortMixin,
         assert aggregation in ('details', 'day', 'week', 'month')
         self.aggregation = aggregation
         self.settings.set(self.settingsSection(), 'aggregation', aggregation)
-        self.setPresentation(self.createSorter(self.createAggregator(\
-                             self.domainObjectsToView(), aggregation)))
+        self.setPresentation(self.createSorter(self.createFilter(\
+                             self.domainObjectsToView())))
         self.registerPresentationObservers()
         # Invalidate the UICommands used for the column popup menu:
         self.__columnUICommands = None
@@ -116,6 +113,9 @@ class EffortViewer(base.ListViewer, mixin.SortableViewerForEffortMixin,
         self._showWeekdayColumns(show=aggregation=='week')
         if autoResizing:
             self.widget.ToggleAutoResizing(True)
+            
+    def isShowingAggregatedEffort(self):
+        return self.aggregation != 'details'
 
     def createFilter(self, taskList):
         ''' Return a class that filters the original list. In this case we
@@ -123,7 +123,10 @@ class EffortViewer(base.ListViewer, mixin.SortableViewerForEffortMixin,
             the taskList, either individually (i.e. no aggregation), per day,
             per week, or per month. '''
         aggregation = self.settings.get(self.settingsSection(), 'aggregation')
-        return self.createAggregator(filter.DeletedFilter(taskList), aggregation)
+        deletedFilter = filter.DeletedFilter(taskList)
+        searchFilter = filter.SearchFilter(self.createAggregator(deletedFilter, aggregation))
+        self.__observersToDetach.extend([deletedFilter, searchFilter])
+        return searchFilter
     
     def createAggregator(self, taskList, aggregation):
         ''' Return an instance of a class that aggregates the effort records 
@@ -133,11 +136,11 @@ class EffortViewer(base.ListViewer, mixin.SortableViewerForEffortMixin,
             - per week ('week'), or 
             - per month ('month'). '''
         if aggregation == 'details':
-            result = effort.EffortList(taskList)
+            aggregator = effort.EffortList(taskList)
         else:
-            result = effort.EffortAggregator(taskList, aggregation=aggregation)
-        self.__observersToDetach.append(result)
-        return result
+            aggregator = effort.EffortAggregator(taskList, aggregation=aggregation)
+        self.__observersToDetach.append(aggregator)
+        return aggregator
             
     def createWidget(self):
         self._columns = self._createColumns()
@@ -364,7 +367,7 @@ class EffortViewer(base.ListViewer, mixin.SortableViewerForEffortMixin,
             selectedTasks = [subjectDecoratedTaskList[0][1]]
         return super(EffortViewer, self).newItemDialog(selectedTasks, bitmap=bitmap)
         
-    def editorClass(self):
+    def itemEditorClass(self):
         return dialog.editor.EffortEditor
     
     def newItemCommandClass(self):
@@ -374,5 +377,8 @@ class EffortViewer(base.ListViewer, mixin.SortableViewerForEffortMixin,
         return command.EditEffortCommand
 
     def newSubItemCommandClass(self):
-        pass # efforts are not composite. 
+        pass # efforts are not composite.
+
+    def deleteItemCommandClass(self):
+        return command.DeleteEffortCommand
     

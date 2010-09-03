@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -104,9 +104,8 @@ class Composite(object):
         
 
 class ObservableComposite(Composite):
+    @observer.eventSource
     def __setstate__(self, state, event=None): # pylint: disable-msg=W0221
-        notify = event is None
-        event = event or observer.Event()
         oldChildren = set(self.children())
         super(ObservableComposite, self).__setstate__(state)
         newChildren = set(self.children())
@@ -117,16 +116,11 @@ class ObservableComposite(Composite):
         childrenAdded = newChildren - oldChildren
         if childrenAdded:
             self.addChildEvent(event, *childrenAdded)
-        if notify:
-            event.send()
 
+    @observer.eventSource
     def addChild(self, child, event=None): # pylint: disable-msg=W0221
-        notify = event is None
-        event = event or observer.Event()
         super(ObservableComposite, self).addChild(child)
         self.addChildEvent(event, child)
-        if notify:
-            event.send()
 
     def addChildEvent(self, event, *children):
         event.addSource(self, *children, **dict(type=self.addChildEventType()))
@@ -135,13 +129,10 @@ class ObservableComposite(Composite):
     def addChildEventType(class_):
         return 'composite(%s).child.add'%class_
 
+    @observer.eventSource
     def removeChild(self, child, event=None): # pylint: disable-msg=W0221
-        notify = event is None
-        event = event or observer.Event()
         super(ObservableComposite, self).removeChild(child)
         self.removeChildEvent(event, child)
-        if notify:
-            event.send()
 
     def removeChildEvent(self, event, *children):    
         event.addSource(self, *children, **dict(type=self.removeChildEventType()))
@@ -166,18 +157,16 @@ class CompositeCollection(object):
         self.extend(initList or [])
     
     def append(self, composite, event=None):
-        return self.extend([composite], event)
+        return self.extend([composite], event=event)
 
+    @observer.eventSource
     def extend(self, composites, event=None):
         if not composites:
             return
-        notify = event is None
-        event = event or observer.Event()
         compositesAndAllChildren = self._compositesAndAllChildren(composites) 
-        super(CompositeCollection, self).extend(compositesAndAllChildren, event)
+        super(CompositeCollection, self).extend(compositesAndAllChildren, 
+                                                event=event)
         self._addCompositesToParent(composites, event)
-        if notify:
-            event.send()
             
     def _compositesAndAllChildren(self, composites):
         compositesAndAllChildren = set(composites) 
@@ -189,27 +178,25 @@ class CompositeCollection(object):
         for composite in composites:
             parent = composite.parent()
             if parent and parent in self and composite not in parent.children():
-                parent.addChild(composite, event)
+                parent.addChild(composite, event=event)
     
     def remove(self, composite, event=None):
-        return self.removeItems([composite], event) if composite in self else event
+        return self.removeItems([composite], event=event) if composite in self else event
 
+    @observer.eventSource
     def removeItems(self, composites, event=None):
         if not composites:
             return
-        notify = event is None
-        event = event or observer.Event()
         compositesAndAllChildren = self._compositesAndAllChildren(composites)
-        super(CompositeCollection, self).removeItems(compositesAndAllChildren, event)
+        super(CompositeCollection, self).removeItems(compositesAndAllChildren, 
+                                                     event=event)
         self._removeCompositesFromParent(composites, event)
-        if notify:
-            event.send()
 
     def _removeCompositesFromParent(self, composites, event):
         for composite in composites:
             parent = composite.parent()
             if parent:
-                parent.removeChild(composite, event)
+                parent.removeChild(composite, event=event)
                             
     def rootItems(self):
         return [composite for composite in self if composite.parent() is None or \

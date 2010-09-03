@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -30,14 +30,14 @@ class TaskCommandTestCase(CommandTestCase, asserts.Mixin):
         self.categories = category.CategoryList()
         self.category = category.Category('cat')
         self.categories.append(self.category)
-        self.task1 = task.Task('task1')
-        self.task2 = task.Task('task2')
+        self.task1 = task.Task('task1', startDateTime=date.Now())
+        self.task2 = task.Task('task2', startDateTime=date.Now())
         self.taskList.append(self.task1)
         self.originalList = [self.task1]
         
     def tearDown(self):
         super(TaskCommandTestCase, self).tearDown()
-        task.Clipboard().clear()
+        command.Clipboard().clear()
 
     def delete(self, items=None, shadow=False):
         if items == 'all':
@@ -46,7 +46,7 @@ class TaskCommandTestCase(CommandTestCase, asserts.Mixin):
  
     def paste(self, items=None): # pylint: disable-msg=W0221
         if items:
-            command.PasteIntoTaskCommand(self.taskList, items).do()
+            command.PasteAsSubItemCommand(self.taskList, items).do()
         else:
             super(TaskCommandTestCase, self).paste()
 
@@ -61,7 +61,7 @@ class TaskCommandTestCase(CommandTestCase, asserts.Mixin):
         newSubTask = command.NewSubTaskCommand(self.taskList, tasks)
         if markCompleted:
             for subtask in newSubTask.items:
-                subtask.setCompletionDate()
+                subtask.setCompletionDateTime()
         newSubTask.do()
 
     def dragAndDrop(self, dropTarget, tasks=None):
@@ -245,9 +245,9 @@ class NewTaskCommandTest(TaskCommandTestCase):
             lambda: self.assertTaskList(self.originalList))
 
     def testNewTaskWithKeywords(self):
-        d = date.Date(2042, 2, 3)
-        newTask = self.new(startDate=d)
-        self.assertEqual(d, newTask.startDate())
+        dateTime = date.DateTime(2042, 2, 3)
+        newTask = self.new(startDateTime=dateTime)
+        self.assertEqual(dateTime, newTask.startDateTime())
 
 
 class NewSubTaskCommandTest(TaskCommandTestCase):
@@ -292,7 +292,7 @@ class EditTaskCommandTest(TaskCommandTestCase):
             taskToEdit.setSubject('New subject')
             taskToEdit.setDescription('New description')
             taskToEdit.setBudget(date.TimeDelta(hours=1))
-            taskToEdit.setCompletionDate()
+            taskToEdit.setCompletionDateTime()
             att = attachment.FileAttachment('attachment')
             if att in taskToEdit.attachments():
                 taskToEdit.removeAttachments(att)
@@ -405,7 +405,7 @@ class MarkCompletedCommandTest(CommandWithChildrenTestCase):
             lambda: self.failIf(self.task1.completed()))
 
     def testMarkCompleted_TaskAlreadyCompleted(self):
-        self.task1.setCompletionDate()
+        self.task1.setCompletionDateTime()
         self.markCompleted([self.task1])
         self.assertDoUndoRedo(
             lambda: self.failIf(self.task1.completed()),
@@ -449,22 +449,22 @@ class MarkCompletedCommandTest(CommandWithChildrenTestCase):
 
     def testMarkRecurringTaskCompleted_StartDateIsIncreased(self):
         self.task1.setRecurrence(date.Recurrence('weekly'))
-        startDate = self.task1.startDate()
-        newStartDate = startDate + date.TimeDelta(days=7)
+        startDateTime = self.task1.startDateTime()
+        newStartDateTime = startDateTime + date.TimeDelta(days=7)
         self.markCompleted([self.task1])
         self.assertDoUndoRedo(
-            lambda: self.assertEqual(newStartDate, self.task1.startDate()),
-            lambda: self.assertEqual(startDate, self.task1.startDate()))
+            lambda: self.assertEqual(newStartDateTime, self.task1.startDateTime()),
+            lambda: self.assertEqual(startDateTime, self.task1.startDateTime()))
 
     def testMarkRecurringTaskCompleted_DueDateIsIncreased(self):
         self.task1.setRecurrence(date.Recurrence('weekly'))
-        dueDate = date.Tomorrow()
-        self.task1.setDueDate(dueDate)
-        newDueDate = dueDate + date.TimeDelta(days=7)
+        tomorrow = date.Now() + date.oneDay
+        self.task1.setDueDateTime(tomorrow)
+        newDueDate = tomorrow + date.TimeDelta(days=7)
         self.markCompleted([self.task1])
         self.assertDoUndoRedo(
-            lambda: self.assertEqual(newDueDate, self.task1.dueDate()),
-            lambda: self.assertEqual(dueDate, self.task1.dueDate()))
+            lambda: self.assertEqual(newDueDate, self.task1.dueDateTime()),
+            lambda: self.assertEqual(tomorrow, self.task1.dueDateTime()))
         
     def testMarkParentWithRecurringChildCompleted_RemovesChildRecurrence(self):
         self.child.setRecurrence(date.Recurrence('daily'))

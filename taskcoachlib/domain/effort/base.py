@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 Copyright (C) 2008 Thomas Sonne Olesen <tpo@sonnet.dk>
 
 Task Coach is free software: you can redistribute it and/or modify
@@ -35,10 +35,10 @@ class BaseEffort(object):
         return self._stop
 
     def subject(self, *args, **kwargs):
-        return self._task.subject(*args, **kwargs)
+        return self.task().subject(*args, **kwargs)
 
     def categories(self, recursive=False):
-        return self._task.categories(recursive)
+        return self.task().categories(recursive)
 
     def foregroundColor(self, recursive=False):
         return self.task().foregroundColor(recursive)
@@ -51,6 +51,9 @@ class BaseEffort(object):
     
     def duration(self, recursive=False):
         raise NotImplementedError
+
+    def isTotal(self):
+        return False # Are we a detail effort or a total effort? For sorting.
 
     @classmethod
     def trackStartEventType(class_):

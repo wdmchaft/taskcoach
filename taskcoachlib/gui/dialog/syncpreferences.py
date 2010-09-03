@@ -2,8 +2,7 @@
 
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2008-2010 Frank Niessink <frank@niessink.com>
-Copyright (C) 2008 Jérôme Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -120,7 +119,7 @@ class SyncMLNotePage(SyncMLBasePage):
         self.fit()
 
 
-class SyncMLPreferences(widgets.ListbookDialog):
+class SyncMLPreferences(widgets.NotebookDialog):
     def __init__(self, iocontroller=None, *args, **kwargs):
         self.iocontroller = iocontroller
         super(SyncMLPreferences, self).__init__(bitmap='wrench_icon', *args,

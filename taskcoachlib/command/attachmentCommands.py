@@ -1,7 +1,8 @@
+# -*- coding: utf-8 -*-
+
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2008 Frank Niessink <frank@niessink.com>
-Copyright (C) 2007-2008 Jerome Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -22,12 +23,11 @@ from taskcoachlib.domain import attachment
 import base
 
 
-class NewAttachmentCommand(base.BaseCommand):
-    def name(self):
-        return _('New attachment')
-
+class NewAttachmentCommand(base.NewItemCommand):
+    singular_name = _('New attachment')
+    
     def __init__(self, *args, **kwargs):
-        subject = kwargs.pop('subject', self.name())
+        subject = kwargs.pop('subject', _('New attachment'))
         description = kwargs.pop('description', '')
         location = kwargs.pop('location', '')
         super(NewAttachmentCommand, self).__init__(*args, **kwargs)
@@ -37,28 +37,23 @@ class NewAttachmentCommand(base.BaseCommand):
     def createNewAttachments(self, **kwargs):
         return [attachment.FileAttachment(**kwargs)]
 
-    def do_command(self):
-        self.list.extend(self.items)
-
-    def undo_command(self):
-        self.list.removeItems(self.items)
-
-    def redo_command(self):
-        self.list.extend(self.items)
-
 
 class EditAttachmentCommand(base.EditCommand):
+    plural_name = _('Edit attachments')
+    singular_name = _('Edit attachment "%s"')
+    
     def __init__(self, *args, **kwargs):
         super(EditAttachmentCommand, self).__init__(*args, **kwargs)
         self.attachments = self.items
-
-    def name(self):
-        return _('Edit attachment')
 
     def getItemsToSave(self):
         return self.items
 
 
+class DeleteAttachmentCommand(base.DeleteCommand):
+    plural_name = _('Delete attachments')
+    singular_name = _('Delete attachment "%s"')
+
+
 class AddAttachmentNoteCommand(base.AddNoteCommand):
-    def name(self):
-        return _('Add note to attachment')
+    plural_name = _('Add note to attachments')

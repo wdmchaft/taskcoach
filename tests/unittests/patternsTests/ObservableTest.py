@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -82,7 +82,7 @@ class EventTest(test.TestCase):
         
     def testExistingSourceAndValue(self):
         self.event.addSource(self, 'new value')
-        self.assertEqual('new value', self.event.value())
+        self.assertEqual(('some value', 'new value'), self.event.values())
 
     def testEventTypes(self):
         self.assertEqual(set(['eventtype']), self.event.types())
@@ -155,7 +155,7 @@ class EventTest(test.TestCase):
 
     def testSubEventForUnspecifiedSourceAndSpecifiedSources(self):
         self.assertEqual(self.event, self.event.subEvent(('eventtype', self), 
-                                                         ('eventtype', None)))
+                                                         ['eventtype', None]))
         
     def testSubEventForSourceThatIsNotPresent(self):
         self.assertEqual(patterns.Event(), 

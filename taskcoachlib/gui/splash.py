@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ import wx
 from taskcoachlib import i18n
 try:
     import icons
-except ImportError:    
+except ImportError: # pragma: no cover   
     print "ERROR: couldn't import icons.py."
     print 'You need to generate the icons file.'
     print 'Run "make prepare" in the Task Coach root folder.'

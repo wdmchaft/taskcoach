@@ -3,7 +3,7 @@
 # Inspired By And Heavily Based On wxGenericTreeCtrl.
 #
 # Andrea Gavana, @ 17 May 2006
-# Latest Revision: 09 Dec 2009, 21.00 GMT
+# Latest Revision: 09 Jun 2010, 12.00 GMT
 #
 #
 # TODO List
@@ -211,14 +211,14 @@ License And Version
 
 CustomTreeCtrl is distributed under the wxPython license. 
 
-Latest Revision: Andrea Gavana @ 09 Dec 2009, 21.00 GMT
+Latest Revision: Andrea Gavana @ 09 Jun 2010, 12.00 GMT
 
-Version 2.0
+Version 2.1
 
 """
 
 # Version Info
-__version__ = "2.0"
+__version__ = "2.1"
 
 import wx
 from wx.lib.expando import ExpandoTextCtrl
@@ -1987,7 +1987,7 @@ class GenericTreeItem(object):
         """
         
         # for a hidden root node, don't evaluate it, but do evaluate children
-        if not (level == 0 and theCtrl.HasFlag(TR_HIDE_ROOT)):
+        if not (level == 0 and theCtrl.HasAGWFlag(TR_HIDE_ROOT)):
         
             # evaluate the item
             h = theCtrl.GetLineHeight(self)
@@ -2043,12 +2043,12 @@ class GenericTreeItem(object):
                     return self, flags
 
                 if point.x < self._x:
-                    if theCtrl.HasFlag(TR_FULL_ROW_HIGHLIGHT):
+                    if theCtrl.HasAGWFlag(TR_FULL_ROW_HIGHLIGHT):
                         flags |= TREE_HITTEST_ONITEM
                     else:
                         flags |= TREE_HITTEST_ONITEMINDENT
                 if point.x > self._x + self._width:
-                    if theCtrl.HasFlag(TR_FULL_ROW_HIGHLIGHT):
+                    if theCtrl.HasAGWFlag(TR_FULL_ROW_HIGHLIGHT):
                         flags |= TREE_HITTEST_ONITEM
                     else:
                         flags |= TREE_HITTEST_ONITEMRIGHT
@@ -2129,7 +2129,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
     """
 
     def __init__(self, parent, id=wx.ID_ANY, pos=wx.DefaultPosition, size=wx.DefaultSize,
-                 style=TR_DEFAULT_STYLE, ctstyle=0, validator=wx.DefaultValidator,
+                 style=0, agwStyle=TR_DEFAULT_STYLE, validator=wx.DefaultValidator,
                  name="CustomTreeCtrl"):
         """
         Default class constructor.
@@ -2140,8 +2140,9 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
          chosen by either the windowing system or wxPython, depending on platform;
         :param `size`: the control size. A value of (-1, -1) indicates a default size,
          chosen by either the windowing system or wxPython, depending on platform;
-        :param `style`: the underlying `wx.PyScrolledWindow` style plus L{CustomTreeCtrl}
-         window style. The latter can be a combination of the following bits:
+        :param `style`: the underlying `wx.PyScrolledWindow` style;
+        :param `agwStyle`: the AGW-specific window style for L{CustomTreeCtrl}. It can be a
+         combination of the following bits:
         
          ============================== =========== ==================================================
          Window Styles                  Hex Value   Description
@@ -2166,13 +2167,9 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
          ``TR_ALIGN_WINDOWS``               0x20000 Flag used to align windows (in items with windows) at the same horizontal position.
          ============================== =========== ==================================================
 
-        :param `ctstyle`: kept for backward compatibility with older versions of
-         L{CustomTreeCtrl}, unused at present;
         :param `validator`: window validator;
         :param `name`: window name.
         """
-
-        style = style | ctstyle
         
         self._current = self._key_current = self._anchor = self._select_me = None
         self._hasFocus = False
@@ -2224,15 +2221,18 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
         # Default normal and bold fonts for an item
         self._hasFont = True
         self._normalFont = wx.SystemSettings_GetFont(wx.SYS_DEFAULT_GUI_FONT)
-        self._boldFont = wx.Font(self._normalFont.GetPointSize(), self._normalFont.GetFamily(),
+        family = self._normalFont.GetFamily()
+        if family == wx.FONTFAMILY_UNKNOWN:
+            family = wx.FONTFAMILY_SWISS
+        self._boldFont = wx.Font(self._normalFont.GetPointSize(), family,
                                  self._normalFont.GetStyle(), wx.BOLD, self._normalFont.GetUnderlined(),
                                  self._normalFont.GetFaceName(), self._normalFont.GetEncoding())
-        self._italicFont = wx.Font(self._normalFont.GetPointSize(), self._normalFont.GetFamily(),
+        self._italicFont = wx.Font(self._normalFont.GetPointSize(), family,
                                    wx.FONTSTYLE_ITALIC, wx.NORMAL, self._normalFont.GetUnderlined(),
                                    self._normalFont.GetFaceName(), self._normalFont.GetEncoding())
 
         # Hyperlinks things
-        self._hypertextfont = wx.Font(self._normalFont.GetPointSize(), self._normalFont.GetFamily(),
+        self._hypertextfont = wx.Font(self._normalFont.GetPointSize(), family,
                                       self._normalFont.GetStyle(), wx.NORMAL, True,
                                       self._normalFont.GetFaceName(), self._normalFont.GetEncoding())
         self._hypertextnewcolour = wx.BLUE
@@ -2279,12 +2279,12 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
         self._itemWithWindow = []
         
         if wx.Platform == "__WXMAC__":
-            style &= ~TR_LINES_AT_ROOT
-            style |= TR_NO_LINES
+            agwStyle &= ~TR_LINES_AT_ROOT
+            agwStyle |= TR_NO_LINES
             
             platform, major, minor = wx.GetOsVersion()
             if major < 10:
-                style |= TR_ROW_LINES
+                agwStyle |= TR_ROW_LINES
 
         # A constant to use my translation of RendererNative.DrawTreeItemButton
         # if the wxPython version is less than 2.6.2.1.
@@ -2296,13 +2296,15 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
         # Create our container... at last!    
         wx.PyScrolledWindow.__init__(self, parent, id, pos, size, style|wx.HSCROLL|wx.VSCROLL, name)
 
+        self._agwStyle = agwStyle
+        
         # Create the default check image list        
         self.SetImageListCheck(16, 16)
 
         # If the tree display has no buttons, but does have
         # connecting lines, we can use a narrower layout.
         # It may not be a good idea to force this...
-        if not self.HasButtons() and not self.HasFlag(TR_NO_LINES):
+        if not self.HasButtons() and not self.HasAGWFlag(TR_NO_LINES):
             self._indent= 10
             self._spacing = 10
         
@@ -2417,7 +2419,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
 
         count = self._anchor.GetChildrenCount()
         
-        if not self.HasFlag(TR_HIDE_ROOT):
+        if not self.HasAGWFlag(TR_HIDE_ROOT):
             # take the root itself into account
             count = count + 1
         
@@ -2642,13 +2644,13 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
         dc = wx.ClientDC(self)
         self.RefreshLine(item)
 
-        if self.HasFlag(TR_AUTO_CHECK_CHILD):
+        if self.HasAGWFlag(TR_AUTO_CHECK_CHILD):
             ischeck = self.IsItemChecked(item)
             self.AutoCheckChild(item, ischeck)
-        if self.HasFlag(TR_AUTO_CHECK_PARENT):
+        if self.HasAGWFlag(TR_AUTO_CHECK_PARENT):
             ischeck = self.IsItemChecked(item)
             self.AutoCheckParent(item, ischeck)
-        elif self.HasFlag(TR_AUTO_TOGGLE_CHILD):
+        elif self.HasAGWFlag(TR_AUTO_TOGGLE_CHILD):
             self.AutoToggleChild(item)
 
         e = TreeEvent(wxEVT_TREE_ITEM_CHECKED, self.GetId())
@@ -2845,17 +2847,29 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
         return item.GetChildrenCount(recursively)
 
 
-    def SetTreeStyle(self, styles):
+    def HasAGWFlag(self, flag):
+        """
+        Returns ``True`` if L{CustomTreeCtrl} has the `flag` bit set.
+
+        :param `flag`: any possible window style for L{CustomTreeCtrl}.
+
+        :see: The L{__init__} method for the `flag` parameter description.
+        """
+
+        return self._agwStyle & flag        
+        
+
+    def SetAGWWindowStyleFlag(self, agwStyle):
         """
         Sets the L{CustomTreeCtrl} window style.
 
-        :param `styles`: the new L{CustomTreeCtrl} window style.
+        :param `agwStyle`: the new L{CustomTreeCtrl} window style.
         
-        :see: The L{__init__} method for the `styles` parameter description.
+        :see: The L{__init__} method for the `agwStyle` parameter description.
         """
 
         # Do not try to expand the root node if it hasn't been created yet
-        if self._anchor and not self.HasFlag(TR_HIDE_ROOT) and styles & TR_HIDE_ROOT:
+        if self._anchor and not self.HasAGWFlag(TR_HIDE_ROOT) and agwStyle & TR_HIDE_ROOT:
         
             # if we will hide the root, make sure children are visible
             self._anchor.SetHasPlus()
@@ -2866,25 +2880,25 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
         # want to update the inherited styles, but right now
         # none of the parents has updatable styles
 
-        if self.HasFlag(TR_MULTIPLE) and not (styles & TR_MULTIPLE):
+        if self.HasAGWFlag(TR_MULTIPLE) and not (agwStyle & TR_MULTIPLE):
             selections = self.GetSelections()
             for select in selections[0:-1]:
                 self.SelectItem(select, False)
 
-        self.SetWindowStyle(styles)
+        self._agwStyle = agwStyle
         self._dirty = True
 
 
-    def GetTreeStyle(self):
+    def GetAGWWindowStyleFlag(self):
         """Returns the L{CustomTreeCtrl} style."""
 
-        return self.GetWindowStyle()
+        return self._agwStyle
     
 
     def HasButtons(self):
         """Returns whether L{CustomTreeCtrl} has the ``TR_HAS_BUTTONS`` flag set."""
 
-        return self.HasFlag(TR_HAS_BUTTONS)
+        return self.HasAGWFlag(TR_HAS_BUTTONS)
 
 
 # -----------------------------------------------------------------------------
@@ -2964,7 +2978,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
         if font.IsOk():
             return font
 
-        return wx.SystemSettings_GetFont(wx.SYS_DEFAULT_GUI_FONT)
+        return wx.NullFont
 
 
     def IsItemHyperText(self, item):
@@ -3140,10 +3154,13 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
         wx.PyScrolledWindow.SetFont(self, font)
 
         self._normalFont = font 
-        self._boldFont = wx.Font(self._normalFont.GetPointSize(), self._normalFont.GetFamily(),
+        family = self._normalFont.GetFamily()
+        if family == wx.FONTFAMILY_UNKNOWN:
+            family = wx.FONTFAMILY_SWISS
+        self._boldFont = wx.Font(self._normalFont.GetPointSize(), family,
                                  self._normalFont.GetStyle(), wx.BOLD, self._normalFont.GetUnderlined(),
                                  self._normalFont.GetFaceName(), self._normalFont.GetEncoding())
-        self._italicFont = wx.Font(self._normalFont.GetPointSize(), self._normalFont.GetFamily(),
+        self._italicFont = wx.Font(self._normalFont.GetPointSize(), family,
                                    wx.FONTSTYLE_ITALIC, wx.NORMAL, self._normalFont.GetUnderlined(),
                                    self._normalFont.GetFaceName(), self._normalFont.GetEncoding())
 
@@ -3839,7 +3856,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
         lastGoodItem = self.GetPrevSibling(item)
         if not lastGoodItem or not self.IsVisible(lastGoodItem):
             parent = self.GetItemParent(item)
-            rootHidden = self.HasFlag(TR_HIDE_ROOT)
+            rootHidden = self.HasAGWFlag(TR_HIDE_ROOT)
             rootItem = self.GetRootItem()
  
             while parent and not (rootHidden and parent == rootItem):
@@ -3868,8 +3885,9 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
     def ResetTextControl(self):
         """ Called by L{TreeTextCtrl} when it marks itself for deletion. """
 
-        self._textCtrl.Destroy()
-        self._textCtrl = None
+        if self._textCtrl is not None:
+            self._textCtrl.Destroy()
+            self._textCtrl = None
 
         self.CalculatePositions()
         self.Refresh()
@@ -3908,7 +3926,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
         
             # ... wrap to the beginning
             id = self.GetRootItem()
-            if self.HasFlag(TR_HIDE_ROOT):
+            if self.HasAGWFlag(TR_HIDE_ROOT):
                 # can't select virtual root
                 id = self.GetNext(id)
                 if idParent == self.GetRootItem(): 
@@ -3945,10 +3963,10 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
         :param `data`: associate the given Python object `data` with the item.
         """
 
-        if wnd is not None and not self.HasFlag(TR_HAS_VARIABLE_ROW_HEIGHT):
+        if wnd is not None and not self.HasAGWFlag(TR_HAS_VARIABLE_ROW_HEIGHT):
             raise Exception("\nERROR: In Order To Append/Insert Controls You Have To Use The Style TR_HAS_VARIABLE_ROW_HEIGHT")
 
-        if text.find("\n") >= 0 and not self.HasFlag(TR_HAS_VARIABLE_ROW_HEIGHT):
+        if text.find("\n") >= 0 and not self.HasAGWFlag(TR_HAS_VARIABLE_ROW_HEIGHT):
             raise Exception("\nERROR: In Order To Append/Insert A MultiLine Text You Have To Use The Style TR_HAS_VARIABLE_ROW_HEIGHT")
 
         if ct_type < 0 or ct_type > 2:
@@ -3994,10 +4012,10 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
         if self._anchor:
             raise Exception("\nERROR: Tree Can Have Only One Root")
 
-        if wnd is not None and not self.HasFlag(TR_HAS_VARIABLE_ROW_HEIGHT):
+        if wnd is not None and not self.HasAGWFlag(TR_HAS_VARIABLE_ROW_HEIGHT):
             raise Exception("\nERROR: In Order To Append/Insert Controls You Have To Use The Style TR_HAS_VARIABLE_ROW_HEIGHT")
 
-        if text.find("\n") >= 0 and not self.HasFlag(TR_HAS_VARIABLE_ROW_HEIGHT):
+        if text.find("\n") >= 0 and not self.HasAGWFlag(TR_HAS_VARIABLE_ROW_HEIGHT):
             raise Exception("\nERROR: In Order To Append/Insert A MultiLine Text You Have To Use The Style TR_HAS_VARIABLE_ROW_HEIGHT")
 
         if ct_type < 0 or ct_type > 2:
@@ -4011,7 +4029,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
             self._hasWindows = True
             self._itemWithWindow.append(self._anchor)            
         
-        if self.HasFlag(TR_HIDE_ROOT):
+        if self.HasAGWFlag(TR_HIDE_ROOT):
         
             # if root is hidden, make sure we can navigate
             # into children
@@ -4019,7 +4037,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
             self._anchor.Expand()
             self.CalculatePositions()
         
-        if not self.HasFlag(TR_MULTIPLE):
+        if not self.HasAGWFlag(TR_MULTIPLE):
         
             self._current = self._key_current = self._anchor
             self._current.SetHilight(True)
@@ -4307,7 +4325,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
         :param `item`: an instance of L{GenericTreeItem}.        
         """
         
-        if self.HasFlag(TR_HIDE_ROOT) and item == self.GetRootItem():
+        if self.HasAGWFlag(TR_HIDE_ROOT) and item == self.GetRootItem():
              raise Exception("\nERROR: Can't Expand An Hidden Root. ")
 
         if not item.HasPlus():
@@ -4354,7 +4372,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
         """
 
         self._sendEvent = False        
-        if not self.HasFlag(TR_HIDE_ROOT) or item != self.GetRootItem():
+        if not self.HasAGWFlag(TR_HIDE_ROOT) or item != self.GetRootItem():
             self.Expand(item)
             if not self.IsExpanded(item):
                 self._sendEvent = True
@@ -4393,7 +4411,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
         :param `item`: an instance of L{GenericTreeItem}.
         """
         
-        if self.HasFlag(TR_HIDE_ROOT) and item == self.GetRootItem():
+        if self.HasAGWFlag(TR_HIDE_ROOT) and item == self.GetRootItem():
              raise Exception("\nERROR: Can't Collapse An Hidden Root. ")
 
         if not item.IsExpanded():
@@ -4410,7 +4428,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
         item.Collapse()
 
         self.CalculatePositions()
-        self.RefreshSubtree(item)
+        self.Refresh()
 
         if self._hasWindows:
             self.HideWindows()
@@ -4487,7 +4505,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
         :param `item`: an instance of L{GenericTreeItem}.
         """
 
-        if not self.HasFlag(TR_MULTIPLE) and not self.HasFlag(TR_EXTENDED):
+        if not self.HasAGWFlag(TR_MULTIPLE) and not self.HasAGWFlag(TR_EXTENDED):
             raise Exception("SelectAllChildren can be used only with multiple selection enabled.")
         
         if not item.IsSelected():
@@ -4514,7 +4532,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
     def SelectAll(self):
         """ Selects all the item in the tree. """
 
-        if not self.HasFlag(TR_MULTIPLE) and not self.HasFlag(TR_EXTENDED):
+        if not self.HasAGWFlag(TR_MULTIPLE) and not self.HasAGWFlag(TR_EXTENDED):
             raise Exception("SelectAll can be used only with multiple selection enabled.")
         
         rootItem = self.GetRootItem()
@@ -4607,7 +4625,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
 
         self._select_me = None
 
-        is_single = not (self.GetTreeStyle() & TR_MULTIPLE)
+        is_single = not (self.GetAGWWindowStyleFlag() & TR_MULTIPLE)
 
         # to keep going anyhow !!!
         if is_single:
@@ -4691,7 +4709,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
         
         if select:
         
-            self.DoSelectItem(item, not self.HasFlag(TR_MULTIPLE))
+            self.DoSelectItem(item, not self.HasAGWFlag(TR_MULTIPLE))
         
         else: # deselect
         
@@ -4759,7 +4777,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
         # first expand all parent branches
         parent = item.GetParent()
 
-        if self.HasFlag(TR_HIDE_ROOT):
+        if self.HasAGWFlag(TR_HIDE_ROOT):
             while parent and parent != self._anchor:
                 self.Expand(parent)
                 parent = parent.GetParent()
@@ -5134,7 +5152,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
         :param `item`: an instance of L{GenericTreeItem}.
         """
 
-        if self.GetTreeStyle() & TR_HAS_VARIABLE_ROW_HEIGHT:
+        if self.GetAGWWindowStyleFlag() & TR_HAS_VARIABLE_ROW_HEIGHT:
             return item.GetHeight()
         else:
             return self._lineHeight
@@ -5374,9 +5392,9 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
             dc.SetBrush(wx.Brush(colBg, wx.SOLID))
             dc.SetPen(wx.TRANSPARENT_PEN)
         
-        offset = (self.HasFlag(TR_ROW_LINES) and [1] or [0])[0]
+        offset = (self.HasAGWFlag(TR_ROW_LINES) and [1] or [0])[0]
         
-        if self.HasFlag(TR_FULL_ROW_HIGHLIGHT):
+        if self.HasAGWFlag(TR_FULL_ROW_HIGHLIGHT):
             x = 0
             w, h = self.GetClientSize()
 
@@ -5534,7 +5552,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
 
         x = level*self._indent
         
-        if not self.HasFlag(TR_HIDE_ROOT):
+        if not self.HasAGWFlag(TR_HIDE_ROOT):
         
             x += self._indent
         
@@ -5552,7 +5570,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
                     y = self.PaintLevel(children[n], dc, 1, y, align)
                     n = n + 1
 
-                if not self.HasFlag(TR_NO_LINES) and self.HasFlag(TR_LINES_AT_ROOT) and count > 0:
+                if not self.HasAGWFlag(TR_NO_LINES) and self.HasAGWFlag(TR_LINES_AT_ROOT) and count > 0:
                 
                     # draw line down to last child
                     origY += self.GetLineHeight(children[0])>>1
@@ -5606,7 +5624,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
             # draw
             self.PaintItem(item, dc, level, align)
 
-            if self.HasFlag(TR_ROW_LINES):
+            if self.HasAGWFlag(TR_ROW_LINES):
             
                 # if the background colour is white, choose a
                 # contrasting colour for the lines
@@ -5619,14 +5637,14 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
             dc.SetBrush(wx.WHITE_BRUSH)
             dc.SetTextForeground(wx.BLACK)
 
-            if not self.HasFlag(TR_NO_LINES):
+            if not self.HasAGWFlag(TR_NO_LINES):
             
                 # draw the horizontal line here
                 dc.SetPen(self._dottedPen)
                 x_start = x
                 if x > self._indent:
                     x_start -= self._indent
-                elif self.HasFlag(TR_LINES_AT_ROOT):
+                elif self.HasAGWFlag(TR_LINES_AT_ROOT):
                     x_start = 3
                 dc.DrawLine(x_start, y_mid, x + self._spacing, y_mid)
                 dc.SetPen(oldpen)            
@@ -5654,7 +5672,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
                     
                 else: # no custom buttons
 
-                    if self.HasFlag(TR_TWIST_BUTTONS):
+                    if self.HasAGWFlag(TR_TWIST_BUTTONS):
                         # We draw something like the Mac twist buttons
                         
                         dc.SetPen(wx.BLACK_PEN)
@@ -5708,7 +5726,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
                     y = self.PaintLevel(children[n], dc, level, y, align)
                     n = n + 1
                     
-                if not self.HasFlag(TR_NO_LINES) and count > 0:
+                if not self.HasAGWFlag(TR_NO_LINES) and count > 0:
                 
                     # draw line down to last child
                     oldY += self.GetLineHeight(children[n-1])>>1
@@ -5755,7 +5773,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
         dc.SetFont(self._normalFont)
         dc.SetPen(self._dottedPen)
 
-        align = self.HasFlag(TR_ALIGN_WINDOWS)            
+        align = self.HasAGWFlag(TR_ALIGN_WINDOWS)            
         y = 2
         self.PaintLevel(self._anchor, dc, 0, y, align)
 
@@ -5868,7 +5886,8 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
             return
         
         # how should the selection work for this event?
-        is_multiple, extended_select, unselect_others = EventFlagsToSelType(self.GetTreeStyle(), event.ShiftDown(), event.CmdDown())
+        is_multiple, extended_select, unselect_others = EventFlagsToSelType(self.GetAGWWindowStyleFlag(),
+                                                                            event.ShiftDown(), event.CmdDown())
 
         # + : Expand
         # - : Collaspe
@@ -5936,7 +5955,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
             prev = self.GetPrevSibling(self._key_current)
             if not prev:
                 prev = self.GetItemParent(self._key_current)
-                if prev == self.GetRootItem() and self.HasFlag(TR_HIDE_ROOT):
+                if prev == self.GetRootItem() and self.HasAGWFlag(TR_HIDE_ROOT):
                     return
                 
                 if prev:
@@ -5975,7 +5994,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
         elif keyCode == wx.WXK_LEFT:
             
             prev = self.GetItemParent(self._current)
-            if prev == self.GetRootItem() and self.HasFlag(TR_HIDE_ROOT):            
+            if prev == self.GetRootItem() and self.HasAGWFlag(TR_HIDE_ROOT):            
                 # don't go to root if it is hidden
                 prev = self.GetPrevSibling(self._current)
 
@@ -6057,7 +6076,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
             if not prev:
                 return
 
-            if self.HasFlag(TR_HIDE_ROOT):
+            if self.HasAGWFlag(TR_HIDE_ROOT):
                 prev, cookie = self.GetFirstChild(prev)
                 if not prev:
                     return
@@ -6405,7 +6424,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
                 self._oldCursor = self._cursor
 
                 # in a single selection control, hide the selection temporarily
-                if not (self.GetTreeStyle() & TR_MULTIPLE):
+                if not (self.GetAGWWindowStyleFlag() & TR_MULTIPLE):
                     self._oldSelection = self.GetSelection()
 
                     if self._oldSelection:
@@ -6540,7 +6559,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
             
                 # this facilitates multiple-item drag-and-drop
 
-                if self.HasFlag(TR_MULTIPLE):
+                if self.HasAGWFlag(TR_MULTIPLE):
                 
                     selections = self.GetSelections()
 
@@ -6550,7 +6569,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
                     
                 if self._lastOnSame:
                 
-                    if item == self._current and (flags & TREE_HITTEST_ONITEMLABEL) and self.HasFlag(TR_EDIT_LABELS):
+                    if item == self._current and (flags & TREE_HITTEST_ONITEMLABEL) and self.HasAGWFlag(TR_EDIT_LABELS):
                     
                         if self._renameTimer:
                         
@@ -6598,8 +6617,8 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
                 if item.GetType() > 0 and (flags & TREE_HITTEST_ONITEMCHECKICON):
 
                     if event.LeftDown():
-                        if flags & TREE_HITTEST_ONITEM and self.HasFlag(TR_FULL_ROW_HIGHLIGHT):
-                            self.DoSelectItem(item, not self.HasFlag(TR_MULTIPLE))
+                        if flags & TREE_HITTEST_ONITEM and self.HasAGWFlag(TR_FULL_ROW_HIGHLIGHT):
+                            self.DoSelectItem(item, not self.HasAGWFlag(TR_MULTIPLE))
                         self.CheckItem(item, not self.IsItemChecked(item))
                         
                     return                                            
@@ -6616,7 +6635,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
                         if item.IsHyperText():
                             self.SetItemVisited(item, True)
                         
-                        is_multiple, extended_select, unselect_others = EventFlagsToSelType(self.GetTreeStyle(),
+                        is_multiple, extended_select, unselect_others = EventFlagsToSelType(self.GetAGWWindowStyleFlag(),
                                                                                             event.ShiftDown(),
                                                                                             event.CmdDown())
 
@@ -6665,7 +6684,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
         # because nothing else has been selected.
         # Delaying it means that we can invoke event handlers
         # as required, when a first item is selected.
-        if not self.HasFlag(TR_MULTIPLE) and not self.GetSelection():
+        if not self.HasAGWFlag(TR_MULTIPLE) and not self.GetSelection():
         
             if self._select_me:
                 self.SelectItem(self._select_me)
@@ -6780,7 +6799,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
 
         x = level*self._indent
         
-        if not self.HasFlag(TR_HIDE_ROOT):
+        if not self.HasAGWFlag(TR_HIDE_ROOT):
         
             x += self._indent
         
@@ -6832,7 +6851,7 @@ class CustomTreeCtrl(wx.PyScrolledWindow):
         y = 2
         y = self.CalculateLevel(self._anchor, dc, 0, y) # start recursion
         
-        if self.HasFlag(TR_ALIGN_WINDOWS):
+        if self.HasAGWFlag(TR_ALIGN_WINDOWS):
             y = 2
             y = self.CalculateLevel(self._anchor, dc, 0, y, align=True) # start recursion
 

@@ -1,6 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2010 Frank Niessink <frank@niessink.com>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -114,7 +114,7 @@ chooseableItemImages = dict( \
     cogwheel_icon=_('Cogwheel'),
     cogwheels_icon=_('Cogwheels'),
     computer_desktop_icon=_('Desktop computer'),
-    computer_laptop_icon=('Laptop computer'),
+    computer_laptop_icon=_('Laptop computer'),
     computer_handheld_icon=_('Handheld computer'),
     cross_red_icon=_('Red cross'),
     die_icon=_('Die'),
@@ -124,10 +124,11 @@ chooseableItemImages = dict( \
     envelopes_icon=_('Envelopes'),
     folder_blue_icon=_('Blue folder'),
     folder_green_icon=_('Green folder'),
-    folder_grey_icon=('Grey folder'),
+    folder_grey_icon=_('Grey folder'),
     folder_orange_icon=_('Orange folder'),
-    folder_red_icon=('Red folder'),
-    folder_yellow_icon=('Yellow folder'),
+    folder_purple_icon=_('Purple folder'),
+    folder_red_icon=_('Red folder'),
+    folder_yellow_icon=_('Yellow folder'),
     folder_blue_arrow_icon=_('Blue folder with arrow'),
     heart_icon=_('Heart'),
     hearts_icon=_('Hearts'),
@@ -156,7 +157,7 @@ chooseableItemImages = dict( \
     paperclip_icon=_('Paperclip'),
     pencil_icon=_('Pencil'),
     person_icon=_('Person'),
-    persons_icon=('People'),
+    persons_icon=_('People'),
     person_id_icon=_('Identification'),
     person_talking_icon=_('Person talking'),
     sign_warning_icon=_('Warning sign'),
@@ -174,7 +175,7 @@ chooseableItemImages = dict( \
 itemImages = chooseableItemImages.keys() + ['folder_blue_open_icon',
     'folder_green_open_icon', 'folder_grey_open_icon',
     'folder_orange_open_icon', 'folder_red_open_icon',
-    'folder_yellow_open_icon', ]
+    'folder_purple_open_icon', 'folder_yellow_open_icon']
 
 chooseableItemImages[''] = _('No icon')
 

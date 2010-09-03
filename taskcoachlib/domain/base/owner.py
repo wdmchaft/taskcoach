@@ -1,7 +1,6 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
-Copyright (C) 2007-2008 Jerome Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -69,16 +68,13 @@ def DomainObjectOwnerMetaclass(name, bases, ns):
 
     setattr(klass, '%ss' % klass.__ownedType__.lower(), objects)
 
+    @patterns.eventSource
     def setObjects(instance, newObjects, event=None):
         if newObjects == objects(instance):
             return
-        notify = event is None
-        event = event or patterns.Event()
         setattr(instance, '_%s__%ss' % (name, klass.__ownedType__.lower()), 
                                         newObjects)
         changedEvent(instance, event, *newObjects) # pylint: disable-msg=W0142
-        if notify:
-            event.send()
 
     setattr(klass, 'set%ss' % klass.__ownedType__, setObjects)
 
@@ -88,53 +84,41 @@ def DomainObjectOwnerMetaclass(name, bases, ns):
     
     setattr(klass, '%ssChangedEvent' % klass.__ownedType__.lower(), changedEvent)
 
+    @patterns.eventSource
     def addObject(instance, ownedObject, event=None):
-        notify = event is None
-        event = event or patterns.Event()
         getattr(instance, '_%s__%ss' % (name, klass.__ownedType__.lower())).append(ownedObject)
         changedEvent(instance, event, ownedObject)
-        if notify:
-            event.send()
 
     setattr(klass, 'add%s' % klass.__ownedType__, addObject)
 
+    @patterns.eventSource
     def addObjects(instance, *ownedObjects, **kwargs):
-        event = kwargs.pop('event', None)
         if not ownedObjects:
             return
-        notify = event is None
-        event = event or patterns.Event()
         getattr(instance, '_%s__%ss' % (name, klass.__ownedType__.lower())).extend(ownedObjects)
+        event = kwargs.pop('event', None)
         changedEvent(instance, event, *ownedObjects)
-        if notify:
-            event.send()
 
     setattr(klass, 'add%ss' % klass.__ownedType__, addObjects)
 
+    @patterns.eventSource
     def removeObject(instance, ownedObject, event=None):
-        notify = event is None
-        event = event or patterns.Event()
         getattr(instance, '_%s__%ss' % (name, klass.__ownedType__.lower())).remove(ownedObject)
         changedEvent(instance, event, ownedObject)
-        if notify:
-            event.send()
 
     setattr(klass, 'remove%s' % klass.__ownedType__, removeObject)
 
+    @patterns.eventSource
     def removeObjects(instance, *ownedObjects, **kwargs):
-        event = kwargs.pop('event', None)
         if not ownedObjects:
             return
-        notify = event is None
-        event = event or patterns.Event()
         for ownedObject in ownedObjects:
             try:
                 getattr(instance, '_%s__%ss' % (name, klass.__ownedType__.lower())).remove(ownedObject)
             except ValueError:
                 pass
+        event = kwargs.pop('event', None)
         changedEvent(instance, event, *ownedObjects)
-        if notify:
-            event.send()
         
     setattr(klass, 'remove%ss' % klass.__ownedType__, removeObjects)
 
@@ -148,16 +132,13 @@ def DomainObjectOwnerMetaclass(name, bases, ns):
 
     klass.__getstate__ = getstate
 
+    @patterns.eventSource
     def setstate(instance, state, event=None):
-        notify = event is None
-        event = event or patterns.Event()
         try:
-            super(klass, instance).__setstate__(state, event)
+            super(klass, instance).__setstate__(state, event=event)
         except AttributeError:
             pass
-        setObjects(instance, state[klass.__ownedType__.lower() + 's'], event)
-        if notify:
-            event.send()
+        setObjects(instance, state[klass.__ownedType__.lower() + 's'], event=event)
 
     klass.__setstate__ = setstate
 

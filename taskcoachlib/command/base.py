@@ -1,7 +1,8 @@
+# -*- coding: utf-8 -*-
+
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2004-2009 Frank Niessink <frank@niessink.com>
-Copyright (C) 2008 Jerome Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,8 +20,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from taskcoachlib import patterns
 from taskcoachlib.i18n import _
-from taskcoachlib.domain import task, note
-
+from taskcoachlib.domain import note
+from clipboard import Clipboard
+ 
 
 class BaseCommand(patterns.Command):
     def __init__(self, list=None, items=None, *args, **kwargs): # pylint: disable-msg=W0622
@@ -30,9 +32,19 @@ class BaseCommand(patterns.Command):
 
     def __str__(self):
         return self.name()
+
+    singular_name = 'Do something with %s' # Override in subclass
+    plural_name = 'Do something'           # Override in subclass
     
     def name(self):
-        raise NotImplementedError
+        return self.singular_name%self.name_subject(self.items[0]) if len(self.items) == 1 else self.plural_name
+
+    def name_subject(self, item):
+        return item.subject()
+    
+    def getItems(self):
+        ''' The items this command operates on. '''
+        return self.items
 
     def canDo(self):
         return bool(self.items)
@@ -88,11 +100,10 @@ class SaveStateMixin(object):
         return [objectToBeSaved.__getstate__() for objectToBeSaved in 
                 self.objectsToBeSaved]
 
-    def __setStates(self, states):
-        event = patterns.Event()
+    @patterns.eventSource
+    def __setStates(self, states, event=None):
         for objectToBeSaved, state in zip(self.objectsToBeSaved, states):
-            objectToBeSaved.__setstate__(state, event)
-        event.send()
+            objectToBeSaved.__setstate__(state, event=event)
 
 
 class CompositeMixin(object):
@@ -114,28 +125,61 @@ class CompositeMixin(object):
                 if composite.parent() != None]
 
 
-class CopyCommand(BaseCommand):
+class NewItemCommand(BaseCommand):
     def name(self):
-        return _('Copy')
+        # Override to always return the singular name without a subject. The
+        # subject would be something like "New task", so not very interesting.
+        return self.singular_name
+
+    def do_command(self):
+        self.list.extend(self.items)
+
+    def undo_command(self):
+        self.list.removeItems(self.items)
+
+    def redo_command(self):
+        self.list.extend(self.items)
+        
+
+class NewSubItemCommand(BaseCommand):
+    def name_subject(self, subitem):
+        # Override to use the subject of the parent of the new subitem instead
+        # of the subject of the new subitem itself, which wouldn't be very
+        # interesting because it's something like 'New subitem'.
+        return subitem.parent().subject()
+
+    def do_command(self):
+        self.list.extend(self.items)
+
+    def undo_command(self):
+        self.list.removeItems(self.items)
+
+    def redo_command(self):
+        self.list.extend(self.items)
+
+    
+class CopyCommand(BaseCommand):
+    plular_name = _('Copy')
+    singular_name = _('Copy "%s"')
 
     def do_command(self):
         self.__copies = [item.copy() for item in self.items] # pylint: disable-msg=W0201
-        task.Clipboard().put(self.__copies, self.list)
+        Clipboard().put(self.__copies, self.list)
 
     def undo_command(self):
-        task.Clipboard().clear()
+        Clipboard().clear()
 
     def redo_command(self):
-        task.Clipboard().put(self.__copies, self.list)
+        Clipboard().put(self.__copies, self.list)
 
         
 class DeleteCommand(BaseCommand, SaveStateMixin):
+    plural_name = _('Delete')
+    singular_name = _('Delete "%s"')
+
     def __init__(self, *args, **kwargs):
         self.__shadow = kwargs.pop('shadow', False)
         super(DeleteCommand, self).__init__(*args, **kwargs)
-
-    def name(self):
-        return _('Delete')
 
     def do_command(self):
         if self.__shadow:
@@ -160,16 +204,16 @@ class DeleteCommand(BaseCommand, SaveStateMixin):
 
 
 class CutCommand(DeleteCommand):
-    def name(self):
-        return _('Cut')
+    plural_name = _('Cut')
+    singular_name = _('Cut "%s"')
 
     def __putItemsOnClipboard(self):
-        cb = task.Clipboard()
+        cb = Clipboard()
         self.__previousClipboardContents = cb.get() # pylint: disable-msg=W0201
         cb.put(self.items, self.list)
 
     def __removeItemsFromClipboard(self):
-        cb = task.Clipboard()
+        cb = Clipboard()
         cb.put(*self.__previousClipboardContents)
 
     def do_command(self):
@@ -186,8 +230,8 @@ class CutCommand(DeleteCommand):
 
         
 class PasteCommand(BaseCommand, SaveStateMixin):
-    def name(self):
-        return _('Paste')
+    plural_name = _('Paste')
+    singular_name = _('Paste "%s"')
 
     def __init__(self, *args, **kwargs):
         super(PasteCommand, self).__init__(*args, **kwargs)
@@ -220,22 +264,38 @@ class PasteCommand(BaseCommand, SaveStateMixin):
     
     # Clipboard interaction:
     def getItemsToPaste(self):
-        return task.Clipboard().get()
+        return Clipboard().get()
 
     def restoreItemsToPasteToSource(self):
-        task.Clipboard().put(self.__itemsToPaste, self.__sourceOfItemsToPaste)
+        Clipboard().put(self.__itemsToPaste, self.__sourceOfItemsToPaste)
         
     def clearSourceOfItemsToPaste(self):
-        task.Clipboard().clear() 
-        
+        Clipboard().clear() 
+
+
+class PasteAsSubItemCommand(PasteCommand, CompositeMixin):
+    plural_name = _('Paste as subitem')
+    singular_name = _('Paste as subitem of "%s"')
+
+    def setParentOfPastedItems(self): # pylint: disable-msg=W0221
+        newParent = self.items[0]
+        super(PasteAsSubItemCommand, self).setParentOfPastedItems(newParent)
+
+    def getItemsToSave(self):
+        return self.getAncestors([self.items[0]]) + \
+            super(PasteAsSubItemCommand, self).getItemsToSave()
+
         
 class EditCommand(BaseCommand, SaveStateMixin): # pylint: disable-msg=W0223
+    plural_name = _('Edit')
+    singular_name = _('Edit "%s"')
+
     def __init__(self, *args, **kwargs):
         super(EditCommand, self).__init__(*args, **kwargs)
         self.saveStates(self.getItemsToSave())
         
     def getItemsToSave(self):
-        raise NotImplementedError
+        raise NotImplementedError # pragma: no cover
         
     def undo_command(self):
         self.undoStates()
@@ -247,8 +307,8 @@ class EditCommand(BaseCommand, SaveStateMixin): # pylint: disable-msg=W0223
         
 
 class DragAndDropCommand(BaseCommand, SaveStateMixin, CompositeMixin):
-    def name(self):
-        return _('Drag and drop')
+    plural_name = _('Drag and drop')
+    singular_name = _('Drag and drop "%s"')
     
     def __init__(self, *args, **kwargs):
         dropTargets = kwargs.pop('drop')
@@ -287,8 +347,8 @@ class DragAndDropCommand(BaseCommand, SaveStateMixin, CompositeMixin):
         
 
 class AddAttachmentCommand(BaseCommand):
-    def name(self):
-        return _('Add attachment')
+    plural_name = _('Add attachment')
+    singular_name = _('Add attachment to "%s"')
     
     def __init__(self, *args, **kwargs):
         self.__attachments = kwargs.pop('attachments')
@@ -313,21 +373,22 @@ class AddAttachmentCommand(BaseCommand):
         
 
 class AddNoteCommand(BaseCommand):
+    plural_name = _('Add note')
+    singular_name = _('Add note to "%s"')
+
     def __init__(self, *args, **kwargs):
         super(AddNoteCommand, self).__init__(*args, **kwargs)
-        self.notes = [note.Note(subject=_('New note')) \
-                      for dummy in self.items]
-
-    def name(self):
-        return _('Add note')
+        self.owners = self.items
+        self.items = self.notes = [note.Note(subject=_('New note')) \
+                                   for dummy in self.items]
     
     def addNotes(self):
-        for item, note in zip(self.items, self.notes): # pylint: disable-msg=W0621
-            item.addNote(note)
+        for owner, note in zip(self.owners, self.notes): # pylint: disable-msg=W0621
+            owner.addNote(note)
 
     def removeNotes(self):
-        for item, note in zip(self.items, self.notes): # pylint: disable-msg=W0621
-            item.removeNote(note)
+        for owner, note in zip(self.owners, self.notes): # pylint: disable-msg=W0621
+            owner.removeNote(note)
     
     def do_command(self):
         self.addNotes()
@@ -340,13 +401,13 @@ class AddNoteCommand(BaseCommand):
 
 
 class EditSubjectCommand(BaseCommand):
+    plural_name = _('Edit subjects')
+    singular_name = _('Edit subject "%s"')
+
     def __init__(self, *args, **kwargs):
         self.__newSubject = kwargs.pop('subject')
         super(EditSubjectCommand, self).__init__(*args, **kwargs)
         self.__oldSubjects = [item.subject() for item in self.items]
-        
-    def name(self):
-        return _('Edit subject')
     
     def do_command(self):
         for item in self.items:

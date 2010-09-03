@@ -1,6 +1,7 @@
 '''
 Task Coach - Your friendly task manager
-Copyright (C) 2010 Jerome Laheurte <fraca7@free.fr>
+Copyright (C) 2004-2010 Task Coach developers <developers@taskcoach.org>
+Copyright (C) 2010 Frank Niessink <frank@niessink.com>
 
 Task Coach is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -20,13 +21,13 @@ import wx, operator
 from taskcoachlib.thirdparty.calendar import wxScheduler, wxSchedule, \
     EVT_SCHEDULE_ACTIVATED, EVT_SCHEDULE_RIGHT_CLICK, \
     EVT_SCHEDULE_DCLICK
-from taskcoachlib.domain.date import Date
+from taskcoachlib.domain import date
 from taskcoachlib.widgets import draganddrop
 import tooltip
 
 
-class Calendar(tooltip.ToolTipMixin, wxScheduler):
-    def __init__(self, parent, taskList, iconProvider,  onSelect, onEdit,
+class _CalendarContent(tooltip.ToolTipMixin, wxScheduler):
+    def __init__(self, parent, taskList, iconProvider, onSelect, onEdit,
                  onCreate, popupMenu, *args, **kwargs):
         self.getItemTooltipData = parent.getItemTooltipData
 
@@ -38,7 +39,7 @@ class Calendar(tooltip.ToolTipMixin, wxScheduler):
                                                  self.OnDropFiles,
                                                  self.OnDropMail)
 
-        super(Calendar, self).__init__(parent, wx.ID_ANY, *args, **kwargs)
+        super(_CalendarContent, self).__init__(parent, wx.ID_ANY, *args, **kwargs)
 
         self.SetDropTarget(self.dropTarget)
 
@@ -53,6 +54,7 @@ class Calendar(tooltip.ToolTipMixin, wxScheduler):
 
         self.__showNoStartDate = False
         self.__showNoDueDate = False
+        self.__showUnplanned = False
 
         self.SetShowWorkHour(False)
         self.SetResizable(True)
@@ -72,8 +74,8 @@ class Calendar(tooltip.ToolTipMixin, wxScheduler):
                 if isinstance(item, TaskSchedule):
                     cb(item.task, object)
                 else:
-                    date = Date(item.GetYear(), item.GetMonth() + 1, item.GetDay())
-                    cb(None, object, startDate=date, dueDate=date)
+                    datetime = date.DateTime(item.GetYear(), item.GetMonth() + 1, item.GetDay())
+                    cb(None, object, startDateTime=datetime, dueDateTime=datetime.endOfDay())
 
     def OnDropURL(self, x, y, url):
         self._handleDrop(x, y, url, self.__onDropURLCallback)
@@ -90,6 +92,10 @@ class Calendar(tooltip.ToolTipMixin, wxScheduler):
 
     def SetShowNoDueDate(self, doShow):
         self.__showNoDueDate = doShow
+        self.RefreshAllItems(0)
+
+    def SetShowUnplanned(self, doShow):
+        self.__showUnplanned = doShow
         self.RefreshAllItems(0)
 
     def OnActivation(self, event):
@@ -114,13 +120,17 @@ class Calendar(tooltip.ToolTipMixin, wxScheduler):
     def OnEdit(self, event):
         if event.schedule is None:
             if event.date is not None:
-                self.createCommand(Date(event.date.GetYear(),
-                                        event.date.GetMonth() + 1,
-                                        event.date.GetDay()))
+                self.createCommand(date.DateTime(event.date.GetYear(),
+                                                 event.date.GetMonth() + 1,
+                                                 event.date.GetDay(),
+                                                 event.date.GetHour(),
+                                                 event.date.GetMinute(),
+                                                 event.date.GetSecond()))
         else:
             self.editCommand(event.schedule.task)
 
     def RefreshAllItems(self, count):
+        x, y = self.GetViewStart()
         selectionId = None
         if self.__selection:
             selectionId = self.__selection[0].id()
@@ -133,11 +143,15 @@ class Calendar(tooltip.ToolTipMixin, wxScheduler):
 
         for task in self.taskList:
             if not task.isDeleted():
-                if task.startDate() == Date() and not self.__showNoStartDate:
+                if task.startDateTime() == date.DateTime() and not self.__showNoStartDate:
                     continue
 
-                if task.dueDate() == Date() and not self.__showNoDueDate:
+                if task.dueDateTime() == date.DateTime() and not self.__showNoDueDate:
                     continue
+
+                if not self.__showUnplanned:
+                    if task.startDateTime() == date.DateTime() and task.dueDateTime() == date.DateTime():
+                        continue
 
                 schedule = TaskSchedule(task, self.iconProvider)
                 schedules.append(schedule)
@@ -149,6 +163,7 @@ class Calendar(tooltip.ToolTipMixin, wxScheduler):
 
         self.Add(schedules)
         wx.CallAfter(self.selectCommand)
+        self.Scroll(x, y)
 
     def RefreshItems(self, *args):
         selectionId = None
@@ -162,13 +177,13 @@ class Calendar(tooltip.ToolTipMixin, wxScheduler):
             if task.isDeleted():
                 doShow = False
 
-            if task.startDate() == Date() and task.dueDate() == Date():
+            if task.startDateTime() == date.DateTime() and task.dueDateTime() == date.DateTime():
                 doShow = False
 
-            if task.startDate() == Date() and not self.__showNoStartDate:
+            if task.startDateTime() == date.DateTime() and not self.__showNoStartDate:
                 doShow = False
 
-            if task.dueDate() == Date() and not self.__showNoDueDate:
+            if task.dueDateTime() == date.DateTime() and not self.__showNoDueDate:
                 doShow = False
 
             if doShow:
@@ -221,8 +236,52 @@ class Calendar(tooltip.ToolTipMixin, wxScheduler):
     def curselection(self):
         return self.__selection
 
+
+class Calendar(wx.Panel):
+    def __init__(self, parent, taskList, iconProvider, onSelect, onEdit,
+                 onCreate, popupMenu, *args, **kwargs):
+        self.getItemTooltipData = parent.getItemTooltipData
+
+        super(Calendar, self).__init__(parent)
+
+        self._headers = wx.Panel(self)
+        self._content = _CalendarContent(self, taskList, iconProvider, onSelect, onEdit,
+                                         onCreate, popupMenu, *args, **kwargs)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self._headers, 0, wx.EXPAND)
+        sizer.Add(self._content, 1, wx.EXPAND)
+        self.SetSizer(sizer)
+
+        # Must wx.CallAfter because SetDrawerClass is called this way.
+        wx.CallAfter(self._content.SetHeaderPanel, self._headers)
+
+    def SetShowNoStartDate(self, doShow):
+        self._content.SetShowNoStartDate(doShow)
+
+    def SetShowNoDueDate(self, doShow):
+        self._content.SetShowNoDueDate(doShow)
+
+    def SetShowUnplanned(self, doShow):
+        self._content.SetShowUnplanned(doShow)
+
+    def RefreshAllItems(self, count):
+        self._content.RefreshAllItems(count)
+
+    def RefreshItems(self, *args):
+        self._content.RefreshItems(*args)
+
+    def GetItemCount(self):
+        return self._content.GetItemCount()
+
+    def curselection(self):
+        return self._content.curselection()
+
     def isAnyItemCollapsable(self):
         return False
+
+    def __getattr__(self, name):
+        return getattr(self._content, name)
 
 
 class TaskSchedule(wxSchedule):
@@ -251,23 +310,28 @@ class TaskSchedule(wxSchedule):
         try:
             self.description = self.task.subject()
 
-            started = self.task.startDate()
-            if started == Date():
+            started = self.task.startDateTime()
+            if started == date.DateTime():
                 self.start = wx.DateTimeFromDMY(1, 1, 0) # Huh
             else:
-                self.start = wx.DateTimeFromDMY(started.day, started.month - 1, started.year, 0, 0, 1)
+                self.start = wx.DateTimeFromDMY(started.day, started.month - 1, 
+                                                started.year, started.hour, 
+                                                started.minute, started.second)
 
-            ended = self.task.dueDate()
-            if ended == Date():
+            ended = self.task.dueDateTime()
+            if ended == date.DateTime():
                 self.end = wx.DateTimeFromDMY(1, 1, 9999)
             else:
-                self.end = wx.DateTimeFromDMY(ended.day, ended.month - 1, ended.year, 23, 59, 0)
+                self.end = wx.DateTimeFromDMY(ended.day, ended.month - 1, 
+                                              ended.year, ended.hour,
+                                              ended.minute, ended.second)
 
             if self.task.completed():
                 self.done = True
 
             self.color = wx.Color(*(self.task.backgroundColor() or (255, 255, 255)))
             self.foreground = wx.Color(*(self.task.foregroundColor(True) or (0, 0, 0)))
+            self.font = self.task.font()
 
             icons = [self.iconProvider(self.task, False)]
 
@@ -278,5 +342,10 @@ class TaskSchedule(wxSchedule):
                 icons.append('note_icon')
 
             self.icons = icons
+
+            if self.task.percentageComplete(True):
+                # If 0, just let the default None value so the progress bar isn't drawn
+                # at all
+                self.complete = 1.0 * self.task.percentageComplete(True) / 100
         finally:
             self.Thaw()
