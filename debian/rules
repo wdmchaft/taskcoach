@@ -14,4 +14,3 @@ override_dh_fixperms:
 	dh_fixperms
 	chmod +r icons.in/taskcoach.png
 	chmod -x icons.in/taskcoach.png
-

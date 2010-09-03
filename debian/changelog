@@ -1,17 +1,6 @@
-taskcoach (1.0.2-1) UNRELEASED; urgency=low
+taskcoach (1.1.2-1) unstable; urgency=low
 
-  * New upstream release 
+  * New upstream release (Closes: #509768) 
 
- -- Alejandro Garrido Mota <garridomota@gmail.com>  Tue, 13 Apr 2010 13:00:33 -0430
+ -- Alejandro Garrido Mota <garridomota@gmail.com>  Fri, 03 Sep 2010 01:27:11 -0430
 
-taskcoach (1.0.1-1) unstable; urgency=low
-
-  * New upstream release 
-
- -- Alejandro Garrido Mota <garridomota@gmail.com>  Tue, 30 Mar 2010 11:11:32 -0430
-
-taskcoach (1.0.0-1) unstable; urgency=low
-
-  * Initial release (Closes: #509768)
-
- -- Alejandro Garrido Mota <garridomota@gmail.com>  Sat, 26 Sep 2009 10:35:31 -0430
