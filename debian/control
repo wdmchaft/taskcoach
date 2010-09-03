@@ -10,7 +10,7 @@ XS-Python-Version: >= 2.5
 
 Package: taskcoach
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, python (>= 2.5), python-support,
+Depends: ${misc:Depends}, python (>= 2.5), python-support,
          python-wxgtk2.8, python-wxversion
 Description: friendly and simple task manager
  TaskCoach is a simple open source todo manager to manage personal tasks
