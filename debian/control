@@ -2,7 +2,7 @@ Source: taskcoach
 Section: utils
 Priority: optional
 Maintainer: Alejandro Garrido Mota <garridomota@gmail.com>
-Build-Depends: debhelper (>= 7.0.50~), python (>= 2.5), python-wxgtk2.8, quilt (>= 0.46-7),
+Build-Depends: debhelper (>= 7.0.50~), python (>= 2.5), python-wxgtk2.8, 
                libcurl3-dev
 Standards-Version: 3.9.1
 Homepage: http://www.taskcoach.org
@@ -10,8 +10,8 @@ XS-Python-Version: >= 2.5
 
 Package: taskcoach
 Architecture: any
-Depends: ${misc:Depends}, python (>= 2.5), python-support,
-         python-wxgtk2.8, python-wxversion
+Depends: ${misc:Depends}, python (>= 2.5), python-support, python-wxgtk2.8,
+         python-wxversion
 Description: friendly and simple task manager
  TaskCoach is a simple open source todo manager to manage personal tasks
  and todo lists. It grew out of a frustration that well-known task managers,
