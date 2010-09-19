@@ -1,4 +1,6 @@
-Fix the application name of executable
+Description: Fix application name of executable in .desktop file
+Forwarded: not-needed
+Author: Alejandro Garrido Mota <garridomota@gmail.com>
 --- a/build.in/fedora/taskcoach.desktop
 +++ b/build.in/fedora/taskcoach.desktop
 @@ -2,7 +2,7 @@
