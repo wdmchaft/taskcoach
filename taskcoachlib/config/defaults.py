@@ -34,7 +34,8 @@ defaults = { \
     'squaretaskviewercount': '0',
     'timelineviewercount': '0',
     'calendarviewercount': '0',
-    'language': 'en_US',             # Language and locale
+    'language': '',                  # Language and locale, maybe set externally (e.g. by PortableApps)
+    'language_set_by_user': '',      # Language and locale as set by user via preferences, overrides language
     'categoryfiltermatchall': 'False',
     'descriptionpopups': 'True',
     # The next three options are used in the effort dialog to populate the

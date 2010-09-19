@@ -201,6 +201,10 @@ class CommonTestsMixin(object):
         self.task.efforts()[0].setDescription('Description')
         self.viewer.setSearchFilter('Description', searchDescription=True)
         self.assertEqual(1, self.viewer.size())
+
+    def testSearchWithIncludeSubitems(self):
+        self.viewer.setSearchFilter('Task2', includeSubItems=True)
+        self.assertEqual(1, self.viewer.size())
         
     def testDelete(self):
         self.viewer.widget.select([self.task.efforts()[-1]])
