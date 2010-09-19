@@ -187,9 +187,10 @@ class WindowBehaviorPage(SettingsPage):
 
 class LanguagePage(SettingsPage):
     def __init__(self, *args, **kwargs):
-        super(LanguagePage, self).__init__(*args, **kwargs)
-        self.addChoiceSetting('view', 'language', _('Language'), 
-            [('ar', u'الْعَرَبيّة (Arabic)'),
+        super(LanguagePage, self).__init__(*args, **kwargs) 
+        choices = \
+            [('', _('Let the system determine the language')),
+             ('ar', u'الْعَرَبيّة (Arabic)'),
              ('eu_ES', 'Euskal Herria (Basque)'),
              ('bs_BA', u'босански (Bosnian)'),
              ('pt_BR', u'Português brasileiro (Brazilian Portuguese)'),
@@ -239,8 +240,9 @@ class LanguagePage(SettingsPage):
              ('th_TH', u'ภาษาไทย (Thai)'),
              ('tr_TR', u'Türkçe (Turkish)'),
              ('uk_UA', u'украї́нська мо́ва (Ukranian)'),
-             ('vi_VI', u'tiếng Việt (Vietnamese)')],
-            helpText='restart')
+             ('vi_VI', u'tiếng Việt (Vietnamese)')]
+        self.addChoiceSetting('view', 'language_set_by_user', _('Language'), 
+                              choices, helpText='restart')
         
         panel = wx.Panel(self)
         sizer = wx.BoxSizer(wx.VERTICAL)

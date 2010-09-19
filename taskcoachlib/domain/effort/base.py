@@ -27,6 +27,9 @@ class BaseEffort(object):
       
     def task(self):
         return self._task
+    
+    def parent(self):
+        return None # Efforts don't have parents
 
     def getStart(self):
         return self._start

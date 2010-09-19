@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-import wx, os, signal
+import wx, os, signal, locale
 
         
 class wxApp(wx.App):
@@ -94,12 +94,29 @@ class Application(object):
     def initLanguage(self):
         ''' Initialize the current translation. '''
         from taskcoachlib import i18n
+        i18n.Translator(self.determineLanguage(self._options, self.settings))
+        
+    @staticmethod
+    def determineLanguage(options, settings, locale=locale):
         language = None
-        if self._options:
-            language = self._options.pofile or self._options.language
+        if options: 
+            # User specified language or .po file on command line
+            language = options.pofile or options.language
         if not language:
-            language = self.settings.get('view', 'language')
-        i18n.Translator(language)
+            # Get language as set by the user via the preferences dialog
+            language = settings.get('view', 'language_set_by_user')
+        if not language:
+            # Get language as set by the user or externally (e.g. PortableApps)
+            language = settings.get('view', 'language')
+        if not language:
+            # Use the user's locale
+            language = locale.getdefaultlocale()[0]
+            if language == 'C':
+                language = None
+        if not language:
+            # Fall back on what the majority of our users use
+            language = 'en_US'
+        return language
         
     def initPrinting(self):
         ''' Prepare for printing. '''

@@ -73,4 +73,8 @@ class VersionChecker(threading.Thread):
 
     @staticmethod
     def tupleVersion(versionString):
-        return tuple(int(i) for i in versionString.split('.'))
+        try:
+            return tuple(int(i) for i in versionString.split('.'))
+        except ValueError:
+            # Something is wrong with versionString, return a default value
+            return (0, 0, 0)

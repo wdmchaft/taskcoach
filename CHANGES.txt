@@ -1,3 +1,23 @@
+Release 1.1.3 - September 10, 2010
+This is a bugfix release.
+
+Bugs fixed:
+- When closing a edit dialog, don't delete the category, note, and attachment
+  viewers in the dialog before the data has been processed. (SF#3059143)
+- The PortableApps platform would override the language selected by the user
+  in Task Coach. (SF#2965342, SF#3059429)
+- When retrieving the latest available Task Coach version number from the Task
+  Coach website doesn't work, simply ignore that.
+- Don't crash when searching efforts with "Include subitems" turned on.
+
+Feature added:
+- When selecting the language in the preferences dialog, you can select 'Let
+  the system determine the language'. If you're using the PortableApps
+  version of Task Coach and the PortableApps platform, the PortableApps
+  platform language will be used. Otherwise, Task Coach will let your system's
+  locale determine the language.
+
+
 Release 1.1.2 - September 2, 2010
 This is a bugfix release.
 

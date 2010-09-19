@@ -17,14 +17,67 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import test, wx
-from taskcoachlib import meta, application
+from taskcoachlib import meta, application, config
+
+
+class DummyOptions(object):
+    pofile = None
+    language = None
+    
+
+class DummyLocale(object):
+    def __init__(self, language='C'):
+        self.language = language
+        
+    def getdefaultlocale(self):
+        return self.language, None
 
 
 class AppTests(test.TestCase):
+    def setUp(self):
+        super(AppTests, self).setUp()
+        self.settings = config.Settings(load=False)
+        self.options = DummyOptions()
+        
     def testAppProperties(self):
         # Normally I prefer one assert per test, but creating the app is
         # expensive, so we do all the queries in one test method.
-        application.Application(loadSettings=False, loadTaskFile=False)
+        app = application.Application(loadSettings=False, loadTaskFile=False)
         wxApp = wx.GetApp()
         self.assertEqual(meta.name, wxApp.GetAppName())
         self.assertEqual(meta.author, wxApp.GetVendorName())
+        app.mainwindow.quit()
+        
+    def assertLanguage(self, expectedLanguage, locale=None):
+        args = [self.options, self.settings]
+        if locale:
+            args.append(locale)
+        self.assertEqual(expectedLanguage, 
+                         application.Application.determineLanguage(*args))
+        
+    def testLanguageViaCommandLineOption(self):
+        self.options.language = 'fi_FI'
+        self.assertLanguage('fi_FI')
+        
+    def testLanguageViaCommandLinePoFile(self):
+        self.options.pofile = 'nl_NL'
+        self.assertLanguage('nl_NL')
+        
+    def testLanguageViaExternallySetLanguage(self):
+        self.settings.set('view', 'language', 'de_DE')
+        self.assertLanguage('de_DE')
+                            
+    def testLanguageSetByUser(self):
+        self.settings.set('view', 'language_set_by_user', 'de_DE')
+        self.assertLanguage('de_DE')
+        
+    def testLanguageSetByUser_OverridesExternallySetLanguage(self):
+        self.settings.set('view', 'language', 'nl_NL')
+        self.settings.set('view', 'language_set_by_user', 'de_DE')
+        self.assertLanguage('de_DE')
+    
+    def testLanguageViaLocale(self):
+        self.assertLanguage('en_GB', DummyLocale('en_GB'))
+        
+    def testLanguageViaCLocale(self):
+        self.assertLanguage('en_US', DummyLocale())

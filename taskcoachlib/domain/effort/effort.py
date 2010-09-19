@@ -26,6 +26,7 @@ class Effort(baseeffort.BaseEffort, base.Object):
     def __init__(self, task=None, start=None, stop=None, *args, **kwargs):
         super(Effort, self).__init__(task, start or date.DateTime.now(), stop, 
             *args, **kwargs)
+        self.__updateDurationCache()
 
     @patterns.eventSource
     def setTask(self, task, event=None):
@@ -73,20 +74,20 @@ class Effort(baseeffort.BaseEffort, base.Object):
         return state
    
     def duration(self, now=date.DateTime.now):
-        stop = self._stop if self._stop else now()
-        return stop - self._start
+        return now() - self._start if self.__cachedDuration is None else self.__cachedDuration
      
     @patterns.eventSource   
     def setStart(self, startDateTime, event=None):
         if startDateTime == self._start:
             return
         self._start = startDateTime
+        self.__updateDurationCache()
         self.task().timeSpentEvent(event, self)
         event.addSource(self, self._start, type='effort.start')
         event.addSource(self, self.duration(), type='effort.duration')
         if self.task().hourlyFee():
             self.revenueEvent(event)
-
+        
     @patterns.eventSource        
     def setStop(self, newStop=None, event=None):
         if newStop is None:
@@ -97,6 +98,7 @@ class Effort(baseeffort.BaseEffort, base.Object):
             return
         previousStop = self._stop
         self._stop = newStop
+        self.__updateDurationCache()
         if newStop == None:
             event.addSource(self, type=self.trackStartEventType())
             self.task().startTrackingEvent(event, self)
@@ -109,15 +111,19 @@ class Effort(baseeffort.BaseEffort, base.Object):
         if self.task().hourlyFee():
             self.revenueEvent(event)
         
+    def __updateDurationCache(self):
+        self.__cachedDuration = self._stop - self._start if self._stop else None
+        
     def isBeingTracked(self, recursive=False): # pylint: disable-msg=W0613
         return self._stop is None
 
     def revenue(self):
         task = self.task()
-        variableRevenue = self.duration().hours() * task.hourlyFee()
-        if task.timeSpent().hours() > 0:
-            fixedRevenue = self.duration().hours() / \
-                task.timeSpent().hours() * task.fixedFee()
+        myHours = self.duration().hours()
+        variableRevenue = myHours * task.hourlyFee()
+        taskHours = task.timeSpent().hours()
+        if taskHours > 0:
+            fixedRevenue = myHours / taskHours * task.fixedFee()
         else:
             fixedRevenue = 0
         return variableRevenue + fixedRevenue

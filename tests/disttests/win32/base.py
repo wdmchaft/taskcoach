@@ -128,7 +128,7 @@ class Win32TestCase(unittest.TestCase):
             self.fail('Could not find Task Coach executable.')
 
         self.logfilename = filename + '.log'
-        cmd = [filename, '-i', 'test.ini'] + self.args
+        cmd = [filename, '-i', 'test.ini', '-l', 'en'] + self.args
 
         sinfo = win32process.STARTUPINFO()
         sinfo.dwFlags = 0
@@ -166,6 +166,8 @@ class Win32TestCase(unittest.TestCase):
         lockdir = os.path.join(self.basepath, 'testfile.tsk.lock')
         if os.path.exists(lockdir):
             shutil.rmtree(os.path.join(self.basepath, 'testfile.tsk.lock'))
+        if os.path.exists(self.logfilename):
+            os.remove(self.logfilename)
 
     def findWindow(self, title, tries=10):
         """ Waits for a window to appear, and return a Window instance,
