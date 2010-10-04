@@ -3579,7 +3579,7 @@ class TreeListMainWindow(CustomTreeCtrl):
             
             # determine the selection if not done by left down
             if not self._left_down_selection:
-                unselect_others = not ((event.ShiftDown() or event.ControlDown()) and self.HasAGWFlag(wx.TR_MULTIPLE))
+                unselect_others = not ((event.ShiftDown() or event.CmdDown()) and self.HasAGWFlag(wx.TR_MULTIPLE))
                 self.DoSelectItem(item, unselect_others, event.ShiftDown())
                 self.EnsureVisible (item)
                 self._current = self._key_current = item # make the new item the current item
@@ -3613,7 +3613,7 @@ class TreeListMainWindow(CustomTreeCtrl):
                 
             # determine the selection if the current item is not selected
             if not item.IsSelected():
-                unselect_others = not ((event.ShiftDown() or event.ControlDown()) and self.HasAGWFlag(wx.TR_MULTIPLE))
+                unselect_others = not ((event.ShiftDown() or event.CmdDown()) and self.HasAGWFlag(wx.TR_MULTIPLE))
                 self.DoSelectItem(item, unselect_others, event.ShiftDown())
                 self.EnsureVisible(item)
                 self._current = self._key_current = item # make the new item the current item

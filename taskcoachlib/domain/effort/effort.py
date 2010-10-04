@@ -118,16 +118,8 @@ class Effort(baseeffort.BaseEffort, base.Object):
         return self._stop is None
 
     def revenue(self):
-        task = self.task()
-        myHours = self.duration().hours()
-        variableRevenue = myHours * task.hourlyFee()
-        taskHours = task.timeSpent().hours()
-        if taskHours > 0:
-            fixedRevenue = myHours / taskHours * task.fixedFee()
-        else:
-            fixedRevenue = 0
-        return variableRevenue + fixedRevenue
-    
+        return self.duration().hours() * self.task().hourlyFee()
+        
     def revenueEvent(self, event):
         event.addSource(self, self.revenue(), type='effort.revenue')
             

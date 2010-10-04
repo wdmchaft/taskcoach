@@ -40,7 +40,7 @@ class ViewFilter(base.Filter):
                           task.Task.removeChildEventType()):
             publisher.registerObserver(self.onTaskChange,
                 eventType=eventType)
-        publisher.registerObserver(self.onMidnight, eventType='clock.midnight')
+        publisher.registerObserver(self.onEveryMinute, eventType='clock.minute')
 
     def onTaskChange(self, event):
         tasks = event.sources()
@@ -52,7 +52,7 @@ class ViewFilter(base.Filter):
         self.extendSelf(tasksToAdd, newEvent)
         newEvent.send()
         
-    def onMidnight(self, event):
+    def onEveryMinute(self, event):
         self.reset()
             
     def setFilteredByDueDateTime(self, dueDateTimeString):
