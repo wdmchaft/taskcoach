@@ -90,7 +90,7 @@ class TaskBarIcon(date.ClockObserver, wx.TaskBarIcon):
             self.__setIcon()
 
     def onTaskbarClick(self, event):
-        if self.__window.IsIconized():
+        if self.__window.IsIconized() or not self.__window.IsShown():
             self.__window.restore(event)
         else:
             self.__window.Iconize()

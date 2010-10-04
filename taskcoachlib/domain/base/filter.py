@@ -115,12 +115,9 @@ class SearchFilter(Filter):
         # pylint: disable-msg=W0201
         self.__includeSubItems = includeSubItems
         self.__searchDescription = searchDescription
-
-        try:
-            if matchCase:
-                rx = re.compile(searchString)
-            else:
-                rx = re.compile(searchString, re.IGNORECASE)
+        flag = 0 if matchCase else re.IGNORECASE
+        try:    
+            rx = re.compile(searchString, flag)
         except sre_constants.error:
             if matchCase:
                 self.__searchPredicate = lambda x: x.find(searchString) != -1

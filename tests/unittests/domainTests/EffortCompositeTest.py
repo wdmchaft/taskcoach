@@ -491,11 +491,11 @@ class CompositeEffortWithSubTasksRevenueTest(test.TestCase):
 
     def testRevenueWhenParentHasFixedFee(self):
         self.task.setFixedFee(1000)
-        self.assertEqual(1000, self.composite.revenue())
+        self.assertEqual(0, self.composite.revenue())
 
     def testRecursiveRevenueWhenParentHasFixedFee(self):
         self.task.setFixedFee(1000)
-        self.assertEqual(1000, self.composite.revenue(recursive=True))
+        self.assertEqual(0, self.composite.revenue(recursive=True))
 
     def testRevenueWhenChildHasFixedFee(self):
         self.child.setFixedFee(1000)
@@ -503,13 +503,13 @@ class CompositeEffortWithSubTasksRevenueTest(test.TestCase):
 
     def testRecursiveRevenueWhenChildHasFixedFee(self):
         self.child.setFixedFee(1000)
-        self.assertEqual(1000, self.composite.revenue(recursive=True))
+        self.assertEqual(0, self.composite.revenue(recursive=True))
 
     def testRevenueWhenParentHasFixedFeeAndMultipleEfforts(self):
         self.task.setFixedFee(1000)
         self.task.addEffort(effort.Effort(self.task, 
             date.DateTime(2005,12,12,10,0,0), date.DateTime(2005,12,12,12,0,0)))
-        self.assertEqual(1./3*1000, self.composite.revenue())
+        self.assertEqual(0, self.composite.revenue())
 
     def testRevenueWhenChildHasFixedFeeAndMultipleEfforts(self):
         self.child.setFixedFee(1000)
@@ -521,12 +521,12 @@ class CompositeEffortWithSubTasksRevenueTest(test.TestCase):
         self.child.setFixedFee(1000)
         self.child.addEffort(effort.Effort(self.child, 
             date.DateTime(2005,12,12,10,0,0), date.DateTime(2005,12,12,12,0,0)))
-        self.assertEqual(1./3*1000, self.composite.revenue(recursive=True))
+        self.assertEqual(0, self.composite.revenue(recursive=True))
 
     def testRevenueWithMixture(self):
         self.child.setFixedFee(100)
         self.task.setHourlyFee(1000)
-        self.assertEqual(1100, self.composite.revenue(recursive=True))
+        self.assertEqual(1000, self.composite.revenue(recursive=True))
 
     def testThatAnHourlyFeeChangeCausesATotalRevenueNotification(self):
         patterns.Publisher().registerObserver(self.onEvent, 

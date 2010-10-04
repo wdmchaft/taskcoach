@@ -295,11 +295,21 @@ class TaskSchedule(wxSchedule):
         self.update()
 
     def SetSelected(self, selected):
-        self.__selected = selected
-        if selected:
-            self.color = wx.SystemSettings_GetColour(wx.SYS_COLOUR_HIGHLIGHT)
-        else:
-            self.color = wx.Color(*(self.task.backgroundColor() or (255, 255, 255)))
+        self.Freeze()
+        try:
+            self.__selected = selected
+            if selected:
+                self.color = wx.SystemSettings_GetColour(wx.SYS_COLOUR_HIGHLIGHT)
+                # On MS Windows, the selection background is very dark. If
+                # the foreground color is too dark, invert it.
+                r, g, b = self.task.foregroundColor() or (0, 0, 0)
+                if r + g + b < 128 * 3:
+                    self.foreground = wx.Color(*(255 - r, 255 - g, 255 - b))
+            else:
+                self.color = wx.Color(*(self.task.backgroundColor() or (255, 255, 255)))
+                self.foreground = wx.Color(*(self.task.foregroundColor() or (0, 0, 0)))
+        finally:
+            self.Thaw()
 
     @property
     def task(self):

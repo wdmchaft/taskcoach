@@ -72,10 +72,10 @@ class PrinterTest(test.TestCase):
                          self.settings.getint('printer', 'orientation'))
 
     def testUpdateMarginsInPageSetupDataUpdatesSettings(self):
-        self.pageSetupData.SetMarginTopLeft(wx.Point(self.margins['top'], 
-                                                     self.margins['left']))
-        self.pageSetupData.SetMarginBottomRight(wx.Point(self.margins['bottom'], 
-                                                         self.margins['right']))
+        self.pageSetupData.SetMarginTopLeft(wx.Point(self.margins['left'],
+                                                     self.margins['top']))
+        self.pageSetupData.SetMarginBottomRight(wx.Point(self.margins['right'], 
+                                                         self.margins['bottom']))
         self.printerSettings.updatePageSetupData(self.pageSetupData)
         for margin in self.margins:
             self.assertEqual(self.margins[margin], 
@@ -98,8 +98,8 @@ class PrinterTest(test.TestCase):
             self.settings.set('printer', 'margin_'+margin, 
                               str(self.margins[margin]))
         printerSettings = gui.printer.PrinterSettings(self.settings)
-        self.assertEqual(wx.Point(1, 2), printerSettings.GetMarginTopLeft())
-        self.assertEqual(wx.Point(3, 4), printerSettings.GetMarginBottomRight())
+        self.assertEqual(wx.Point(2, 1), printerSettings.GetMarginTopLeft())
+        self.assertEqual(wx.Point(4, 3), printerSettings.GetMarginBottomRight())
         
     def testPaperIdInPageSetupDataIsUpdatedFromSettings(self):
         self.resetPrinterSettings()

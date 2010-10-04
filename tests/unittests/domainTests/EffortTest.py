@@ -225,7 +225,7 @@ class EffortTest(test.TestCase, asserts.Mixin):
     def testRevenue_FixedFee_OneEffort(self):
         self.task.setFixedFee(1000)
         self.task.addEffort(self.effort)
-        self.assertEqual(1000, self.effort.revenue())
+        self.assertEqual(0, self.effort.revenue())
 
     def testRevenue_FixedFee_OneSmallEffort(self):
         self.task.setFixedFee(1000)
@@ -237,7 +237,7 @@ class EffortTest(test.TestCase, asserts.Mixin):
         self.task.addEffort(self.effort)
         self.task.addEffort(effort.Effort(self.task, 
             date.DateTime(2005,1,1,10,0), date.DateTime(2005,1,1,22,0)))
-        self.assertEqual(2./3*1000., self.effort.revenue())
+        self.assertEqual(0, self.effort.revenue())
 
     def testSubject(self):
         self.assertEqual(self.task.subject(), self.effort.subject())

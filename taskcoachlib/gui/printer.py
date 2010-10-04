@@ -35,10 +35,10 @@ class PrinterSettings(object):
 
     def updatePageSetupData(self, data):
         self.pageSetupData = wx.PageSetupDialogData(data)
-        self.updatePrintData(data.GetPrintData())
+        self._updatePrintData(data.GetPrintData())
         self._saveToSettings()
 
-    def updatePrintData(self, printData):
+    def _updatePrintData(self, printData):
         self.printData = wx.PrintData(printData)
         self.pageSetupData.SetPrintData(self.printData)
  
@@ -53,8 +53,8 @@ class PrinterSettings(object):
         margin = dict()
         for edge in self.edges:
             margin[edge] = self._getSetting('margin_'+edge)
-        topLeft = wx.Point(margin['top'], margin['left'])
-        bottomRight = wx.Point(margin['bottom'], margin['right'])
+        topLeft = wx.Point(margin['left'], margin['top'])
+        bottomRight = wx.Point(margin['right'], margin['bottom'])
         self.SetMarginTopLeft(topLeft)
         self.SetMarginBottomRight(bottomRight)
         self.SetPaperId(self._getSetting('paper_id'))
@@ -63,8 +63,8 @@ class PrinterSettings(object):
     def _saveToSettings(self):
         ''' Save the printer settings to the user settings. '''
         margin = dict()
-        margin['top'], margin['left'] = self.GetMarginTopLeft()  
-        margin['bottom'], margin['right'] = self.GetMarginBottomRight()  
+        margin['left'], margin['top'] = self.GetMarginTopLeft()  
+        margin['right'], margin['bottom'] = self.GetMarginBottomRight()  
         for edge in self.edges:
             self._setSetting('margin_'+edge, margin[edge])
         self._setSetting('paper_id', self.GetPaperId())
@@ -84,8 +84,8 @@ class HTMLPrintout(wx.html.HtmlPrintout):
         self.SetFooter(_('Page') + ' @PAGENUM@/@PAGESCNT@', wx.html.PAGE_ALL)
         self.SetFonts('Arial', 'Courier')
         printerSettings = PrinterSettings(settings)
-        top, left = printerSettings.pageSetupData.GetMarginTopLeft()
-        bottom, right = printerSettings.pageSetupData.GetMarginBottomRight()
+        left, top = printerSettings.pageSetupData.GetMarginTopLeft()
+        right, bottom = printerSettings.pageSetupData.GetMarginBottomRight()
         self.SetMargins(top, bottom, left, right)
 
                 

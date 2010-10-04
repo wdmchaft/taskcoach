@@ -257,6 +257,10 @@ improving, please consider helping. See:'''))
         self.addText(_('Language not found?'), panel)
         self.fit()
 
+    def ok(self):
+        super(LanguagePage, self).ok()
+        self.set('view', 'language', self.get('view', 'language_set_by_user'))
+        
 
 class ColorsPage(SettingsPage):
     def __init__(self, *args, **kwargs):
