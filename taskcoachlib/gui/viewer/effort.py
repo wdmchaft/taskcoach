@@ -40,7 +40,6 @@ class EffortViewer(base.ListViewer, mixin.SortableViewerForEffortMixin,
         self.aggregation = 'details'
         self.tasksToShowEffortFor = kwargs.pop('tasksToShowEffortFor', [])
         kwargs.setdefault('settingsSection', 'effortviewer')
-        self.__hiddenTotalColumns = []
         self.__hiddenWeekdayColumns = []
         self.__columnUICommands = None
         self.__domainObjectsToView = None
@@ -55,6 +54,10 @@ class EffortViewer(base.ListViewer, mixin.SortableViewerForEffortMixin,
             patterns.Publisher().registerObserver(self.onAttributeChanged,
                                                   eventType=eventType)
         
+    def registerClockObservers(self):
+        pass # Don't register for the update per minute since the effort viewer
+        # either updates every second or not at all.
+    
     def domainObjectsToView(self):
         if self.__domainObjectsToView is None:
             if self.displayingNewTasks():
@@ -109,7 +112,6 @@ class EffortViewer(base.ListViewer, mixin.SortableViewerForEffortMixin,
         # efforts than there really are when switching from aggregate mode to
         # detail mode.
         self.refresh()
-        self._showTotalColumns(show=aggregation!='details')
         self._showWeekdayColumns(show=aggregation=='week')
         if autoResizing:
             self.widget.ToggleAutoResizing(True)
@@ -168,11 +170,7 @@ class EffortViewer(base.ListViewer, mixin.SortableViewerForEffortMixin,
             ('description', _('Description'), effort.Effort.descriptionChangedEventType(), lambda effort: effort.description())] + \
             [widgets.Column('categories', _('Categories'),
              width=self.getColumnWidth('categories'),
-             renderCallback=self.renderCategory, **kwargs)] + \
-            [widgets.Column('totalCategories', _('Overall categories'),
-             width=self.getColumnWidth('totalCategories'),
-             renderCallback=lambda effort: self.renderCategory(effort, recursive=True),
-             **kwargs)] + \
+             renderCallback=self.renderCategories, **kwargs)] + \
             [widgets.Column(name, columnHeader, eventType, 
              width=self.getColumnWidth(name),
              renderCallback=renderCallback, alignment=wx.LIST_FORMAT_RIGHT,
@@ -181,11 +179,7 @@ class EffortViewer(base.ListViewer, mixin.SortableViewerForEffortMixin,
             ('timeSpent', _('Time spent'), 'effort.duration', 
                 lambda effort: render.timeSpent(effort.duration())),
             ('revenue', _('Revenue'), 'effort.revenue', 
-                lambda effort: render.monetaryAmount(effort.revenue())),
-            ('totalTimeSpent', _('Total time spent'), 'effort.totalDuration',  
-                 lambda effort: render.timeSpent(effort.duration(recursive=True))),
-            ('totalRevenue', _('Total revenue'), 'effort.totalRevenue',
-                 lambda effort: render.monetaryAmount(effort.revenue(recursive=True)))] + \
+                lambda effort: render.monetaryAmount(effort.revenue()))] + \
              [widgets.Column(name, columnHeader, eventType, 
               renderCallback=renderCallback, alignment=wx.LIST_FORMAT_RIGHT,
               width=self.getColumnWidth(name), **kwargs) \
@@ -205,17 +199,6 @@ class EffortViewer(base.ListViewer, mixin.SortableViewerForEffortMixin,
                 ('sunday', _('Sunday'), 'effort.duration',  
                  lambda effort: self.renderTimeSpentOnDay(effort, 6))      
              ]
-
-    def _showTotalColumns(self, show=True):
-        if show:
-            columnsToShow = self.__hiddenTotalColumns[:]
-            self.__hiddenTotalColumns = []
-        else:
-            self.__hiddenTotalColumns = columnsToShow = \
-                [column for column in self.visibleColumns() \
-                 if column.name().startswith('total')]
-        for column in columnsToShow:
-            self.showColumn(column, show, refresh=False)
 
     def _showWeekdayColumns(self, show=True):
         if show:
@@ -245,26 +228,12 @@ class EffortViewer(base.ListViewer, mixin.SortableViewerForEffortMixin,
              uicommand.ViewColumn(menuText=_('&Categories'),
                                   helpText=_('Show/hide categories column'),
                                   setting='categories', viewer=self),
-             uicommand.ViewColumn(menuText=_('Overall categories'),
-                                  helpText=_('Show/hide categories column'),
-                                  setting='totalCategories', viewer=self),
              uicommand.ViewColumn(menuText=_('&Time spent'),
                                   helpText=_('Show/hide time spent column'),
                                   setting='timeSpent', viewer=self),
              uicommand.ViewColumn(menuText=_('&Revenue'),
                                   helpText=_('Show/hide revenue column'),
                                   setting='revenue', viewer=self),]
-        if self.aggregation != 'details':
-            self.__columnUICommands.insert(-1, 
-                uicommand.ViewColumn(menuText=_('&Total time spent'),
-                    helpText=_('Show/hide total time spent column'),
-                    setting='totalTimeSpent',
-                    viewer=self))
-            self.__columnUICommands.append(\
-                uicommand.ViewColumn(menuText=_('Total &revenue'),
-                    helpText=_('Show/hide total revenue column'),
-                    setting='totalRevenue',
-                    viewer=self))
         if self.aggregation == 'week':
             self.__columnUICommands.append(\
                 uicommand.ViewColumns(menuText=_('Effort per weekday'),

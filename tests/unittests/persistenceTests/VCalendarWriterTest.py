@@ -38,7 +38,7 @@ class VCalTestCase(test.wxTestCase):
         return self.fd.getvalue()
 
     def selectItems(self, items):
-        self.viewer.widget.select(items)
+        self.viewer.select(items)
         
     def numberOfSelectedItems(self):
         return len(self.viewer.curselection())

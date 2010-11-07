@@ -93,8 +93,7 @@ class Category(attachment.AttachmentOwner, note.NoteOwner, base.CompositeObject)
     def categorySubjectChangedEvent(self, event):
         subject = self.subject()
         for eachCategorizable in self.categorizables(recursive=True):
-            eachCategorizable.categorySubjectChangedEvent(event, subject)
-            eachCategorizable.totalCategorySubjectChangedEvent(event, subject)      
+            eachCategorizable.categorySubjectChangedEvent(event, subject)      
                     
     def categorizables(self, recursive=False):
         result = self.__categorizables.get()
@@ -134,20 +133,6 @@ class Category(attachment.AttachmentOwner, note.NoteOwner, base.CompositeObject)
         event.addSource(self, self.isFiltered(), 
                         type=self.filterChangedEventType())
                                 
-    def contains(self, categorizable, treeMode=False):
-        ''' Return whether the categorizable belongs to this category. If an
-            ancestor of the categorizable belong to this category, the 
-            categorizable itself belongs to this category too. '''
-        containedCategorizables = self.categorizables(recursive=True)
-        if treeMode:
-            categorizablesToInvestigate = categorizable.family()
-        else:
-            categorizablesToInvestigate = [categorizable] + categorizable.ancestors()
-        for categorizableToInvestigate in categorizablesToInvestigate:
-            if categorizableToInvestigate in containedCategorizables:
-                return True
-        return False
-
     def foregroundColorChangedEvent(self, event):
         ''' Override to include all categorizables (recursively) in the event 
             that belong to this category since their foreground colors (may) 

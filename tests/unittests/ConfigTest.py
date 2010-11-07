@@ -106,6 +106,21 @@ class SettingsTest(SettingsTestCase):
             copyFromSection='effortviewer')
         self.assertEqual(dict(subject=10), 
             self.settings.getlist('effortviewer2', 'columnwidths'))
+
+    # Prevent ValueError: invalid interpolation syntax in '%' at position 0:
+    def testSinglePercentage(self):
+        self.settings.set('effortviewer', 'searchfilterstring', '%')
+        self.assertEqual('%', self.settings.get('effortviewer', 'searchfilterstring'))
+
+    def testEmbeddedPercentage(self):
+        # Prevent ValueError: invalid interpolation syntax in '%' at position 0
+        self.settings.set('effortviewer', 'searchfilterstring', 'Bla%Bla')
+        self.assertEqual('Bla%Bla', self.settings.get('effortviewer', 'searchfilterstring'))
+
+    def testDoublePercentage(self):
+        # Prevent ValueError: invalid interpolation syntax in '%' at position 0
+        self.settings.set('effortviewer', 'searchfilterstring', '%%')
+        self.assertEqual('%%', self.settings.get('effortviewer', 'searchfilterstring'))
         
 
 class SettingsIOTest(SettingsTestCase):

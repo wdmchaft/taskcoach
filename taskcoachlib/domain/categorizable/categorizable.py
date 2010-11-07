@@ -48,12 +48,15 @@ class CategorizableCompositeObject(base.CompositeObject):
         state.update(dict(categories=self.categories()))
         return state
         
-    def categories(self, recursive=False):
+    def categories(self, recursive=False, upwards=False):
         result = self.__categories.get()
-        if recursive and self.parent() is not None:
-            result |= self.parent().categories(recursive=True)
+        if recursive and upwards and self.parent() is not None:
+            result |= self.parent().categories(recursive=True, upwards=True)
+        elif recursive and not upwards:
+            for child in self.children(recursive=True):
+                result |= child.categories()
         return result
-    
+        
     @classmethod
     def categoryAddedEventType(class_):
         return 'categorizable.category.add'
@@ -65,7 +68,7 @@ class CategorizableCompositeObject(base.CompositeObject):
         event.addSource(self, *categories, **dict(type=self.categoryAddedEventType()))
         for child in self.children(recursive=True):
             event.addSource(child, *categories, 
-                            **dict(type=child.totalCategoryAddedEventType()))
+                            **dict(type=child.categoryAddedEventType()))
         if not self.foregroundColor(recursive=False) and any(category.foregroundColor(recursive=True) for category in categories):
             self.foregroundColorChangedEvent(event)
         if not self.backgroundColor(recursive=False) and any(category.backgroundColor(recursive=True) for category in categories):
@@ -86,7 +89,7 @@ class CategorizableCompositeObject(base.CompositeObject):
         event.addSource(self, *categories, **dict(type=self.categoryRemovedEventType()))
         for child in self.children(recursive=True):
             event.addSource(child, *categories, 
-                            **dict(type=child.totalCategoryRemovedEventType()))
+                            **dict(type=child.categoryRemovedEventType()))
         if not self.foregroundColor(recursive=False) and any(category.foregroundColor(recursive=True) for category in categories):
             self.foregroundColorChangedEvent(event)
         if not self.backgroundColor(recursive=False) and any(category.backgroundColor(recursive=True) for category in categories):
@@ -99,6 +102,30 @@ class CategorizableCompositeObject(base.CompositeObject):
     def setCategories(self, categories, event=None):
         self.__categories.set(set(categories), event=event)
 
+    @staticmethod
+    def categoriesSortFunction(**kwargs):
+        ''' Return a sort key for sorting by categories. Since a categorizable
+            can have multiple categories we first sort the categories by their
+            subjects. If the sorter is in tree mode, we also take the categories
+            of the children of the categorizable into account, after the 
+            categories of the categorizable itself. '''
+        def sortKeyFunction(categorizable):
+            def sortedSubjects(items):
+                return sorted([item.subject(recursive=True) for item in items])
+            categories = categorizable.categories()
+            sortedCategorySubjects = sortedSubjects(categories)
+            if kwargs.get('treeMode', False):
+                childCategories = categorizable.categories(recursive=True) - categories
+                sortedCategorySubjects.extend(sortedSubjects(childCategories)) 
+            return sortedCategorySubjects
+        return sortKeyFunction
+
+    @classmethod
+    def categoriesSortEventTypes(class_):
+        ''' The event types that influence the categories sort order. '''
+        return (class_.categoryAddedEventType(), 
+                class_.categoryRemovedEventType())
+        
     def foregroundColor(self, recursive=True):
         myOwnFgColor = super(CategorizableCompositeObject, self).foregroundColor(False)
         if myOwnFgColor or not recursive:
@@ -185,30 +212,14 @@ class CategorizableCompositeObject(base.CompositeObject):
         return ''
         
     @classmethod
-    def totalCategoryAddedEventType(class_):
-        return 'categorizable.totalCategory.add'
-
-    @classmethod
-    def totalCategoryRemovedEventType(class_):
-        return 'categorizable.totalCategory.remove'
-            
-    @classmethod
     def categorySubjectChangedEventType(class_):
         return 'categorizable.category.subject'
     
     def categorySubjectChangedEvent(self, event, subject):
-        event.addSource(self, subject, 
-                        type=self.categorySubjectChangedEventType())
-    
-    @classmethod
-    def totalCategorySubjectChangedEventType(class_):
-        return 'categorizable.totalCategory.subject'
-    
-    def totalCategorySubjectChangedEvent(self, event, subject):
         for categorizable in [self] + self.children(recursive=True):
             event.addSource(categorizable, subject,
-                            type=categorizable.totalCategorySubjectChangedEventType())
-            
+                            type=categorizable.categorySubjectChangedEventType())
+                    
     @classmethod
     def modificationEventTypes(class_):
         eventTypes = super(CategorizableCompositeObject, class_).modificationEventTypes()

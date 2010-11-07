@@ -103,6 +103,11 @@ class TaskTestsMixin(CommonTestsMixin):
     def testColumnStyle(self):
         self.expectInHTML('      .subject {text-align: left}\n')
         
+    def testSortIndicator(self):
+        self.expectInHTML('id="sorted"')
+        if not self.filename:
+            self.expectInHTML('<u>')
+            
     def testTaskStatusStyle(self):
         self.expectInHTML('      .completed {color: #00FF00}\n')
         

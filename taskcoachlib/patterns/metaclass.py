@@ -18,6 +18,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Module for metaclasses that are not widely recognized patterns.
 
+import weakref
+
 class NumberedInstances(type):
     ''' A metaclass that numbers class instances. Use by defining the metaclass 
         of a class NumberedInstances, e.g.: 
@@ -29,8 +31,17 @@ class NumberedInstances(type):
     count = dict()
         
     def __call__(class_, *args, **kwargs):
-        kwargs['instanceNumber'] = NumberedInstances.count.setdefault(class_, 0)
+        if class_ not in NumberedInstances.count:
+            NumberedInstances.count[class_] = weakref.WeakKeyDictionary()
+        instanceNumber = NumberedInstances.lowestUnusedNumber(class_)
+        kwargs['instanceNumber'] = instanceNumber
         instance = super(NumberedInstances, class_).__call__(*args, **kwargs)
-        NumberedInstances.count[class_] += 1
+        NumberedInstances.count[class_][instance] = instanceNumber
         return instance
-    
+        
+    def lowestUnusedNumber(class_):
+        usedNumbers = sorted(NumberedInstances.count[class_].values())
+        for index, usedNumber in enumerate(usedNumbers):
+            if usedNumber != index:
+                return index
+        return len(usedNumbers)

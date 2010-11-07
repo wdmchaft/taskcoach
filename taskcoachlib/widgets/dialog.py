@@ -77,7 +77,10 @@ class Dialog(wx.Dialog):
         self._buttonBox.enable(_('OK'))
 
 
-class BookDialog(Dialog):    
+class NotebookDialog(Dialog):    
+    def createInterior(self):
+        return notebook.Notebook(self._panel)
+
     def fillInterior(self):
         self.addPages()
             
@@ -93,7 +96,7 @@ class BookDialog(Dialog):
        
     def ok(self, *args, **kwargs):
         self.okPages()
-        super(BookDialog, self).ok(*args, **kwargs)
+        super(NotebookDialog, self).ok(*args, **kwargs)
         
     def okPages(self, *args, **kwargs):
         for page in self._interior:
@@ -101,11 +104,6 @@ class BookDialog(Dialog):
 
     def addPages(self):
         raise NotImplementedError 
-
-        
-class NotebookDialog(BookDialog):
-    def createInterior(self):
-        return notebook.Notebook(self._panel)
 
         
 class HtmlWindowThatUsesWebBrowserForExternalLinks(wx.html.HtmlWindow):

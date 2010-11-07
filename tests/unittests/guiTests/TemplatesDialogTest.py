@@ -16,21 +16,23 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-import sys, os, struct
+import test
+from taskcoachlib import gui, command, config, persistence
+from taskcoachlib.domain import note, attachment
 
-_BINBASE = os.path.join(os.path.split(__file__)[0], '..', 'bin.in')
 
-if len(struct.pack('L', 0)) == 8:
-    arch = 'IA64'
-else:
-    arch = 'IA32'
+class TemplatesDialogUnderTest(gui.dialog.templates.TemplatesDialog):
+    def _loadTemplates(self):
+        return []
+    
 
-if sys.platform == 'linux2':
-    # The user should install the binary packages
-    pass
-elif sys.platform == 'darwin':
-    sys.path.insert(0, os.path.join(_BINBASE, 'macos'))
-else:
-    sys.path.insert(0, os.path.join(_BINBASE, 'windows'))
+class TemplatesDialogTestCase(test.wxTestCase):
+    def setUp(self):
+        super(TemplatesDialogTestCase, self).setUp()
+        self.settings = config.Settings(load=False)
+        self.taskFile = persistence.TaskFile()
+        self.editor = TemplatesDialogUnderTest(self.settings, self.frame, 
+            'title', raiseDialog=False)
 
-from _pysyncml import *
+    def testTwoDefaultTemplates(self):
+        self.assertEqual(0, len(self.editor.tasks))

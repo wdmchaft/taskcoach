@@ -57,7 +57,7 @@ class iCalendarWriter(object):
 
     def _writeMetaData(self):
         self.__fd.write('VERSION:2.0\r\n')
-        domain = meta.url.strip('http://').strip('/')
+        domain = meta.url[len('http://'):].strip('/')
         self.__fd.write('PRODID:-//%s//NONSGML %s V%s//EN\r\n'%(domain, 
                                                                 meta.name, 
                                                                 meta.version))

@@ -23,12 +23,3 @@ import attachment
 class AttachmentSorter(base.Sorter):
     DomainObjectClass = attachment.Attachment
     EventTypePrefix = 'attachment'
-                        
-    def createSortKeyFunction(self):
-        sortKeyName = self._sortKey
-        if not self._sortCaseSensitive and sortKeyName in ('subject', 'description'):
-            prepareSortValue = lambda stringOrUnicode: stringOrUnicode.lower()
-        else:
-            prepareSortValue = lambda value: value
-        return lambda attachment: [prepareSortValue(getattr(attachment, 
-            sortKeyName)())]

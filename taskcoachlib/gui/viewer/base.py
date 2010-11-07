@@ -46,6 +46,8 @@ class Viewer(wx.Panel):
         self.__settingsSection = kwargs.pop('settingsSection')
         # The how maniest of this viewer type are we? Used for settings
         self.__instanceNumber = kwargs.pop('instanceNumber')
+        # Selection cache:
+        self.__curselection = [] 
         # Flag so that we don't notify observers while we're selecting all items
         self.__selectingAllItems = False
         self.__toolbarUICommands = None
@@ -59,8 +61,7 @@ class Viewer(wx.Panel):
         self.toolbar = toolbar.ToolBar(self, (16, 16))
         self.initLayout()
         self.registerPresentationObservers()
-        patterns.Publisher().registerObserver(self.onEveryMinute,
-                                              eventType='clock.minute')
+        self.registerClockObservers()
         self.refresh()
         
     def domainObjectsToView(self):
@@ -79,6 +80,10 @@ class Viewer(wx.Panel):
         registerObserver(self.onPresentationChanged, 
                          eventType=self.presentation().removeItemEventType(),
                          eventSource=self.presentation())
+        
+    def registerClockObservers(self):
+        patterns.Publisher().registerObserver(self.onEveryMinute,
+                                              eventType='clock.minute')
         
     def detach(self):
         ''' Should be called by viewer.container before closing the viewer '''
@@ -155,8 +160,9 @@ class Viewer(wx.Panel):
             # Some widgets change the selection and send selection events when 
             # deleting all items as part of the Destroy process. Ignore.
             return
+        self.__curselection = self.widget.curselection()
         # Be sure all wx events are handled before we notify our observers:
-        event = patterns.Event(self.selectEventType(), self, self.curselection())
+        event = patterns.Event(self.selectEventType(), self, self.__curselection)
         wx.CallAfter(event.send)
 
     def freeze(self):
@@ -172,10 +178,14 @@ class Viewer(wx.Panel):
         items = [item for item in items if item in self.presentation()]
         self.widget.RefreshItems(*items) # pylint: disable-msg=W0142
         
+    def select(self, items):
+        self.__curselection = items
+        self.widget.select(items)
+        
     def curselection(self):
         ''' Return a list of items (domain objects) currently selected in our
             widget. '''
-        return self.widget.curselection()
+        return self.__curselection
         
     def curselectionIsInstanceOf(self, class_):
         ''' Return whether all items in the current selection are instances of
@@ -184,10 +194,9 @@ class Viewer(wx.Panel):
         return all(isinstance(item, class_) for item in self.curselection())
 
     def isselected(self, item):
-        """Returns True if the given item is selected. See
-        L{EffortViewer} for an explanation of why this may be
-        different than 'if item in viewer.curselection()'."""
-
+        ''' Returns True if the given item is selected. See
+            L{EffortViewer} for an explanation of why this may be
+            different than 'if item in viewer.curselection()'. '''
         return item in self.curselection()
 
     def selectall(self):
@@ -395,29 +404,17 @@ class TreeViewer(Viewer): # pylint: disable-msg=W0223
         item.expand(expanded, context=self.settingsSection())
     
     def expandAll(self):
-        self.widget.expandAllItems()
         # Since the widget does not send EVT_TREE_ITEM_EXPANDED when expanding
         # all items, we have to do the bookkeeping ourselves:
         event = patterns.Event()
         for item in self.visibleItems():
             item.expand(True, context=self.settingsSection(), event=event)
+        self.refresh()
         # Don't send the event, since the viewer has already been updated. 
 
     def collapseAll(self):
         self.widget.collapseAllItems()
-        
-    def expandSelected(self):
-        self.widget.expandSelectedItems()
-
-    def collapseSelected(self):
-        self.widget.collapseSelectedItems()
-        
-    def isSelectionExpandable(self):
-        return self.widget.isSelectionExpandable()
-    
-    def isSelectionCollapsable(self):
-        return self.widget.isSelectionCollapsable()
-        
+                
     def isAnyItemExpandable(self):
         return self.widget.isAnyItemExpandable()
 
@@ -689,9 +686,28 @@ class ViewerWithColumns(Viewer): # pylint: disable-msg=W0223
             patterns.Publisher().removeObserver(self.onAttributeChanged, 
                 eventType=eventType)
 
-    def renderCategory(self, item, recursive=False):
-        return ', '.join(sorted([category.subject(recursive=True) for category in \
-                                 item.categories(recursive=recursive)]))
+    def renderCategories(self, item):
+        return self.renderSubjectsOfRelatedItems(item, item.categories)        
+    
+    def renderSubjectsOfRelatedItems(self, item, getItems):
+        subjects = []
+        ownItems = getItems(recursive=False)
+        if ownItems:
+            subjects.append(self.renderSubjects(ownItems))
+        if self.isItemCollapsed(item):
+            childItems = getItems(recursive=True) - ownItems
+            if childItems:
+                subjects.append('(%s)'%self.renderSubjects(childItems))
+        return ' '.join(subjects)
+    
+    @staticmethod
+    def renderSubjects(items):
+        subjects = [item.subject(recursive=True) for item in items]
+        return ', '.join(sorted(subjects))
+            
+    def isItemCollapsed(self, item):
+        return not self.getItemExpanded(item) \
+            if self.isTreeViewer() and item.children() else False
 
 
 class SortableViewerWithColumns(mixin.SortableViewerMixin, ViewerWithColumns): # pylint: disable-msg=W0223

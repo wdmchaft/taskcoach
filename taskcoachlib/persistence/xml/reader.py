@@ -63,6 +63,7 @@ class XMLReader(object):
         if self.__tskversion > meta.data.tskversion:
             raise XMLReaderTooNewException # Version number of task file is too high
         tasks = self._parseTaskNodes(root)
+        self._resolvePrerequisitesAndDependencies(tasks)
         categorizables = tasks[:]
         for eachTask in tasks:
             categorizables.extend(eachTask.children(recursive=True))
@@ -106,6 +107,28 @@ class XMLReader(object):
 
     def _parseTaskNodes(self, node):
         return [self._parseTaskNode(child) for child in node.findall('task')]
+                
+    def _resolvePrerequisitesAndDependencies(self, tasks):
+        tasksById = dict()
+        
+        def collectIds(tasks):
+            for task in tasks:
+                tasksById[task.id()] = task
+                collectIds(task.children())
+        
+        def addPrerequisitesAndDependencies(tasks):            
+            for task in tasks:
+                dummyPrerequisites = task.prerequisites()
+                prerequisites = set()
+                for dummyPrerequisite in dummyPrerequisites:
+                    prerequisites.add(tasksById[dummyPrerequisite.id])
+                task.setPrerequisites(prerequisites)
+                for prerequisite in prerequisites:
+                    prerequisite.addDependencies([task])
+                addPrerequisitesAndDependencies(task.children())
+                
+        collectIds(tasks)                
+        addPrerequisitesAndDependencies(tasks)
                 
     def _parseCategoryNodes(self, node, categorizablesById):
         return [self._parseCategoryNode(child, categorizablesById) \
@@ -165,6 +188,13 @@ class XMLReader(object):
         return categoryMapping
         
     def _parseTaskNode(self, taskNode):
+        class DummyPrerequisite(object):
+            def __init__(self, id):
+                self.id = id
+            def __getattr__(self, attr):
+                ''' Ignore all method calls. '''
+                return lambda *args, **kwargs: None
+            
         kwargs = self._parseBaseCompositeAttributes(taskNode, self._parseTaskNodes)
         kwargs.update(dict(
             startDateTime=date.parseDateTime(taskNode.attrib.get('startdate', ''), 
@@ -179,6 +209,8 @@ class XMLReader(object):
             hourlyFee=float(taskNode.attrib.get('hourlyFee', '0')),
             fixedFee=float(taskNode.attrib.get('fixedFee', '0')),
             reminder=self._parseDateTime(taskNode.attrib.get('reminder', '')),
+            # Here we just add the ids, they will be converted to object references later on:
+            prerequisites=[DummyPrerequisite(id) for id in taskNode.attrib.get('prerequisites', '').split(' ') if id], 
             shouldMarkCompletedWhenAllChildrenCompleted= \
                 self._parseBoolean(taskNode.attrib.get('shouldMarkCompletedWhenAllChildrenCompleted', '')),
             efforts=self._parseEffortNodes(taskNode),

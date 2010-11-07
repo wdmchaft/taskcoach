@@ -20,12 +20,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import xml.parsers.expat, wx, StringIO, os, tempfile
 import test
-from taskcoachlib import persistence
-from taskcoachlib.domain import date
+from taskcoachlib import persistence, config
+from taskcoachlib.domain import date, task
 
 
 class XMLReaderTestCase(test.TestCase):
     tskversion = 'Subclass responsibility'
+
+    def setUp(self):
+        super(XMLReaderTestCase, self).setUp()
+        task.Task.settings = config.Settings(load=False)
             
     def writeAndRead(self, xmlContents):
         # pylint: disable-msg=W0201
@@ -344,9 +348,11 @@ class XMLReaderVersion20Test(XMLReaderTestCase):
         reader = persistence.XMLReader(StringIO.StringIO())
         try:
             reader.read()
-            self.fail('Expected ExpatError') # pragma: no cover
+            self.fail('Expected ExpatError or ParseError') # pragma: no cover
         except xml.parsers.expat.ExpatError:
-            pass
+            pass # pragma: no cover
+        except xml.etree.ElementTree.ParseError:
+            pass # pragma: no cover
         
     def testNoTasksAndNoCategories(self):
         tasks, categories, notes = self.writeAndReadTasksAndCategoriesAndNotes('<tasks/>\n')
@@ -1341,3 +1347,70 @@ class XMLReaderVersion30Test(XMLReaderTestCase):
         else: # pragma: no cover
             expectedFontSize = 9 if '__WXGTK__' == wx.Platform else 8
             self.assertEqual(expectedFontSize, tasks[0].font().GetPointSize())
+
+
+class XMLReaderVersion31Test(XMLReaderTestCase):
+    tskversion = 31 # New in release 1.2.0.
+    
+    def writeAndReadTasks(self, *args, **kwargs):
+        tasks = super(XMLReaderVersion31Test, self).writeAndReadTasks(*args, **kwargs)
+        tasksById = dict()
+        def collectIds(tasks):
+            for task in tasks:
+                tasksById[task.id()] = task
+                collectIds(task.children())
+        collectIds(tasks)
+        return tasksById
+    
+    def assertDepends(self, prerequisite, dependency):
+        self.failUnless(prerequisite in dependency.prerequisites())
+        self.failUnless(dependency in prerequisite.dependencies())
+        
+    def testOnePrerequisite(self):
+        tasks = self.writeAndReadTasks('''
+        <tasks>
+            <task id="1"/>
+            <task id="2" prerequisites="1"/>
+        </tasks>\n''')
+        self.assertDepends(tasks['1'], tasks['2'])
+        
+    def testTwoPrerequisites(self):
+        tasks = self.writeAndReadTasks('''
+        <tasks>
+            <task id="1"/>
+            <task id="2" prerequisites="1 3"/>
+            <task id="3"/>
+        </tasks>\n''')
+        self.assertDepends(tasks['1'], tasks['2'])
+        self.assertDepends(tasks['3'], tasks['2'])
+        
+    def testChainOfPrerequisites(self):
+        tasks = self.writeAndReadTasks('''
+        <tasks>
+            <task id="1"/>
+            <task id="2" prerequisites="1"/>
+            <task id="3" prerequisites="2"/>
+        </tasks>\n''')
+        self.assertDepends(tasks['1'], tasks['2'])
+        self.assertDepends(tasks['2'], tasks['3'])
+
+    def testSubTaskPrerequisite(self):
+        tasks = self.writeAndReadTasks('''
+        <tasks>
+            <task id="1">
+                <task id="1.1"/>
+            </task>
+            <task id="2" prerequisites="1.1"/>
+        </tasks>\n''')
+        self.assertDepends(tasks['1.1'], tasks['2'])
+        
+    def testInterSubTaskPrerequisite(self):
+        tasks = self.writeAndReadTasks('''
+        <tasks>
+            <task id="1">
+                <task id="1.1"/>
+                <task id="1.2" prerequisites="1.1"/>
+            </task>
+        </tasks>\n''')
+        self.assertDepends(tasks['1.1'], tasks['1.2'])
+

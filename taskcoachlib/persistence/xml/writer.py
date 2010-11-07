@@ -71,6 +71,10 @@ class XMLWriter(object):
             node.setAttribute('fixedFee', str(task.fixedFee()))
         if task.reminder() != None:
             node.setAttribute('reminder', str(task.reminder()))
+        prerequisiteIds = ' '.join([prerequisite.id() for prerequisite in \
+            task.prerequisites()])
+        if prerequisiteIds:            
+            node.setAttribute('prerequisites', prerequisiteIds)
         if task.shouldMarkCompletedWhenAllChildrenCompleted() != None:
             node.setAttribute('shouldMarkCompletedWhenAllChildrenCompleted', 
                               str(task.shouldMarkCompletedWhenAllChildrenCompleted()))

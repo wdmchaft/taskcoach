@@ -1,3 +1,99 @@
+Release 1.2.2 - November 6, 2010
+This release adds a template edit dialog and fixes some bugs.
+
+Bugs fixed:
+- Type indicator of attachments in the attachment tab of edit dialogs was
+  missing. (SF#3087177)
+- After editing the subject of a composite task in the task list viewer (e.g.
+  changing 'Project A' into 'Project B'), also update the subjects of the
+  subtasks (e.g. 'Project A -> Task 1' should update to 'Project B -> Task
+  1').
+- When editing a subject of a subtask in the task list viewer inline, don't
+  include the subjects of its ancestors in the text control.
+- When filtering on categories, don't show tasks whose subtasks (that belong
+  to the filtered categories) are all hidden by another filter.
+- When double clicking in the calendar viewer (when it is in vertical month
+  mode) to create a new task, set the due date of the new task to the end of
+  the day. This makes sure the new task is visible in the calendar after
+  closing the task edit dialog. (SF#3103011)
+- Include end of work day as option when selecting a time in the effort edit
+  dialog. (http://uservoice.com/a/380R8)
+- Remember column widths in the category viewer across sessions.
+
+Features added:
+- Don't ask for a name when creating a new template. There is now a template
+  edit dialog; one can only delete templates though.
+  (http://uservoice.com/a/4Ntz6)
+- Allow the user to change the ordering of templates
+
+Distribution changed:
+- Added support for Fedora 14. (SF#3101814)
+
+
+Release 1.2.1 - October 16, 2010
+This is a bugfix release.
+
+Bugs fixed:
+- Don't refuse to open a task file when it is sorted on a "total" column.
+  (SF#3085056)
+- Don't expand tasks in the prerequisite tab when opening a task dialog, it's
+  really slow. (SF#3085358)
+- Always display the month name in the horizontal monthly calendar view.
+  (SF#3062505)
+- Allow the user to resize columns in horizontal calendar view (SF#3062505)
+- Reset percentage complete when recurring a task.
+- When using relative paths for attachments, attachments couldn't be opened
+  from the attachments tab in the edit dialog. (SF#3087177)
+
+
+Release 1.2.0 - October 9, 2010
+This release adds task dependencies.
+
+Bugs fixed:
+- An exception would be thrown if search strings contained a percentage
+  symbol.
+- When printing, correctly align columns.
+- Show sort indicator in attachment viewers.
+- Task Coach would always change budget, hourly fee, and fixed fee to zero
+  when mass editing tasks. (SF#3081666)
+- Better contrast in the calendar view (SF#3072138)
+- Tasks started at 00:00 would be displayed twice in the monthly vertical
+  calendar view (SF#3062501)
+
+Feature added:
+- Tasks can have one or more prerequisite tasks. As long as a task has one or
+  more prerequisite tasks that are not completed, the dependent task is
+  inactive. The task tree viewer has two extra columns, one for showing
+  prerequisite tasks and one for showing dependent tasks. Prerequisite tasks
+  can be selected in the Prerequisites tab of the task edit dialog. Dependent
+  tasks cannot be selected explicitly but are simply derived from the
+  prerequisite tasks. For example, if task B can be started only after task A
+  has been completed, task A is called a prerequisite for task B and task B
+  is called a dependency of task A.
+
+Features changed:
+- To simplify the application and reduce the number of columns all "total"
+  and "overall" columns have been removed. For composite items that have
+  children, the tree viewers show the "total" or "overall" value when the
+  item is collapsed and the individual value when the item is not collapsed.
+  An example may help: suppose task A has a budget of 20 hours and subtask A1
+  has a budget of 10 hours. In the task viewer in tree mode, the budget
+  column shows 20 hours for task A when it is expanded and 30 hours when it
+  is collapsed. For task A1 the budget shown is always 10 hour. In list mode,
+  the task viewer shows the individual values, so a budget of 20 hours for
+  task A and 10 hours for task A1.
+- The order of tabs in tabbed dialogs can be changed. Task Coach now
+  remembers the order of the tabs in the item edit dialogs and the
+  preferences dialog. (http://uservoice.com/a/oa7jx)
+- When printing, show the sorted column by underlining the column header.
+- Reorganized some menu items differently and added mnemonics to all menu
+  items.
+
+Implementation changed:
+- The task file format was changed to support task dependencies. The task
+  file format version number is now 31.
+
+
 Release 1.1.4 - September 30, 2010
 This is a bugfix release.
 

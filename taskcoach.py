@@ -34,7 +34,7 @@ if not hasattr(sys, "frozen"):
         import taskcoachlib
     except ImportError:
         sys.stderr.write('''ERROR: cannot import the library 'taskcoachlib'.
-Please see http://www.taskcoach.org/faq.html for more information and
+Please see http://taskcoach.org/faq.html for more information and
 possible resolutions.''')
         sys.exit(1)
 

@@ -145,8 +145,12 @@ class SettingsPage(SettingsPageBase):
 
 
 class SavePage(SettingsPage):
+    pageName = 'save'
+    pageTitle = _('Files')
+    pageIcon = 'save'
+    
     def __init__(self, *args, **kwargs):
-        super(SavePage, self).__init__(*args, **kwargs)
+        super(SavePage, self).__init__(columns=3, *args, **kwargs)
         self.addBooleanSetting('file', 'autosave', 
             _('Auto save after every change'))
         self.addBooleanSetting('file', 'backup', 
@@ -161,8 +165,12 @@ class SavePage(SettingsPage):
             
                
 class WindowBehaviorPage(SettingsPage):
+    pageName = 'window'
+    pageTitle = _('Window behavior')
+    pageIcon = 'windows'
+    
     def __init__(self, *args, **kwargs):
-        super(WindowBehaviorPage, self).__init__(*args, **kwargs)
+        super(WindowBehaviorPage, self).__init__(columns=3, *args, **kwargs)
         self.addBooleanSetting('window', 'splash', 
             _('Show splash screen on startup'))
         self.addBooleanSetting('window', 'tips', 
@@ -186,8 +194,12 @@ class WindowBehaviorPage(SettingsPage):
 
 
 class LanguagePage(SettingsPage):
+    pageName = 'language'
+    pageTitle = _('Language')
+    pageIcon = 'person_talking_icon'
+    
     def __init__(self, *args, **kwargs):
-        super(LanguagePage, self).__init__(*args, **kwargs) 
+        super(LanguagePage, self).__init__(columns=3, *args, **kwargs) 
         choices = \
             [('', _('Let the system determine the language')),
              ('ar', u'الْعَرَبيّة (Arabic)'),
@@ -263,8 +275,12 @@ improving, please consider helping. See:'''))
         
 
 class ColorsPage(SettingsPage):
+    pageName = 'colors'
+    pageTitle = _('Colors')
+    pageIcon = 'palette_icon'
+    
     def __init__(self, *args, **kwargs):
-        super(ColorsPage, self).__init__(*args, **kwargs)
+        super(ColorsPage, self).__init__(columns=1, growableColumn=-1, *args, **kwargs)
         for setting, label in \
             [('activetasks', _('Click this button to change the color of active tasks')), 
              ('inactivetasks', _('Click this button to change the color of inactive tasks')),
@@ -276,8 +292,12 @@ class ColorsPage(SettingsPage):
 
 
 class FeaturesPage(SettingsPage):
+    pageName = 'features'
+    pageTitle = _('Features')
+    pageIcon = 'cogwheel_icon'
+    
     def __init__(self, *args, **kwargs):
-        super(FeaturesPage, self).__init__(*args, **kwargs)
+        super(FeaturesPage, self).__init__(columns=3, *args, **kwargs)
         self.addBooleanSetting('feature', 'effort', 
             _('Allow for tracking effort'), helpText='restart')
         self.addBooleanSetting('feature', 'notes', _('Allow for taking notes'),
@@ -313,8 +333,12 @@ class FeaturesPage(SettingsPage):
         
 
 class TaskBehaviorPage(SettingsPage):
+    pageName = 'task'
+    pageTitle = _('Task behavior')
+    pageIcon = 'cogwheel_icon'
+    
     def __init__(self, *args, **kwargs):
-        super(TaskBehaviorPage, self).__init__(*args, **kwargs)
+        super(TaskBehaviorPage, self).__init__(columns=3, *args, **kwargs)
         self.addBooleanSetting('behavior', 'markparentcompletedwhenallchildrencompleted',
             _('Mark parent task completed when all children are completed'))
         self.addIntegerSetting('behavior', 'duesoonhours', 
@@ -327,8 +351,12 @@ class TaskBehaviorPage(SettingsPage):
 
 
 class IPhonePage(SettingsPage):
+    pageName = 'iphone'
+    pageTitle = _('iPhone')
+    pageIcon = 'computer_handheld_icon'
+    
     def __init__(self, *args, **kwargs):
-        super(IPhonePage, self).__init__(*args, **kwargs)
+        super(IPhonePage, self).__init__(columns=3, *args, **kwargs)
         self.addTextSetting('iphone', 'password',
             _('Password for synchronization with iPhone'))
         self.addTextSetting('iphone', 'service',
@@ -341,8 +369,12 @@ class IPhonePage(SettingsPage):
 
         
 class EditorPage(SettingsPage):
+    pageName = 'editor'
+    pageTitle = _('Editor')
+    pageIcon = 'edit'
+    
     def __init__(self, *args, **kwargs):
-        super(EditorPage, self).__init__(*args, **kwargs)
+        super(EditorPage, self).__init__(columns=2, *args, **kwargs)
         self.addBooleanSetting('editor', 'maccheckspelling',
             _('Check spelling in editors'))
         self.fit()
@@ -354,25 +386,48 @@ class EditorPage(SettingsPage):
 
 
 class Preferences(widgets.NotebookDialog):
+    allPageNames = ['window', 'task', 'save', 'language', 'colors', 'features',
+                    'iphone', 'editor']
+    pages = dict(window=WindowBehaviorPage, task=TaskBehaviorPage, 
+                 save=SavePage, language=LanguagePage, colors=ColorsPage, 
+                 features=FeaturesPage, iphone=IPhonePage, editor=EditorPage)
+    
     def __init__(self, settings=None, *args, **kwargs):
         self.settings = settings
         super(Preferences, self).__init__(bitmap='wrench_icon', *args, **kwargs)
-
+        self.TopLevelParent.Bind(wx.EVT_CLOSE, self.onClose)        
         if '__WXMAC__' in wx.PlatformInfo:
             self.CentreOnParent()
 
     def addPages(self):
         self.SetMinSize((300, 430))
-        pages = [\
-            (WindowBehaviorPage(parent=self._interior, columns=3, settings=self.settings), _('Window behavior'), 'windows'),
-            (TaskBehaviorPage(parent=self._interior, columns=3, settings=self.settings), _('Task behavior'), 'cogwheel_icon'),
-            (SavePage(parent=self._interior, columns=3, settings=self.settings), _('Files'), 'save'),
-            (LanguagePage(parent=self._interior, columns=3, settings=self.settings), _('Language'), 'person_talking_icon'),
-            (ColorsPage(parent=self._interior, columns=1, settings=self.settings, growableColumn=-1), _('Colors'), 'palette_icon'),
-            (FeaturesPage(parent=self._interior, columns=3, settings=self.settings), _('Features'), 'cogwheel_icon')]
-        if self.settings.getboolean('feature', 'iphone'):
-            pages.append((IPhonePage(parent=self._interior, columns=3, settings=self.settings), _('iPhone'), 'computer_handheld_icon'))
-        if '__WXMAC__' in wx.PlatformInfo:
-            pages.append((EditorPage(parent=self._interior, columns=2, settings=self.settings), _('Editor'), 'edit'))
-        for page, title, bitmap in pages:
-            self._interior.AddPage(page, title, bitmap=bitmap)
+        for pageName in self.allPageNamesInUserOrder():
+            if self.shouldCreatePage(pageName):
+                page = self.createPage(pageName)
+                self._interior.AddPage(page, page.pageTitle, page.pageIcon)
+
+    def allPageNamesInUserOrder(self):
+        ''' Return all pages names in the order stored in the settings. The
+            settings may not contain all pages (e.g. because a feature was
+            turned off by the user) so we add the missing pages if necessary. '''
+        pageNamesInUserOrder = self.settings.getlist('editor', 'preferencespages')
+        remainingPageNames = self.allPageNames[:]
+        for pageName in pageNamesInUserOrder:
+            remainingPageNames.remove(pageName)
+        return pageNamesInUserOrder + remainingPageNames
+                    
+    def shouldCreatePage(self, pageName):
+        if pageName == 'iphone':
+            return self.settings.getboolean('feature', 'iphone')
+        elif pageName == 'editor':
+            return '__WXMAC__' in wx.PlatformInfo
+        else:
+            return True
+
+    def createPage(self, pageName):
+        return self.pages[pageName](parent=self._interior, settings=self.settings)
+
+    def onClose(self, event):
+        event.Skip()
+        pageNames = [page.pageName for page in self]
+        self.settings.setlist('editor', 'preferencespages', pageNames)

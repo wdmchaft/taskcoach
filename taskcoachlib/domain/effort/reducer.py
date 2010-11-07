@@ -113,10 +113,8 @@ class EffortAggregator(patterns.SetDecorator,
             
     def createComposites(self, task, efforts): # pylint: disable-msg=W0621
         newComposites = []
-        taskAndAncestors = [task] + task.ancestors()
         for effort in efforts:
-            for task in taskAndAncestors:
-                newComposites.extend(self.createComposite(effort, task))
+            newComposites.extend(self.createComposite(effort, task))
             newComposites.extend(self.createCompositeForPeriod(effort))
         return newComposites
 

@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 from taskcoachlib import patterns
-from taskcoachlib.domain import date, base
+from taskcoachlib.domain import date, base, task
 import base as baseeffort
     
 
@@ -122,6 +122,19 @@ class Effort(baseeffort.BaseEffort, base.Object):
         
     def revenueEvent(self, event):
         event.addSource(self, self.revenue(), type='effort.revenue')
+
+    @staticmethod
+    def effortSortFunction(**kwargs):
+        # Sort by start of effort first, then make sure the Total entry comes
+        # first and finally sort by task subject:
+        return lambda effort: (effort.getStart(), effort.isTotal(),
+                               effort.task().subject(recursive=True))
+    
+    @classmethod
+    def effortSortEventTypes(class_):
+        ''' The event types that influence the effort sort order. '''
+        return ('effort.start', class_.taskChangedEventType(),
+                task.Task.subjectChangedEventType())
             
     @classmethod    
     def modificationEventTypes(class_):

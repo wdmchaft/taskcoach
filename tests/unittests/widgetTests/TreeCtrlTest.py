@@ -32,11 +32,12 @@ class TreeCtrlTestCase(test.wxTestCase):
     def setUp(self):
         super(TreeCtrlTestCase, self).setUp()
         self.children = dict()
+        self.collapsedItems = []
         self.frame.children = lambda item: self.children.get(item, [])
         self.frame.getItemText = lambda item, column: item.subject()
         self.frame.getItemImage = lambda item, which, column: -1
         self.frame.getIsItemChecked = lambda item: False
-        self.frame.getItemExpanded = lambda item: False
+        self.frame.getItemExpanded = lambda item: item not in self.collapsedItems
         self.item0 = DummyDomainObject('item 0')
         self.item1 = DummyDomainObject('item 1')
         self.item0_0 = DummyDomainObject('item 0.0')
@@ -210,94 +211,6 @@ class CommonTestsMixin(object):
         self.treeCtrl.RefreshItems(self.item0)
         item = self.getFirstTreeItem()
         self.assertEqual('item 0', self.treeCtrl.GetItemText(item))        
-
-    def testIsSelectionCollapsable_EmptyTree(self):
-        self.failIf(self.treeCtrl.isSelectionCollapsable())
-    
-    def testIsSelectionExpandable_EmptyTree(self):
-        self.failIf(self.treeCtrl.isSelectionExpandable())
-       
-    def testIsSelectionCollapsable_OneUnselectedItem(self):
-        self.children[None] = [self.item0]
-        self.treeCtrl.RefreshAllItems(1)
-        self.failIf(self.treeCtrl.isSelectionCollapsable())
-    
-    def testIsSelectionExpandable_OneUnselectedItem(self):
-        self.children[None] = [self.item0]
-        self.treeCtrl.RefreshAllItems(1)
-        self.failIf(self.treeCtrl.isSelectionExpandable())
-    
-    def testIsSelectionCollapsable_OneSelectedItem(self):
-        self.children[None] = [self.item0]
-        self.treeCtrl.RefreshAllItems(1)
-        item = self.getFirstTreeItem()
-        self.treeCtrl.SelectItem(item)
-        self.failIf(self.treeCtrl.isSelectionCollapsable())
-    
-    def testIsSelectionExpandable_OneSelectedItem(self):
-        self.children[None] = [self.item0]
-        self.treeCtrl.RefreshAllItems(1)
-        item = self.getFirstTreeItem()
-        self.treeCtrl.SelectItem(item)
-        self.failIf(self.treeCtrl.isSelectionExpandable())
-    
-    def testIsSelectionCollapsable_SelectedExpandedParent(self):
-        self.children[None] = [self.item0]
-        self.children[self.item0] = [self.item0_0]
-        self.treeCtrl.RefreshAllItems(2)
-        parent = self.getFirstTreeItem()
-        self.treeCtrl.Expand(parent)
-        self.treeCtrl.SelectItem(parent)
-        self.failUnless(self.treeCtrl.isSelectionCollapsable())
-    
-    def testIsSelectionExpandable_SelectedExpandedParent(self):
-        self.children[None] = [self.item0]
-        self.children[self.item0] = [self.item0_0]
-        self.treeCtrl.RefreshAllItems(2)
-        parent = self.getFirstTreeItem()
-        self.treeCtrl.Expand(parent)
-        self.treeCtrl.SelectItem(parent)
-        self.failIf(self.treeCtrl.isSelectionExpandable())
-    
-    def testIsSelectionCollapsable_SelectedCollapsedParent(self):
-        self.children[None] = [self.item0]
-        self.children[self.item0] = [self.item0_0]
-        self.treeCtrl.RefreshAllItems(2)
-        parent = self.getFirstTreeItem()
-        self.treeCtrl.SelectItem(parent)
-        self.failIf(self.treeCtrl.isSelectionCollapsable())
-    
-    def testIsSelectionExpandable_SelectedCollapsedParent(self):
-        self.children[None] = [self.item0]
-        self.children[self.item0] = [self.item0_0]
-        self.treeCtrl.RefreshAllItems(2)
-        parent = self.getFirstTreeItem()
-        self.treeCtrl.SelectItem(parent)
-        self.failUnless(self.treeCtrl.isSelectionExpandable())
-    
-    def testIsSelectionCollapsable_CollapsedAndExpandedTasksInSelection(self):
-        self.children[None] = [self.item0, self.item1]
-        self.children[self.item0] = [self.item0_0]
-        self.children[self.item1] = [self.item1_0]
-        self.treeCtrl.RefreshAllItems(4)
-        parent1, cookie = self.treeCtrl.GetFirstChild(self.treeCtrl.GetRootItem())
-        self.treeCtrl.Expand(parent1)
-        self.treeCtrl.SelectItem(parent1)
-        parent2, cookie = self.treeCtrl.GetNextChild(self.treeCtrl.GetRootItem(), cookie)
-        self.treeCtrl.SelectItem(parent2)
-        self.failUnless(self.treeCtrl.isSelectionCollapsable())
-    
-    def testIsSelectionExpandable_CollapsedAndExpandedTasksInSelection(self):
-        self.children[None] = [self.item0, self.item1]
-        self.children[self.item0] = [self.item0_0]
-        self.children[self.item1] = [self.item1_0]
-        self.treeCtrl.RefreshAllItems(4)
-        parent1, cookie = self.treeCtrl.GetFirstChild(self.treeCtrl.GetRootItem())
-        self.treeCtrl.Expand(parent1)
-        self.treeCtrl.SelectItem(parent1)
-        parent2, cookie = self.treeCtrl.GetNextChild(self.treeCtrl.GetRootItem(), cookie)
-        self.treeCtrl.SelectItem(parent2)
-        self.failUnless(self.treeCtrl.isSelectionExpandable())
     
     def testIsAnyItemCollapsable_NoItems(self):
         self.failIf(self.treeCtrl.isAnyItemCollapsable())
@@ -318,12 +231,14 @@ class CommonTestsMixin(object):
     def testIsAnyItemCollapsable_OneCollapsedParent(self):
         self.children[None] = [self.item0]
         self.children[self.item0] = [self.item0_0]
+        self.collapsedItems.append(self.item0)
         self.treeCtrl.RefreshAllItems(2)
         self.failIf(self.treeCtrl.isAnyItemCollapsable())
        
     def testIsAnyItemExpandable_OneCollapsedParent(self):
         self.children[None] = [self.item0]
         self.children[self.item0] = [self.item0_0]
+        self.collapsedItems.append(self.item0)
         self.treeCtrl.RefreshAllItems(2)
         self.failUnless(self.treeCtrl.isAnyItemExpandable())
     

@@ -94,4 +94,3 @@ class TaskListTest(test.TestCase):
     def testMaxPriority_TwoTasks(self):
         self.taskList.extend([task.Task(priority=3), task.Task(priority=5)])
         self.assertEqual(5, self.taskList.maxPriority())
-

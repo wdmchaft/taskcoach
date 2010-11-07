@@ -305,13 +305,9 @@ class SortableViewerForCategorizablesMixin(SortableViewerMixin):
 
     def createSortByUICommands(self):
         commands = super(SortableViewerForCategorizablesMixin, self).createSortByUICommands()
-        commands.extend(
-               [uicommand.ViewerSortByCommand(viewer=self, value='categories',
-                    menuText=_('&Category'),
-                    helpText=self.sortByCategoryHelpText),
-                uicommand.ViewerSortByCommand(viewer=self,
-                    value='totalCategories', menuText=_('Overall categories'),
-                    helpText=self.sortByTotalCategoryHelpText)])
+        commands.append(uicommand.ViewerSortByCommand(viewer=self, 
+            value='categories', menuText=_('&Category'),
+            helpText=self.sortByCategoryHelpText))
         return commands
 
 
@@ -319,14 +315,12 @@ class SortableViewerForAttachmentsMixin(SortableViewerForCategorizablesMixin):
     sortBySubjectHelpText = _('Sort attachments by subject')
     sortByDescriptionHelpText = _('Sort attachments by description')
     sortByCategoryHelpText = _('Sort attachments by category')
-    sortByTotalCategoryHelpText = _('Sort attachments by overall categories')
     
 
 class SortableViewerForNotesMixin(SortableViewerForCategorizablesMixin):
     sortBySubjectHelpText = _('Sort notes by subject')
     sortByDescriptionHelpText = _('Sort notes by description')
     sortByCategoryHelpText = _('Sort notes by category')
-    sortByTotalCategoryHelpText = _('Sort notes by overall categories')
 
 
 class SortableViewerForTasksMixin(SortableViewerForCategorizablesMixin):
@@ -334,7 +328,6 @@ class SortableViewerForTasksMixin(SortableViewerForCategorizablesMixin):
     sortBySubjectHelpText = _('Sort tasks by subject')
     sortByDescriptionHelpText = _('Sort tasks by description')
     sortByCategoryHelpText = _('Sort tasks by category')
-    sortByTotalCategoryHelpText = _('Sort tasks by overall categories')
     
     def __init__(self, *args, **kwargs):
         self.__sortKeyUnchangedCount = 0
@@ -375,32 +368,24 @@ class SortableViewerForTasksMixin(SortableViewerForCategorizablesMixin):
     def createSortByUICommands(self):
         commands = super(SortableViewerForTasksMixin, self).createSortByUICommands()
         effortOn = self.settings.getboolean('feature', 'effort')
-        dependsOnEffortFeature = ['budget', 'totalBudget', 
-                                  'timeSpent', 'totalTimeSpent',
-                                  'budgetLeft', 'totalBudgetLeft', 
-                                  'hourlyFee', 'fixedFee', 'totalFixedFee',
-                                  'revenue', 'totalRevenue']
+        dependsOnEffortFeature = ['budget', 'timeSpent', 'budgetLeft',  
+                                  'hourlyFee', 'fixedFee', 'revenue']
         for menuText, helpText, value in [\
             (_('&Start date'), _('Sort tasks by start date'), 'startDateTime'),
             (_('&Due date'), _('Sort tasks by due date'), 'dueDateTime'),
             (_('&Completion date'), _('Sort tasks by completion date'), 'completionDateTime'),
+            (_('&Prerequisites'), _('Sort tasks by prerequisite tasks'), 'prerequisites'),
+            (_('&Dependencies'), _('Sort tasks by dependent tasks'), 'dependencies'),
             (_('&Time left'), _('Sort tasks by time left'), 'timeLeft'),
             (_('&Percentage complete'), _('Sort tasks by percentage complete'), 'percentageComplete'),
-            (_('&Overall percentage complete'), _('Sort tasks by overall percentage complete'), 'totalPercentageComplete'),
             (_('&Recurrence'), _('Sort tasks by recurrence'), 'recurrence'),
             (_('&Budget'), _('Sort tasks by budget'), 'budget'),
-            (_('Total b&udget'), _('Sort tasks by total budget'), 'totalBudget'),
             (_('&Time spent'), _('Sort tasks by time spent'), 'timeSpent'),
-            (_('T&otal time spent'), _('Sort tasks by total time spent'), 'totalTimeSpent'),
             (_('Budget &left'), _('Sort tasks by budget left'), 'budgetLeft'),
-            (_('Total budget l&eft'), _('Sort tasks by total budget left'), 'totalBudgetLeft'),
             (_('&Priority'), _('Sort tasks by priority'), 'priority'),
-            (_('Overall priority'), _('Sort tasks by overall priority'), 'totalPriority'),
             (_('&Hourly fee'), _('Sort tasks by hourly fee'), 'hourlyFee'),
             (_('&Fixed fee'), _('Sort tasks by fixed fee'), 'fixedFee'),
-            (_('Total fi&xed fee'), _('Sort tasks by total fixed fee'), 'totalFixedFee'),
             (_('&Revenue'), _('Sort tasks by revenue'), 'revenue'),
-            (_('Total re&venue'), _('Sort tasks by total revenue'), 'totalRevenue'),
             (_('&Reminder'), _('Sort tasks by reminder date and time'), 'reminder')]:
             if value not in dependsOnEffortFeature or (value in dependsOnEffortFeature and effortOn):
                 commands.append(uicommand.ViewerSortByCommand(\

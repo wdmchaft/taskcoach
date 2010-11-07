@@ -85,8 +85,7 @@ class SquareMap(tooltip.ToolTipMixin, squaremap.SquareMap):
     def isAnyItemExpandable(self):
         return False
 
-    isSelectionExpandable = isSelectionCollapsable = isAnyItemCollapsable =\
-        isAnyItemExpandable
+    isAnyItemCollapsable = isAnyItemExpandable
 
     def GetMainWindow(self):
         return self

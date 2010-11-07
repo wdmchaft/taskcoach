@@ -41,8 +41,8 @@ class TreeViewerTest(test.wxTestCase):
         root = self.widget.GetRootItem()
         return self.widget.GetFirstChild(root)[0]
                 
-    def testWidgetDisplayAllItems(self):
-        self.assertEqual(2, self.viewer.widget.GetItemCount())
+    def testWidgetDoesNotDisplayChildItemBeforeItsParentIsExpanded(self):
+        self.assertEqual(1, self.viewer.widget.GetItemCount())
         
     def testExpand(self):
         self.widget.Expand(self.firstItem())

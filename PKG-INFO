@@ -1,12 +1,12 @@
 Metadata-Version: 1.0
 Name: TaskCoach
-Version: 1.1.4
+Version: 1.2.2
 Summary: Your friendly task manager
-Home-page: http://www.taskcoach.org/
+Home-page: http://taskcoach.org/
 Author: Frank Niessink and Jerome Laheurte
 Author-email: developers@taskcoach.org
 License: GNU General Public License version 3 or any later version
-Download-URL: http://www.taskcoach.org/download.html
+Download-URL: http://taskcoach.org/download.html
 Description: Task Coach is a simple open source todo manager to manage personal tasks and todo lists. It grew out of a frustration that well-known task managers, such as those provided with Outlook or Lotus Notes, do not provide facilities for composite tasks. Often, tasks and other things todo consist of several activities. Task Coach is designed to deal with composite tasks.
 Platform: UNKNOWN
 Classifier: Development Status :: 3 - Alpha

@@ -155,6 +155,17 @@ class IOControllerTest(test.TestCase):
         self.iocontroller._saveSave(self.taskFile, showerror) # pylint: disable-msg=W0212
         self.failUnless(self.showerrorCalled)
 
+    def testIOErrorOnExport(self):
+        self.taskFile.setFilename(self.filename1)
+        self.taskFile.tasks().append(task.Task())
+        def showerror(*args, **kwargs): # pylint: disable-msg=W0613
+            self.showerrorCalled = True
+        def openfile(*args, **kwargs):
+            raise IOError
+        self.iocontroller.exportAsHTML(None, filename="Don't ask", 
+                                       openfile=openfile, showerror=showerror)
+        self.failUnless(self.showerrorCalled)
+        
     def testNothingDeleted(self):
         self.taskFile.tasks().append(task.Task(subject='Task'))
         self.taskFile.notes().append(note.Note(subject='Note'))

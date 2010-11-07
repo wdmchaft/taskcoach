@@ -42,8 +42,8 @@ class PerformanceTest(test.TestCase):
         super(PerformanceTest, self).tearDown()
 
     def testRead(self):
-        start = time.time()
         mockApp = mock.App()
+        start = time.time()
         mockApp.io.open(self.taskfilename)
         end = time.time()
         self.assertEqual(self.nrTasks, len(mockApp.taskFile.tasks()))

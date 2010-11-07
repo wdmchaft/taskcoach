@@ -72,38 +72,81 @@ class Sorter(patterns.ListDecorator):
     def createSortKeyFunction(self):
         ''' createSortKeyFunction returns a function that is passed to the 
             builtin list.sort method to extract the sort key from each element
-            in the list. '''
-        if self._sortCaseSensitive:
-            return lambda item: item.subject()
-        else:
-            return lambda item: item.subject().lower()
+            in the list. We expect the domain object class to provide a
+            <sortKey>SortFunction(sortCaseSensitive) method that returns the
+            sortKeyFunction for the sortKey. '''
+        return self._getSortKeyFunction()(caseSensitive=self._sortCaseSensitive)
+            
+    def _getSortKeyFunction(self):
+        try:
+            return getattr(self.DomainObjectClass, '%sSortFunction'%self._sortKey)
+        except AttributeError:
+            self._sortKey = 'subject'
+            return self._getSortKeyFunction()
 
     def _registerObserverForAttribute(self, attribute):
-        eventType = self._createEventTypeFromAttribute(attribute)
-        patterns.Publisher().registerObserver(self.onAttributeChanged, 
-                                              eventType=eventType)
+        for eventType in self._getSortEventTypes(attribute):
+            patterns.Publisher().registerObserver(self.onAttributeChanged, 
+                                                  eventType=eventType)
             
     def _removeObserverForAttribute(self, attribute):
-        eventType = self._createEventTypeFromAttribute(attribute)
-        patterns.Publisher().removeObserver(self.onAttributeChanged, 
-                                            eventType=eventType)
+        for eventType in self._getSortEventTypes(attribute):
+            patterns.Publisher().removeObserver(self.onAttributeChanged, 
+                                                eventType=eventType)
         
     def onAttributeChanged(self, event): # pylint: disable-msg=W0613
         self.reset()
 
-    def _createEventTypeFromAttribute(self, attribute):
-        ''' At the moment, there are two ways event types are specified: 
-            1) by means of a simple, dot-separated, string. For example 
-            "task.subject", or 
-            2) by means of a method that returns an event type string. For
-            example task.Task.subjectChangedEventType(). This method tries both
-            options to get the event type. '''
+    def _getSortEventTypes(self, attribute):
         try:
-            return getattr(self.DomainObjectClass, '%sChangedEventType'%attribute)()
+            return getattr(self.DomainObjectClass, '%sSortEventTypes'%attribute)()
         except AttributeError:
-            return '%s.%s'%(self.EventTypePrefix, attribute) # FIXME: to be removed when no event type strings are used anymore.
+            return []
 
 
 class TreeSorter(Sorter):
+    def __init__(self, *args, **kwargs):
+        self.__rootItems = None # Cached root items
+        super(TreeSorter, self).__init__(*args, **kwargs)
+
+    def treeMode(self):
+        return True
+
+    def createSortKeyFunction(self):
+        ''' createSortKeyFunction returns a function that is passed to the 
+            builtin list.sort method to extract the sort key from each element
+            in the list. We expect the domain object class to provide a
+            <sortKey>SortFunction(sortCaseSensitive, treeMode) method that 
+            returns the sortKeyFunction for the sortKey. '''            
+        return self._getSortKeyFunction()(caseSensitive=self._sortCaseSensitive, 
+                                          treeMode=self.treeMode())
+
+    @patterns.eventSource
+    def reset(self, *args, **kwargs): # pylint: disable-msg=W0221
+        self.__invalidateRootItemCache()
+        return super(TreeSorter, self).reset(*args, **kwargs)
+
+    @patterns.eventSource
+    def extendSelf(self, items, event=None):
+        self.__invalidateRootItemCache()
+        return super(TreeSorter, self).extendSelf(items, event=event)
+
+    @patterns.eventSource
+    def removeItemsFromSelf(self, itemsToRemove, event=None):
+        self.__invalidateRootItemCache()
+        # FIXME: Why is it necessary to remove all children explicitly?
+        itemsToRemove = set(itemsToRemove)
+        if self.treeMode():
+            for item in itemsToRemove.copy():
+                itemsToRemove.update(item.children(recursive=True)) 
+        itemsToRemove = [item for item in itemsToRemove if item in self]
+        return super(TreeSorter, self).removeItemsFromSelf(itemsToRemove, event=event)
+
     def rootItems(self):
-        return [item for item in self if item.parent() is None]
+        ''' Return the root items, i.e. items without a parent. ''' 
+        if self.__rootItems is None:
+            self.__rootItems = [item for item in self if item.parent() is None]
+        return self.__rootItems
+
+    def __invalidateRootItemCache(self):
+        self.__rootItems = None

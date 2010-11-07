@@ -37,11 +37,12 @@ class Attribute(object):
            
 
 class SetAttribute(object):
-    def __init__(self, values, owner, addEvent, removeEvent):
+    def __init__(self, values, owner, addEvent=None, removeEvent=None, changeEvent=None):
         self.__set = set(values) if values else set()
         self.__owner = owner
-        self.__addEvent = addEvent
-        self.__removeEvent = removeEvent
+        self.__addEvent = addEvent or self.__nullEvent
+        self.__removeEvent = removeEvent or self.__nullEvent
+        self.__changeEvent = changeEvent or self.__nullEvent
         
     def get(self):
         return self.__set.copy()
@@ -57,6 +58,8 @@ class SetAttribute(object):
             self.__addEvent(event, *added) # pylint: disable-msg=W0142
         if removed:
             self.__removeEvent(event, *removed) # pylint: disable-msg=W0142
+        if added or removed:
+            self.__changeEvent(event, *self.__set)
 
     @patterns.eventSource            
     def add(self, values, event=None):
@@ -64,10 +67,15 @@ class SetAttribute(object):
             return
         self.__set |= values
         self.__addEvent(event, *values) # pylint: disable-msg=W0142
-
+        self.__changeEvent(event, *self.__set)
+        
     @patterns.eventSource                    
     def remove(self, values, event=None):
         if values & self.__set == set():
             return
         self.__set -= values
         self.__removeEvent(event, *values) # pylint: disable-msg=W0142
+        self.__changeEvent(event, *self.__set)
+        
+    def __nullEvent(self, *args, **kwargs):
+        pass

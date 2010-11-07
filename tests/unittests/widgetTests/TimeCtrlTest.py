@@ -21,31 +21,39 @@ from taskcoachlib import widgets
 from taskcoachlib.domain import date
 
 
-class TimeCtrlTest_Seconds(test.wxTestCase):
-    def setUp(self):
-        super(TimeCtrlTest_Seconds, self).setUp()
-        self.timeCtrl = widgets.datectrl.TimeCtrl(self.frame, showSeconds=True)
-        
+class CommonTestsMixin(object):
     def testGetValue(self):
         oneHour = date.Time(hour=1)
         self.timeCtrl.SetValue(oneHour)
         self.assertEqual(oneHour, self.timeCtrl.GetValue())
 
+    def testChoicesStartTime(self):
+        self.assertEqual('08:00:00' if self.showSeconds else '08:00', 
+                         self.timeCtrl._choices()[0])
+        
+    def testChoicesendTime(self):
+        self.assertEqual('18:00:00' if self.showSeconds else '18:00', 
+                         self.timeCtrl._choices()[-1])
+
+        
+class TimeCtrlTestCase(test.wxTestCase):
+    def setUp(self):
+        super(TimeCtrlTestCase, self).setUp()
+        self.timeCtrl = widgets.datectrl.TimeCtrl(self.frame, 
+                                                  showSeconds=self.showSeconds)
+        
+
+class TimeCtrlTest_Seconds(CommonTestsMixin, TimeCtrlTestCase):
+    showSeconds = True
+        
     def testGetValue_SecondPrecision(self):
         oneHourAndTenSeconds = date.Time(hour=1, second=10)
         self.timeCtrl.SetValue(oneHourAndTenSeconds)
         self.assertEqual(oneHourAndTenSeconds, self.timeCtrl.GetValue())
 
 
-class TimeCtrlTest_NoSeconds(test.wxTestCase):
-    def setUp(self):
-        super(TimeCtrlTest_NoSeconds, self).setUp()
-        self.timeCtrl = widgets.datectrl.TimeCtrl(self.frame, showSeconds=False)
-
-    def testGetValue(self):
-        oneHour = date.Time(hour=1)
-        self.timeCtrl.SetValue(oneHour)
-        self.assertEqual(oneHour, self.timeCtrl.GetValue())
+class TimeCtrlTest_NoSeconds(CommonTestsMixin, TimeCtrlTestCase):
+    showSeconds = False
 
     def testGetValue_SecondPrecision(self):
         oneHour = date.Time(hour=1)
