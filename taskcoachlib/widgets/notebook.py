@@ -188,9 +188,9 @@ class Notebook(BookMixin, fnb.FlatNotebook):
     def __init__(self, *args, **kwargs):
         kwargs['agwStyle'] = fnb.FNB_NO_X_BUTTON | fnb.FNB_VC8 | fnb.FNB_SMART_TABS | fnb.FNB_NO_NAV_BUTTONS | fnb.FNB_DROPDOWN_TABS_LIST
         super(Notebook, self).__init__(*args, **kwargs)
-        # Despite its name, we need to pass a bitmap to SetNavigatorIcon
         bitmap = wx.BitmapFromIcon(self.TopLevelParent.GetIcon())
         if bitmap:
+            # Despite its name, we need to pass a bitmap to SetNavigatorIcon
             self.SetNavigatorIcon(bitmap) 
 
 

@@ -16,22 +16,14 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from taskcoachlib import patterns
 from taskcoachlib.domain import base
 import effort
 
 
 class EffortSorter(base.Sorter):
-    EventTypePrefix = 'effort'
+    DomainObjectClass = effort.Effort
+
     def __init__(self, *args, **kwargs):
         kwargs['sortAscending'] = False
+        kwargs['sortBy'] = 'effort'
         super(EffortSorter, self).__init__(*args, **kwargs)
-        for eventType in ['effort.start', effort.Effort.taskChangedEventType()]:
-            patterns.Publisher().registerObserver(self.onAttributeChanged, 
-                                                  eventType=eventType)
-        
-    def createSortKeyFunction(self):
-        # Sort by start of effort first, then make sure the Total entry comes
-        # first and finally sort by task subject:
-        return lambda effort: (effort.getStart(), effort.isTotal(),
-                               effort.task().subject(recursive=True))

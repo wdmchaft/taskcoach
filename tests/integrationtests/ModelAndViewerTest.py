@@ -32,20 +32,22 @@ class TaskViewerAndCategoryFilterIntegrationTestFixture(test.wxTestCase):
         self.app.mainwindow.taskFile.tasks().append(parent)
         self.category.addCategorizable(child)
         self.category.setFiltered()
-        
+        self.taskViewer = self.app.mainwindow.viewer[0]
         
 class TaskListViewerAndCategoryFilterIntegrationTest( \
         TaskViewerAndCategoryFilterIntegrationTestFixture):
             
     def testFilterOnCategoryChildDoesHideParent(self):
-        self.assertEqual(1, self.app.mainwindow.viewer[1].widget.GetItemCount())
+        self.taskViewer.showTree(False)
+        self.assertEqual(1, self.taskViewer.widget.GetItemCount())
 
 
 class TaskTreeViewerAndCategoryFilterIntegrationTest( \
         TaskViewerAndCategoryFilterIntegrationTestFixture):
             
     def testFilterOnCategoryChildDoesNotHideParent(self):
-        self.app.mainwindow.viewer[1].expandAll()
-        self.assertEqual(2, self.app.mainwindow.viewer[0].widget.GetItemCount())
+        self.taskViewer.showTree(True)
+        self.taskViewer.expandAll()
+        self.assertEqual(2, self.taskViewer.widget.GetItemCount())
         
     

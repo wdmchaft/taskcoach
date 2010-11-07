@@ -28,7 +28,7 @@ class BaseCompositeEffort(base.BaseEffort): # pylint: disable-msg=W0223
     def __init__(self, theTask, *args, **kwargs):
         super(BaseCompositeEffort, self).__init__(theTask, *args, **kwargs)
         patterns.Publisher().registerObserver(self.onTimeSpentChanged,
-            eventType=task.Task.totalTimeSpentChangedEventType(), eventSource=theTask)
+            eventType='task.timeSpent', eventSource=theTask)
         
     def parent(self):
         # Composite efforts don't have a parent.
@@ -108,8 +108,6 @@ class CompositeEffort(BaseCompositeEffort):
             eventType=task.trackStopEventType(), eventSource=task)
         patterns.Publisher().registerObserver(self.onRevenueChanged,
             eventType='task.revenue', eventSource=task)
-        patterns.Publisher().registerObserver(self.onTotalRevenueChanged,
-            eventType='task.totalRevenue', eventSource=task)
         '''
         FIMXE! CompositeEffort does not derive from base.Object
         patterns.Publisher().registerObserver(self.onBackgroundColorChanged,
@@ -166,10 +164,7 @@ class CompositeEffort(BaseCompositeEffort):
             patterns.Event(self.trackStopEventType(), self, stoppedEffort).send()
 
     def onRevenueChanged(self, event): # pylint: disable-msg=W0613
-        patterns.Event('effort.revenue', self, self.revenue()).send()
-
-    def onTotalRevenueChanged(self, event): # pylint: disable-msg=W0613
-        patterns.Event('effort.totalRevenue', self, self.revenue(recursive=True)).send()
+        patterns.Event('effort.revenue', self, self.revenue(recursive=True)).send()
         
     def description(self):
         effortDescriptions = [effort.description() for effort in \
@@ -191,7 +186,7 @@ class CompositeEffortPerPeriod(BaseCompositeEffort):
         super(CompositeEffortPerPeriod, self).__init__(None, start, stop)
         self._invalidateCache()
         patterns.Publisher().registerObserver(self.onTimeSpentChanged,
-            eventType=task.Task.totalTimeSpentChangedEventType())
+            eventType='task.timeSpent')
         for eventType in self.taskList.modificationEventTypes():
             patterns.Publisher().registerObserver(self.onTaskAddedOrRemoved, eventType,
                                                   eventSource=self.taskList)
@@ -223,7 +218,7 @@ class CompositeEffortPerPeriod(BaseCompositeEffort):
     def revenue(self, recursive=False): # pylint: disable-msg=W0613
         return sum(effort.revenue() for effort in self._getEfforts())
     
-    def categories(self, recursive=False):
+    def categories(self, *args, **kwargs):
         return [] 
         
     def isBeingTracked(self, recursive=False): # pylint: disable-msg=W0613

@@ -53,10 +53,7 @@ class BaseNoteViewer(mixin.AttachmentDropTargetMixin,
         pass
 
     def domainObjectsToView(self):
-        if self.notesToShow is None:
-            return self.taskFile.notes()
-        else:
-            return self.notesToShow
+        return self.taskFile.notes() if self.notesToShow is None else self.notesToShow
 
     def curselectionIsInstanceOf(self, class_):
         return class_ == note.Note
@@ -107,10 +104,7 @@ class BaseNoteViewer(mixin.AttachmentDropTargetMixin,
                 setting='attachments', viewer=self),
             uicommand.ViewColumn(menuText=_('&Categories'),
                 helpText=_('Show/hide categories column'),
-                setting='categories', viewer=self),
-            uicommand.ViewColumn(menuText=_('Overall categories'),
-                helpText=_('Show/hide overall categories column'),
-                setting='totalCategories', viewer=self)]
+                setting='categories', viewer=self)]
 
     def _createColumns(self):
         columns = [widgets.Column(name, columnHeader,
@@ -120,28 +114,24 @@ class BaseNoteViewer(mixin.AttachmentDropTargetMixin,
                 sortCallback=uicommand.ViewerSortByCommand(viewer=self, 
                     value=name.lower(), menuText=sortMenuText, 
                     helpText=sortHelpText),
-                imageIndexCallback=self.subjectImageIndex,
+                imageIndexCallback=imageIndexCallback,
                 *eventTypes) \
-            for name, columnHeader, sortMenuText, sortHelpText, eventTypes, renderCallback in \
+            for name, columnHeader, sortMenuText, sortHelpText, eventTypes, renderCallback, imageIndexCallback in \
             ('subject', _('Subject'), _('&Subject'), _('Sort notes by subject'), 
                 (note.Note.subjectChangedEventType(),), 
-                lambda note: note.subject(recursive=False)),
+                lambda note: note.subject(recursive=False), 
+                self.subjectImageIndex),
             ('description', _('Description'), _('&Description'), 
                 _('Sort notes by description'), 
                 (note.Note.descriptionChangedEventType(),), 
-                lambda note: note.description()),
+                lambda note: note.description(), lambda *args: -1),
             ('categories', _('Categories'), _('&Categories'), 
                 _('Sort notes by categories'), 
                 (note.Note.categoryAddedEventType(), 
                  note.Note.categoryRemovedEventType(), 
-                 note.Note.categorySubjectChangedEventType()), 
-                self.renderCategory),
-            ('totalCategories', _('Overall categories'), 
-                _('&Overall categories'), _('Sort notes by overall categories'),
-                 (note.Note.totalCategoryAddedEventType(),
-                  note.Note.totalCategoryRemovedEventType(),
-                  note.Note.totalCategorySubjectChangedEventType()), 
-                 self.renderCategory)]
+                 note.Note.categorySubjectChangedEventType(),
+                 note.Note.expansionChangedEventType()), 
+                self.renderCategories, lambda *args: -1)]
         attachmentsColumn = widgets.Column('attachments', '', 
             note.Note.attachmentsChangedEventType(), # pylint: disable-msg=E1101
             width=self.getColumnWidth('attachments'),

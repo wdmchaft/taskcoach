@@ -50,14 +50,14 @@ class SearchCtrl(tooltip.ToolTipMixin, wx.SearchCtrl):
     def createMenu(self):
         menu = wx.Menu()
         self.__matchCaseMenuItem = menu.AppendCheckItem(wx.ID_ANY, 
-            _('Match case'), _('Match case when filtering'))
+            _('&Match case'), _('Match case when filtering'))
         self.__matchCaseMenuItem.Check(self.__matchCase)
         self.__includeSubItemsMenuItem = menu.AppendCheckItem(wx.ID_ANY, 
-            _('Include sub items'), 
+            _('&Include sub items'), 
             _('Include sub items of matching items in the search results'))
         self.__includeSubItemsMenuItem.Check(self.__includeSubItems)
         self.__searchDescriptionMenuItem = menu.AppendCheckItem(wx.ID_ANY,
-            _('Search description too'),
+            _('&Search description too'),
             _('Search both subject and description'))
         self.__searchDescriptionMenuItem.Check(self.__searchDescription)
         self.SetMenu(menu)

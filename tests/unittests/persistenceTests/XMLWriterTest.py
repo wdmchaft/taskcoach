@@ -590,3 +590,18 @@ class XMLWriterTest(test.TestCase):
         self.expectInXML('<attachment id="foo" location="whatever.txt" '
                          'selectedIcon="icon" status="1" '
                          'subject="whatever.txt" type="file"/>')
+
+    def testPrerequisite(self):
+        prerequisite = task.Task(subject='prereq')
+        self.taskList.append(prerequisite)
+        self.task.addPrerequisites([prerequisite])
+        self.expectInXML('prerequisites="%s"'%prerequisite.id())
+
+    def testMultiplePrerequisites(self):
+        # Use the same id's for both prerequisites because we don't know in
+        # what order they will end up in the XML.
+        prerequisites = [task.Task(subject='prereq1', id='id'),
+                         task.Task(subject='prereq2', id='id')]
+        self.taskList.extend(prerequisites)
+        self.task.addPrerequisites(prerequisites)
+        self.expectInXML('prerequisites="id id"')

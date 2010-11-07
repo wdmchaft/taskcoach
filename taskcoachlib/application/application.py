@@ -52,10 +52,11 @@ class Application(object):
             template directory. '''
         from taskcoachlib.persistence import getDefaultTemplates
         templateDir = self.settings.pathToTemplatesDir()
-        for name, template in getDefaultTemplates():
-            filename = os.path.join(templateDir, name + '.tsktmpl')
-            if not os.path.exists(filename):
-                file(filename, 'wb').write(template)
+        if len([name for name in os.listdir(templateDir) if name.endswith('.tsktmpl')]) == 0:
+            for name, template in getDefaultTemplates():
+                filename = os.path.join(templateDir, name + '.tsktmpl')
+                if not os.path.exists(filename):
+                    file(filename, 'wb').write(template)
         
     def init(self, loadSettings=True, loadTaskFile=True):
         ''' Initialize the application. Needs to be called before 

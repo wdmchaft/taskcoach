@@ -100,7 +100,7 @@ class Viewer2HTMLConverter(object):
             body. '''
         visibleColumns = self.viewer.visibleColumns()
         tableContent = [] if printing else [self.tableCaption(level+1)]
-        tableContent.extend(self.tableHeader(visibleColumns, level+1) + \
+        tableContent.extend(self.tableHeader(visibleColumns, printing, level+1) + \
                             self.tableBody(visibleColumns, selectionOnly, 
                                            printing, level+1))
         attributes = dict(id='table')
@@ -112,26 +112,28 @@ class Viewer2HTMLConverter(object):
         ''' Returns the table caption, based on the viewer title. '''
         return self.wrap(self.viewer.title(), 'caption', level, oneLine=True)
     
-    def tableHeader(self, visibleColumns, level):
+    def tableHeader(self, visibleColumns, printing, level):
         ''' Returns the table header section <thead> containing the header
             row with the column headers. '''
-        tableHeaderContent = self.headerRow(visibleColumns, level+1)
+        tableHeaderContent = self.headerRow(visibleColumns, printing, level+1)
         return self.wrap(tableHeaderContent, 'thead', level)
         
-    def headerRow(self, visibleColumns, level):
+    def headerRow(self, visibleColumns, printing, level):
         ''' Returns the header row <tr> for the table. '''
         headerRowContent = []
         for column in visibleColumns:
-            headerRowContent.append(self.headerCell(column, level+1))
+            headerRowContent.append(self.headerCell(column, printing, level+1))
         return self.wrap(headerRowContent, 'tr', level, **{'class': 'header'})
         
-    def headerCell(self, column, level):
+    def headerCell(self, column, printing, level):
         ''' Returns a table header <th> for the specific column. '''
         header = column.header() or '&nbsp;'
         name = column.name()
         attributes = {'scope': 'col', 'class': name}
         if self.viewer.isSortable() and self.viewer.isSortedBy(name):
             attributes['id'] = 'sorted'
+            if printing:
+                header = self.wrap(header, 'u', level+1, oneLine=True) 
         return self.wrap(header, 'th', level, oneLine=True, **attributes)
     
     def tableBody(self, visibleColumns, selectionOnly, printing, level):
@@ -151,6 +153,7 @@ class Viewer2HTMLConverter(object):
         ''' Returns a <tr> containing the values of item for the 
             visibleColumns. '''
         bodyRowContent = []
+        attributes = dict()
         for column in visibleColumns:
             renderedItem = self.render(item, column, indent=not bodyRowContent and tree)
             if printing:
@@ -159,8 +162,8 @@ class Viewer2HTMLConverter(object):
                     itemColor = self.cssColorSyntax(itemColor)
                     renderedItem = self.wrap(renderedItem, 'font', level+1, 
                                              color=itemColor, oneLine=True)
-            bodyRowContent.append(self.bodyCell(renderedItem, column, level+1))
-        attributes = self.bodyRowBgColor(item, printing)
+            bodyRowContent.append(self.bodyCell(renderedItem, column, printing, level+1))
+        attributes.update(self.bodyRowBgColor(item, printing))
         if not printing:
             attributes.update(self.bodyRowFgColor(item))
         return self.wrap(bodyRowContent, 'tr', level, **attributes)
@@ -194,9 +197,11 @@ class Viewer2HTMLConverter(object):
         else:
             return dict()
         
-    def bodyCell(self, item, column, level):
+    def bodyCell(self, item, column, printing, level):
         ''' Return a <td> for the item/column combination. '''
         attributes = {'class': column.name()}
+        if printing and column.alignment() == wx.LIST_FORMAT_RIGHT:
+            attributes['align'] = 'right'
         return self.wrap(item, 'td', level, oneLine=True, **attributes)
     
     @classmethod

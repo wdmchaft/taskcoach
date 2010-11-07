@@ -54,12 +54,25 @@ class CategoryFilter(base.Filter):
             return categorizables
         
     def filterCategorizable(self, categorizable, filteredCategories):
-        matches = [category.contains(categorizable, self.treeMode()) 
+        matches = [self.categoryContains(category, categorizable) 
                    for category in filteredCategories]
         if self.__filterOnlyWhenAllCategoriesMatch:
             return False not in matches
         else:
             return True in matches
+        
+    def categoryContains(self, category, categorizable):
+        ''' Return whether the categorizable belongs to the category. If an
+            ancestor of the categorizable belong to the category, the 
+            categorizable itself belongs to the category too. '''
+        containedCategorizables = category.categorizables(recursive=True)
+        categorizablesToInvestigate = [categorizable] + categorizable.ancestors()
+        if self.treeMode():
+            categorizablesToInvestigate.extend([child for child in categorizable.children(recursive=True) if child in self.observable()])
+        for categorizableToInvestigate in categorizablesToInvestigate:
+            if categorizableToInvestigate in containedCategorizables:
+                return True
+        return False
         
     def onFilterMatchingChanged(self, event):
         self.__filterOnlyWhenAllCategoriesMatch = eval(event.value())

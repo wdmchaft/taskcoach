@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import wx, operator
 from taskcoachlib.thirdparty.calendar import wxScheduler, wxSchedule, \
     EVT_SCHEDULE_ACTIVATED, EVT_SCHEDULE_RIGHT_CLICK, \
-    EVT_SCHEDULE_DCLICK
+    EVT_SCHEDULE_DCLICK, EVT_PERIODWIDTH_CHANGED
 from taskcoachlib.domain import date
 from taskcoachlib.widgets import draganddrop
 import tooltip
@@ -28,7 +28,7 @@ import tooltip
 
 class _CalendarContent(tooltip.ToolTipMixin, wxScheduler):
     def __init__(self, parent, taskList, iconProvider, onSelect, onEdit,
-                 onCreate, popupMenu, *args, **kwargs):
+                 onCreate, onChangeConfig, popupMenu, *args, **kwargs):
         self.getItemTooltipData = parent.getItemTooltipData
 
         self.__onDropURLCallback = kwargs.pop('onDropURL', None)
@@ -47,6 +47,7 @@ class _CalendarContent(tooltip.ToolTipMixin, wxScheduler):
         self.iconProvider = iconProvider
         self.editCommand = onEdit
         self.createCommand = onCreate
+        self.changeConfigCb = onChangeConfig
         self.popupMenu = popupMenu
 
         self.__tip = tooltip.SimpleToolTip(self)
@@ -65,6 +66,7 @@ class _CalendarContent(tooltip.ToolTipMixin, wxScheduler):
         EVT_SCHEDULE_ACTIVATED(self, self.OnActivation)
         EVT_SCHEDULE_RIGHT_CLICK(self, self.OnPopup)
         EVT_SCHEDULE_DCLICK(self, self.OnEdit)
+        EVT_PERIODWIDTH_CHANGED(self, self.OnChangeConfig)
 
     def _handleDrop(self, x, y, object, cb):
         if cb is not None:
@@ -97,6 +99,9 @@ class _CalendarContent(tooltip.ToolTipMixin, wxScheduler):
     def SetShowUnplanned(self, doShow):
         self.__showUnplanned = doShow
         self.RefreshAllItems(0)
+
+    def OnChangeConfig(self, event):
+        self.changeConfigCb()
 
     def OnActivation(self, event):
         self.SetFocus()

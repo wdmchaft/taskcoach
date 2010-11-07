@@ -38,11 +38,19 @@ class Filter(patterns.SetDecorator):
         return self.__treeMode
 
     def extendSelf(self, items, event=None):
-        super(Filter, self).extendSelf(self.filter(items), event)
+        itemsToAdd = set(self.filter(items))
+        if self.treeMode():
+            for item in itemsToAdd.copy():
+                itemsToAdd.update(self.filter(item.ancestors()))
+        itemsToAdd = [item for item in itemsToAdd if item not in self]
+        super(Filter, self).extendSelf(itemsToAdd, event)
 
     def removeItemsFromSelf(self, items, event=None):
         itemsToRemove = set(items)
         if self.treeMode():
+            for item in itemsToRemove.copy():
+                ancestorsToRemove = [ancestor for ancestor in item.ancestors() if not self.filter([ancestor])]
+                itemsToRemove.update(ancestorsToRemove)
             for item in itemsToRemove.copy():
                 itemsToRemove.update(item.children(recursive=True))
         itemsToRemove = [item for item in itemsToRemove if item in self]
@@ -51,10 +59,9 @@ class Filter(patterns.SetDecorator):
     @patterns.eventSource    
     def reset(self, event=None):
         filteredItems = self.filter(self.observable())
-        itemsToAdd = [item for item in filteredItems if item not in self]
         itemsToRemove = [item for item in self if item not in filteredItems]
         self.removeItemsFromSelf(itemsToRemove, event)
-        self.extendSelf(itemsToAdd, event)
+        self.extendSelf(self.observable(), event)
             
     def filter(self, items):
         ''' filter returns the items that pass the filter. '''
@@ -162,12 +169,7 @@ class DeletedFilter(Filter):
                           eventType=eventType)
 
     def onObjectMarkedDeletedOrNot(self, event):
-        items = event.sources()
-        newEvent = patterns.Event()
-        self.removeItemsFromSelf([item for item in items if item.isDeleted()], newEvent)
-        self.extendSelf([item for item in items if not item.isDeleted() \
-            and item in self.observable() and not item in self], newEvent)
-        newEvent.send()
+        self.reset()
 
     def filter(self, items):
         return [item for item in items if not item.isDeleted()]

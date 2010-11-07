@@ -142,6 +142,21 @@ class DeleteCommandWithTasksTest(TaskCommandTestCase):
         self.assertDoUndoRedo(lambda: self.failIf(cat1.categorizables() or cat2.categorizables()), 
             lambda: self.failUnless(set([self.task1]) == cat1.categorizables() == cat2.categorizables()))
         
+    def testDeleteTaskThatIsPrerequisite(self):
+        self.task2.addPrerequisites([self.task1])
+        self.task1.addDependencies([self.task2])
+        self.taskList.append(self.task2)
+        self.delete([self.task1])
+        self.assertDoUndoRedo(lambda: self.failIf(self.task2.prerequisites()),
+                              lambda: self.failUnless(self.task2.prerequisites()))
+
+    def testDeleteTaskThatIsDependency(self):
+        self.task2.addPrerequisites([self.task1])
+        self.taskList.append(self.task2)
+        self.delete([self.task2])
+        self.assertDoUndoRedo(lambda: self.failIf(self.task1.dependencies()),
+                              lambda: self.failUnless(self.task1.dependencies()))
+
 
 class DeleteCommandWithTasksWithChildrenTest(CommandWithChildrenTestCase):
     def assertDeleteWorks(self):
@@ -224,9 +239,8 @@ class DeleteCommandWithTasksWithEffortTest(CommandWithEffortTestCase):
 
 
 class NewTaskCommandTest(TaskCommandTestCase):
-    def new(self, categories=None, **kwargs):
-        newTaskCommand = command.NewTaskCommand(self.taskList, categories=categories or [],
-                                                **kwargs)
+    def new(self, **kwargs):
+        newTaskCommand = command.NewTaskCommand(self.taskList, **kwargs)
         newTask = newTaskCommand.items[0]
         newTaskCommand.do()
         return newTask
@@ -244,6 +258,44 @@ class NewTaskCommandTest(TaskCommandTestCase):
             lambda: self.assertEqual(set([cat]), newTask.categories()),
             lambda: self.assertTaskList(self.originalList))
 
+    def testNewTaskWithCategory_AddsTaskToCategory(self):
+        cat = category.Category('cat')
+        newTask = self.new(categories=[cat])
+        self.assertDoUndoRedo(
+            lambda: self.assertEqual(set([newTask]), cat.categorizables()),
+            lambda: self.failIf(cat.categorizables()))
+
+    def testNewTaskWithPrerequisite(self):
+        newTask = self.new(prerequisites=[self.task1])
+        self.assertDoUndoRedo(
+            lambda: self.assertEqual(set([self.task1]), newTask.prerequisites()),
+            lambda: self.assertTaskList(self.originalList))
+        
+    def testNewTaskWithPrerequisite_AddsDependency(self):
+        newTask = self.new(prerequisites=[self.task1])
+        self.assertDoUndoRedo(
+            lambda: self.assertEqual(set([newTask]), self.task1.dependencies()),
+            lambda: self.failIf(self.task1.dependencies()))
+
+    def testNewTaskWithDependency(self):
+        newTask = self.new(dependencies=[self.task1])
+        self.assertDoUndoRedo(
+            lambda: self.assertEqual(set([self.task1]), newTask.dependencies()),
+            lambda: self.assertTaskList(self.originalList))
+
+    def testNewTaskWithDependency_AddsPrerequisite(self):
+        newTask = self.new(dependencies=[self.task1])
+        self.assertDoUndoRedo(
+            lambda: self.assertEqual(set([newTask]), self.task1.prerequisites()),
+            lambda: self.failIf(self.task1.prerequisites()))
+        
+    def testNewTaskWithAttachment(self):
+        att = attachment.FileAttachment('filename')
+        newTask = self.new(attachments=[att])
+        self.assertDoUndoRedo(
+            lambda: self.assertEqual([att], newTask.attachments()),
+            lambda: self.assertTaskList(self.originalList))
+        
     def testNewTaskWithKeywords(self):
         dateTime = date.DateTime(2042, 2, 3)
         newTask = self.new(startDateTime=dateTime)
@@ -293,6 +345,7 @@ class EditTaskCommandTest(TaskCommandTestCase):
             taskToEdit.setDescription('New description')
             taskToEdit.setBudget(date.TimeDelta(hours=1))
             taskToEdit.setCompletionDateTime()
+            taskToEdit.addPrerequisites([self.task2])
             att = attachment.FileAttachment('attachment')
             if att in taskToEdit.attachments():
                 taskToEdit.removeAttachments(att)
@@ -396,6 +449,18 @@ class EditTaskCommandTest(TaskCommandTestCase):
             lambda: self.assertEqual(date.Recurrence('weekly'), 
                                      self.task1.recurrence()))
                 
+    def testAddPrerequisite(self):
+        self.edit([self.task1])
+        self.assertDoUndoRedo(
+            lambda: self.failUnless(self.task1.prerequisites()),
+            lambda: self.failIf(self.task1.prerequisites()))
+        
+    def testAddPrerequisiteAddsDependencyToo(self):
+        self.edit([self.task1])
+        self.assertDoUndoRedo(
+            lambda: self.failUnless(self.task2.dependencies()),
+            lambda: self.failIf(self.task2.dependencies()))
+
 
 class MarkCompletedCommandTest(CommandWithChildrenTestCase):
     def testMarkCompleted(self):

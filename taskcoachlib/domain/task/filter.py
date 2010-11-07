@@ -31,30 +31,20 @@ class ViewFilter(base.Filter):
         self.__hideCompositeTasks = kwargs.pop('hideCompositeTasks', False)
         self.registerObservers()
         super(ViewFilter, self).__init__(*args, **kwargs)
-
+        
     def registerObservers(self):
         publisher = patterns.Publisher()
         for eventType in ('task.dueDateTime', 'task.startDateTime', 
                           'task.completionDateTime', 'task.prerequisites',
                           task.Task.addChildEventType(),
-                          task.Task.removeChildEventType()):
-            publisher.registerObserver(self.onTaskChange,
+                          task.Task.removeChildEventType(),
+                          'clock.minute'):
+            publisher.registerObserver(self.onTaskStatusChange,
                 eventType=eventType)
-        publisher.registerObserver(self.onEveryMinute, eventType='clock.minute')
 
-    def onTaskChange(self, event):
-        tasks = event.sources()
-        newEvent = patterns.Event()
-        tasksToRemove = [task for task in tasks if not self.filterTask(task)] # pylint: disable-msg=W0621
-        self.removeItemsFromSelf(tasksToRemove, newEvent)
-        tasksToAdd = [task for task in tasks if self.filterTask(task) \
-                      and task in self.observable() and task not in self]
-        self.extendSelf(tasksToAdd, newEvent)
-        newEvent.send()
-        
-    def onEveryMinute(self, event):
+    def onTaskStatusChange(self, event): # pylint: disable-msg=W0613
         self.reset()
-            
+        
     def setFilteredByDueDateTime(self, dueDateTimeString):
         self.__dueDateTimeFilter = self.stringToDueDateTime(dueDateTimeString)
         self.reset()
@@ -94,6 +84,7 @@ class ViewFilter(base.Filter):
 
     @staticmethod
     def stringToDueDateTime(dueDateTimeString):
+        # pylint: disable-msg=W0108
         dateTimeFactory = {'Today' : lambda: date.Now().endOfDay(), 
                            'Tomorrow' : lambda: date.Now().endOfTomorrow(),
                            'Workweek' : lambda: date.Now().endOfWorkWeek(), 

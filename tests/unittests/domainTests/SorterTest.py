@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import test
 from taskcoachlib import config
-from taskcoachlib.domain import task, effort, date
+from taskcoachlib.domain import task, effort, date, category
 
 
 class DummyTaskList(task.TaskList):
@@ -148,14 +148,14 @@ class TaskSorterSettingsTest(test.TestCase):
         self.taskList.append(task3)
         self.assertEqual([self.task1, task3, self.task2], list(self.sorter))
     
-    def testSortByTotalTimeLeftAscending(self):
+    def testSortByTimeLeftAscending(self):
         self.sorter.sortAscending(True)
-        self.sorter.sortBy('totaltimeLeft')
+        self.sorter.sortBy('timeLeft')
         self.assertEqual([self.task2, self.task1], list(self.sorter))
 
-    def testSortByTotalTimeLeftDescending(self):
+    def testSortByTimeLeftDescending(self):
         self.sorter.sortAscending(False)
-        self.sorter.sortBy('totaltimeLeft')
+        self.sorter.sortBy('timeLeft')
         self.assertEqual([self.task1, self.task2], list(self.sorter))
 
     def testSortByBudgetAscending(self):
@@ -184,6 +184,68 @@ class TaskSorterSettingsTest(test.TestCase):
             date.DateTime(2005,1,1,10,0,0), date.DateTime(2005,1,1,11,0,0)))
         self.assertEqual([self.task1, self.task2], list(self.sorter))
 
+    def testSortByHourlyFeeAscending(self):
+        self.sorter.sortAscending(True)
+        self.sorter.sortBy('hourlyFee')
+        self.task1.setHourlyFee(100)
+        self.task2.setHourlyFee(200)
+        self.assertEqual([self.task1, self.task2], list(self.sorter))
+
+    def testSortByHourlyFeeDescending(self):
+        self.sorter.sortAscending(False)
+        self.sorter.sortBy('hourlyFee')
+        self.task1.setHourlyFee(100)
+        self.task2.setHourlyFee(200)
+        self.assertEqual([self.task2, self.task1], list(self.sorter))
+        
+    def testSortByPrerequisiteAscending(self):
+        self.sorter.sortAscending(True)
+        self.sorter.sortBy('prerequisites')
+        self.task1.addPrerequisites([self.task2])
+        self.task2.addPrerequisites([self.task1])
+        self.assertEqual([self.task2, self.task1], list(self.sorter))
+
+    def testSortByPrerequisiteDescending(self):
+        self.sorter.sortAscending(False)
+        self.sorter.sortBy('prerequisites')
+        self.task1.addPrerequisites([self.task2])
+        self.task2.addPrerequisites([self.task1])
+        self.assertEqual([self.task1, self.task2], list(self.sorter))
+        
+    def testSortByRecursivePrerequisiteAscending(self):
+        self.sorter.sortAscending(True)
+        self.sorter.sortBy('prerequisites')
+        child1 = task.Task(subject='Child 1')
+        self.task1.addChild(child1)
+        self.taskList.append(child1)
+        child1.addPrerequisites([self.task2])
+        self.task2.addPrerequisites([self.task1])
+        self.assertEqual([self.task1, self.task2, child1], list(self.sorter))
+        
+    def testSortByDependencyAscending(self):
+        self.sorter.sortAscending(True)
+        self.sorter.sortBy('dependencies')
+        self.task1.addDependencies([self.task2])
+        self.task2.addDependencies([self.task1])
+        self.assertEqual([self.task2, self.task1], list(self.sorter))
+
+    def testSortByDependencyDescending(self):
+        self.sorter.sortAscending(False)
+        self.sorter.sortBy('dependencies')
+        self.task1.addDependencies([self.task2])
+        self.task2.addDependencies([self.task1])
+        self.assertEqual([self.task1, self.task2], list(self.sorter))
+
+    def testSortByRecursiveDependencyAscending(self):
+        self.sorter.sortAscending(True)
+        self.sorter.sortBy('dependencies')
+        child1 = task.Task(subject='Child 1')
+        self.task1.addChild(child1)
+        self.taskList.append(child1)
+        child1.addDependencies([self.task2])
+        self.task2.addDependencies([self.task1])
+        self.assertEqual([self.task1, self.task2, child1], list(self.sorter))
+        
     def testAlwaysKeepSubscriptionToCompletionDateTime(self):
         ''' TaskSorter should keep a subscription to task.completionDateTime 
             even when the completion date is not the sort key, because sorting
@@ -204,6 +266,16 @@ class TaskSorterSettingsTest(test.TestCase):
         self.task1.setStartDateTime(date.Now() + date.oneDay)
         self.assertEqual([self.task2, self.task1], list(self.sorter))
         
+    def testSortByCategories(self):
+        self.sorter.sortBy('categories')
+        self.task1.addCategory(category.Category('Category 2'))
+        self.task2.addCategory(category.Category('Category 1'))
+        self.assertEqual([self.task2, self.task1], list(self.sorter))
+        
+    def testSortByInvalidSortKey(self):
+        self.sorter.sortBy('invalidKey')
+        self.assertEqual([self.task1, self.task2], list(self.sorter))
+
 
 class TaskSorterTreeModeTest(test.TestCase):
     def setUp(self):
@@ -233,14 +305,24 @@ class TaskSorterTreeModeTest(test.TestCase):
         self.sorter.sortAscending(False)
         self.parent1.setPriority(5)
         self.child2.setPriority(10)
-        self.failUnless(list(self.sorter).index(self.parent1) < \
-            list(self.sorter).index(self.parent2))
+        self.failUnless(list(self.sorter).index(self.parent2) < \
+            list(self.sorter).index(self.parent1))
 
-    def testSortByTotalPriority(self):
-        self.sorter.sortBy('totalpriority')
-        self.sorter.sortAscending(False)
-        self.parent1.setPriority(5)
-        self.child2.setPriority(10)
+    def testSortByCategories_WhenParentsHaveNoCategories(self):
+        self.child1.addCategory(category.Category('Category 2'))
+        self.child2.addCategory(category.Category('Category 1'))
+        self.sorter.sortBy('categories')
+        self.failUnless(list(self.sorter).index(self.parent2) < \
+            list(self.sorter).index(self.parent1))
+
+    def testSortByCategories_WhenParentCategoryEqualsChildCategoryOfAnotherParent(self):
+        category1 = category.Category('Category 1')
+        category2 = category.Category('Category 2')
+        category3 = category.Category('Category 3')
+        self.child1.addCategory(category1)
+        self.parent1.addCategory(category3)
+        self.parent2.addCategory(category2)
+        self.sorter.sortBy('categories')
         self.failUnless(list(self.sorter).index(self.parent2) < \
             list(self.sorter).index(self.parent1))
         
@@ -257,6 +339,10 @@ class TaskSorterTreeModeTest(test.TestCase):
         self.sorter.setTreeMode(False)
         self.assertEqual(False, self.taskList.treeMode)
 
+    def testSortByInvalidSortKey(self):
+        self.sorter.sortBy('invalidKey')
+        self.assertEqual([self.parent1, self.child1, self.parent2, self.child2], 
+                         list(self.sorter))
         
             
 class EffortSorterTest(test.TestCase):

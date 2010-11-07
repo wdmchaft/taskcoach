@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from task import TaskViewer, SquareTaskViewer, TimelineViewer, CalendarViewer
+from task import TaskViewer, CheckableTaskViewer, SquareTaskViewer, TimelineViewer, CalendarViewer
 from category import CategoryViewer, BaseCategoryViewer
 from effort import EffortViewer
 from note import NoteViewer, BaseNoteViewer

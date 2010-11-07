@@ -109,7 +109,7 @@ class CommonTestsMixin(object):
         self.taskList.extend([self.task1, self.task2])
         self.task1.addChild(self.task2)
         self.task2.addEffort(self.effort2period1a)
-        self.assertEqual(3, len(self.effortAggregator))
+        self.assertEqual(2, len(self.effortAggregator))
 
     def testAddChildWithEffort(self):
         self.taskList.extend([self.task1, self.task2])
@@ -120,19 +120,19 @@ class CommonTestsMixin(object):
     def testAddParentAndChildWithEffortToTaskList(self):
         self.task3.addEffort(self.effort3period1a)
         self.taskList.append(self.task1)
-        self.assertEqual(3, len(self.effortAggregator))
+        self.assertEqual(2, len(self.effortAggregator))
 
     def testAddEffortToGrandChild(self):
         self.taskList.extend([self.task1, self.task2])
         self.task3.addChild(self.task2)
         self.task2.addEffort(self.effort2period1a)
-        self.assertEqual(4, len(self.effortAggregator))
+        self.assertEqual(2, len(self.effortAggregator))
 
     def testAddGrandChildWithEffort(self):
         self.taskList.extend([self.task1, self.task2])
         self.task2.addEffort(self.effort2period1a)
         self.task3.addChild(self.task2)
-        self.assertEqual(4, len(self.effortAggregator))
+        self.assertEqual(3, len(self.effortAggregator))
 
     def testRemoveChildWithEffortFromParent(self):
         self.taskList.extend([self.task1, self.task2])

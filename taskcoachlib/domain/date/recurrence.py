@@ -24,8 +24,10 @@ import dateandtime as date
 
 
 class Recurrence(object):
+    units = ('daily', 'weekly', 'monthly', 'yearly', '')
+    
     def __init__(self, unit='', amount=1, sameWeekday=False, max=0, count=0): # pylint: disable-msg=W0622
-        assert unit in ['', 'daily', 'weekly', 'monthly', 'yearly']
+        assert unit in self.units
         assert amount >= 1
         self.unit = unit
         self.amount = amount
@@ -124,6 +126,14 @@ class Recurrence(object):
                    self.max == other.max
         except AttributeError:
             return False
+ 
+    def __lt__(self, other):
+        try:
+            return self.units.index(self.unit) < self.units.index(other.unit) or \
+                (self.units.index(self.unit) == self.units.index(other.unit) and \
+                self.amount < other.amount)
+        except AttributeError:
+            return True
  
     def __nonzero__(self):
         return bool(self.unit)

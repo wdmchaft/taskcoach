@@ -83,8 +83,7 @@ class Timeline(tooltip.ToolTipMixin, timeline.TimeLine):
     def isAnyItemExpandable(self):
         return False
 
-    isSelectionExpandable = isSelectionCollapsable = isAnyItemCollapsable =\
-        isAnyItemExpandable
+    isAnyItemCollapsable = isAnyItemExpandable
 
     def GetMainWindow(self):
         return self

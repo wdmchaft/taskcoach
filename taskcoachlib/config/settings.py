@@ -147,6 +147,7 @@ class Settings(patterns.Observer, UnicodeAwareConfigParser):
         return result
 
     def set(self, section, option, value, new=False): # pylint: disable-msg=W0221
+        value = self.__escapePercentage(value)
         if new:
             currentValue = 'a new option, so use something as current value'\
                 ' that is unlikely to be equal to the new value'
@@ -259,3 +260,9 @@ class Settings(patterns.Observer, UnicodeAwareConfigParser):
     def setLoadAndSave(self, loadAndSave=True):
         ''' Turn saving and loading on and off, for testing purposes. '''
         self.__loadAndSave = loadAndSave
+    
+    @staticmethod
+    def __escapePercentage(value):
+        # Prevent ValueError: invalid interpolation syntax in '%' at position 0
+        return value.replace('%', '%%')
+        

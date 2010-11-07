@@ -181,54 +181,7 @@ class CategoryTest(test.TestCase):
     def testSetFilteredViaConstructor(self):
         filteredCategory = category.Category('test', filtered=True)
         self.failUnless(filteredCategory.isFiltered())
-        
-    # Contains:
-        
-    def testContains_NoCategorizables(self):
-        self.failIf(self.category.contains(self.categorizable))
-        
-    def testContains_CategorizablesInCategory(self):
-        self.category.addCategorizable(self.categorizable)
-        self.failUnless(self.category.contains(self.categorizable))
-        
-    def testContains_CategorizableInSubCategory(self):
-        self.subCategory.addCategorizable(self.categorizable)
-        self.category.addChild(self.subCategory)
-        self.failUnless(self.category.contains(self.categorizable))
-        
-    def testContains_ParentInCategory(self):
-        self.category.addCategorizable(self.categorizable)
-        self.categorizable.addChild(self.child)
-        self.failUnless(self.category.contains(self.child))
-        
-    def testContains_ParentInSubCategory(self):
-        self.subCategory.addCategorizable(self.categorizable)
-        self.category.addChild(self.subCategory)
-        self.categorizable.addChild(self.child)
-        self.failUnless(self.category.contains(self.child))
-    
-    def testContains_ChildInCategory(self):
-        self.categorizable.addChild(self.child)
-        self.category.addCategorizable(self.child)
-        self.failIf(self.category.contains(self.categorizable))
-        
-    def testContains_ChildInSubCategory(self):
-        self.categorizable.addChild(self.child)
-        self.subCategory.addCategorizable(self.child)
-        self.category.addChild(self.subCategory)
-        self.failIf(self.category.contains(self.categorizable))
-        
-    def testRecursiveContains_ChildInCategory(self):
-        self.categorizable.addChild(self.child)
-        self.category.addCategorizable(self.child)
-        self.failUnless(self.category.contains(self.categorizable, treeMode=True))
-        
-    def testRecursiveContains_ChildInSubcategory(self):
-        self.categorizable.addChild(self.child)
-        self.subCategory.addCategorizable(self.child)
-        self.category.addChild(self.subCategory)
-        self.failUnless(self.category.contains(self.categorizable, treeMode=True))
-        
+
     # Copy:
         
     def testCopy_SubjectIsCopied(self):

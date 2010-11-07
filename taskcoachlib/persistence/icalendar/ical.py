@@ -252,8 +252,8 @@ def VCalFromTask(task, encoding=True):
     if task.completionDateTime() != date.DateTime():
         components.append('COMPLETED:%s'%fmtDateTime(task.completionDateTime()))
 
-    if task.categories(True):
-        categories = ','.join([quote(unicode(c)) for c in task.categories(True)])
+    if task.categories(recursive=True, upwards=True):
+        categories = ','.join([quote(unicode(c)) for c in task.categories(recursive=True, upwards=True)])
         components.append('CATEGORIES%s:%s'%(encoding, categories))
 
     if task.completed():

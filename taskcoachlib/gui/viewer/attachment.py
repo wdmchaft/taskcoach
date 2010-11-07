@@ -28,7 +28,7 @@ from taskcoachlib.gui import uicommand, menu, dialog
 import base, mixin
 
 
-class AttachmentViewer(mixin.AttachmentDropTargetMixin, base.ViewerWithColumns,
+class AttachmentViewer(mixin.AttachmentDropTargetMixin, base.SortableViewerWithColumns,
                        mixin.SortableViewerForAttachmentsMixin, 
                        mixin.SearchableViewerMixin, mixin.NoteColumnMixin,
                        base.ListViewer):
@@ -123,18 +123,19 @@ class AttachmentViewer(mixin.AttachmentDropTargetMixin, base.ViewerWithColumns,
                                                       viewer=self),
                            None,
                            uicommand.AttachmentOpen(attachments=attachment.AttachmentList(),
-                                                    viewer=self)]
+                                                    viewer=self, settings=self.settings)]
         return commands
 
-    def typeImageIndex(self, anAttachment, which): # pylint: disable-msg=W0613
+    def typeImageIndex(self, anAttachment, which, exists=os.path.exists): # pylint: disable-msg=W0613
         if anAttachment.type_ == 'file':
-            if os.path.exists(anAttachment.normalizedLocation()):
+            attachmentBase = self.settings.get('file', 'attachmentbase')
+            if exists(anAttachment.normalizedLocation(attachmentBase)):
                 return self.imageIndex['fileopen']
             return self.imageIndex['fileopen_red']
 
         try:
             return self.imageIndex[{ 'uri': 'earth_blue_icon',
-                                     'mail': 'email'}[anAttachment.type_]]
+                                     'mail': 'envelope_icon'}[anAttachment.type_]]
         except KeyError:
             return -1
     

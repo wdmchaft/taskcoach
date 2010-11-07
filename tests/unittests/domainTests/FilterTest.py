@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import test
 from taskcoachlib import patterns, config
-from taskcoachlib.domain import task, date, category, base, effort
+from taskcoachlib.domain import task, date, category, base
 
 
 class TestFilter(base.Filter):
@@ -26,7 +26,7 @@ class TestFilter(base.Filter):
         return [item for item in items if item > 'b']
 
 
-class FilterTests(object):
+class FilterTestsMixin(object):
     def setUp(self):
         self.observable = self.collectionClass(['a', 'b', 'c', 'd'])
         self.filter = TestFilter(self.observable)
@@ -49,11 +49,11 @@ class FilterTests(object):
         self.failUnless('e' in self.filter)
 
         
-class FilterListTest(FilterTests, test.TestCase):
+class FilterListTest(FilterTestsMixin, test.TestCase):
     collectionClass = patterns.ObservableList
 
 
-class FilterSetTest(FilterTests, test.TestCase):
+class FilterSetTest(FilterTestsMixin, test.TestCase):
     collectionClass = patterns.ObservableSet
     
     
@@ -62,12 +62,21 @@ class DummyFilter(base.Filter):
         return items
     
     def test(self):
-        self.testcalled = 1
+        self.testcalled = 1 # pylint: disable-msg=W0201
+
+
+class DummyItem(str):
+    def ancestors(self):
+        return []
+    
+    def children(self, *args, **kwargs):
+        return []
 
 
 class StackedFilterTest(test.TestCase):
     def setUp(self):
-        self.list = patterns.ObservableList(['a', 'b', 'c', 'd'])
+        self.list = patterns.ObservableList([DummyItem('a'), DummyItem('b'), 
+                                             DummyItem('c'), DummyItem('d')])
         self.filter1 = DummyFilter(self.list)
         self.filter2 = TestFilter(self.filter1)
 
@@ -88,7 +97,7 @@ class ViewFilterTestCase(test.TestCase):
     def setUp(self):
         task.Task.settings = config.Settings(load=False)
         self.list = task.TaskList()
-        self.filter = task.filter.ViewFilter(self.list, treeMode=self.treeMode)
+        self.filter = task.filter.ViewFilter(self.list, treeMode=self.treeMode) # pylint: disable-msg=E1101
         self.task = task.Task(subject='task')
         self.dueToday = task.Task(subject='due today', dueDateTime=date.Now().endOfDay())
         self.dueTomorrow = task.Task(subject='due tomorrow', 
@@ -98,7 +107,7 @@ class ViewFilterTestCase(test.TestCase):
         self.child = task.Task(subject='child')
 
 
-class ViewFilterTests(object):
+class ViewFilterTestsMixin(object):
     def testCreate(self):
         self.assertEqual(0, len(self.filter))
 
@@ -178,12 +187,31 @@ class ViewFilterTests(object):
         self.filter.setFilteredByDueDateTime('Workweek')
         self.assertEqual(1, len(self.filter))
 
+    def testMarkPrerequisiteCompletedWhileFilteringInactiveTasks(self):
+        self.task.addPrerequisites([self.dueToday])
+        self.task.setStartDateTime(date.Now())
+        self.dueToday.setStartDateTime(date.Now())
+        self.filter.extend([self.dueToday, self.task])
+        self.filter.hideInactiveTasks()
+        self.filter.hideCompletedTasks()
+        self.assertEqual(self.dueToday, list(self.filter)[0])
+        self.dueToday.setCompletionDateTime()
+        self.assertEqual(self.task, list(self.filter)[0])
+        
+    def testAddPrerequisiteToActiveTaskWhileFilteringInactiveTasksShouldHideTask(self):
+        for eachTask in (self.task, self.dueToday):
+            eachTask.setStartDateTime(date.Now())
+        self.filter.extend([self.dueToday, self.task])
+        self.filter.hideInactiveTasks()
+        self.task.addPrerequisites([self.dueToday])
+        self.assertEqual([self.dueToday], list(self.filter))
+        
 
-class ViewFilterInListModeTest(ViewFilterTests, ViewFilterTestCase):
+class ViewFilterInListModeTest(ViewFilterTestsMixin, ViewFilterTestCase):
     treeMode = False
             
 
-class ViewFilterInTreeModeTest(ViewFilterTests, ViewFilterTestCase):
+class ViewFilterInTreeModeTest(ViewFilterTestsMixin, ViewFilterTestCase):
     treeMode = True
         
     def testFilterCompletedTasks(self):
@@ -200,14 +228,14 @@ class HideCompositeTasksTestCase(ViewFilterTestCase):
     def setUp(self):
         task.Task.settings = config.Settings(load=False)
         self.list = task.TaskList()
-        self.filter = task.filter.ViewFilter(self.list, treeMode=self.treeMode)
+        self.filter = task.filter.ViewFilter(self.list, treeMode=self.treeMode) # pylint: disable-msg=E1101
         self.task = task.Task(subject='task')
         self.child = task.Task(subject='child')
         self.task.addChild(self.child)
         self.filter.append(self.task)
 
 
-class HideCompositeTasksTests(object):
+class HideCompositeTasksTestsMixin(object):
     def testTurnOn(self):
         self.filter.hideCompositeTasks()
         if self.filter.treeMode():
@@ -236,6 +264,7 @@ class HideCompositeTasksTests(object):
         self.assertEqual([self.task], list(self.filter))
 
     def _addTwoGrandChildren(self):
+        # pylint: disable-msg=W0201
         self.grandChild1 = task.Task(subject='grandchild 1')
         self.grandChild2 = task.Task(subject='grandchild 2')
         self.child.addChild(self.grandChild1)
@@ -248,8 +277,8 @@ class HideCompositeTasksTests(object):
         if self.filter.treeMode():
             self.assertEqual(4, len(self.filter))
         else:
-            self.assertEqual([self.grandChild1, self.grandChild2], 
-                list(self.filter))
+            self.assertEqual(set([self.grandChild1, self.grandChild2]), 
+                set(self.filter))
 
     def testRemoveTwoChildren(self):
         self._addTwoGrandChildren()
@@ -261,12 +290,12 @@ class HideCompositeTasksTests(object):
             self.assertEqual([self.child], list(self.filter))
 
 
-class HideCompositeTasksInListModeTest(HideCompositeTasksTests, 
+class HideCompositeTasksInListModeTest(HideCompositeTasksTestsMixin, 
                                        HideCompositeTasksTestCase):
     treeMode = False
             
 
-class HideCompositeTasksInTreeModeTest(HideCompositeTasksTests, 
+class HideCompositeTasksInTreeModeTest(HideCompositeTasksTestsMixin, 
                                        HideCompositeTasksTestCase):
     treeMode = True
         
@@ -371,15 +400,15 @@ class SearchFilterTest(test.TestCase):
         self.assertEqual(2, len(self.filter))
 
 
-class CategoryFilterHelpers(object):
+class CategoryFilterHelpersMixin(object):
     def setFilterOnAnyCategory(self):
         self.filter.setFilterOnlyWhenAllCategoriesMatch(False)
         
     def setFilterOnAllCategories(self):
         self.filter.setFilterOnlyWhenAllCategoriesMatch(True)
     
-    
-class CategoryFilterFixtureAndCommonTests(CategoryFilterHelpers):
+
+class CategoryFilterFixtureAndCommonTestsMixin(CategoryFilterHelpersMixin):
     def setUp(self):
         task.Task.settings = config.Settings(load=False)
         self.parent = task.Task('parent')
@@ -485,9 +514,38 @@ class CategoryFilterFixtureAndCommonTests(CategoryFilterHelpers):
         self.parentCategory.setFiltered()
         patterns.Event('view.categoryfiltermatchall', 'dummy_source', 'False').send()
         self.assertEqual(2, len(self.filter))
-        
 
-class CategoryFilterInListModeTest(CategoryFilterFixtureAndCommonTests, 
+    # Contains:
+        
+    def testContains_NoCategorizables(self):
+        self.failIf(self.filter.categoryContains(self.unusedCategory, self.parent))
+        
+    def testContains_CategorizablesInCategory(self):
+        self.parentCategory.addCategorizable(self.parent)
+        self.failUnless(self.filter.categoryContains(self.parentCategory, self.parent))
+        
+    def testContains_CategorizableInSubCategory(self):
+        self.childCategory.addCategorizable(self.parent)
+        self.failUnless(self.filter.categoryContains(self.parentCategory, self.parent))
+        
+    def testContains_ParentInCategory(self):
+        self.parentCategory.addCategorizable(self.parent)
+        self.failUnless(self.filter.categoryContains(self.parentCategory, self.child))
+        
+    def testContains_ParentInSubCategory(self):
+        self.childCategory.addCategorizable(self.parent)
+        self.failUnless(self.filter.categoryContains(self.parentCategory, self.child))
+    
+    def testContains_ChildInCategory(self):
+        self.parentCategory.addCategorizable(self.child)
+        self.failUnless(self.filter.categoryContains(self.parentCategory, self.parent))
+        
+    def testContains_ChildInSubCategory(self):
+        self.childCategory.addCategorizable(self.child)
+        self.failUnless(self.filter.categoryContains(self.parentCategory, self.parent))
+                           
+
+class CategoryFilterInListModeTest(CategoryFilterFixtureAndCommonTestsMixin, 
                                    test.TestCase):
     treeMode = False   
     
@@ -504,7 +562,7 @@ class CategoryFilterInListModeTest(CategoryFilterFixtureAndCommonTests,
         self.failUnless(self.child in self.filter)
 
 
-class CategoryFilterInTreeModeTest(CategoryFilterFixtureAndCommonTests, 
+class CategoryFilterInTreeModeTest(CategoryFilterFixtureAndCommonTestsMixin, 
                                    test.TestCase):
     treeMode = True
     
@@ -517,15 +575,15 @@ class CategoryFilterInTreeModeTest(CategoryFilterFixtureAndCommonTests,
         self.parentCategory.setFiltered()
         self.childCategory.setFiltered()
         self.assertEqual(2, len(self.filter))
-
+        
                 
-class OriginalLengthTest(test.TestCase, CategoryFilterHelpers):
+class OriginalLengthTest(test.TestCase, CategoryFilterHelpersMixin):
     def setUp(self):
         self.list = task.TaskList()
         self.settings = config.Settings(load=False)
         self.categories = category.CategoryList()
         self.filter = category.filter.CategoryFilter(self.list,
-            categories=self.categories, settings=self.settings)
+            categories=self.categories)
         
     def testEmptyList(self):
         self.assertEqual(0, self.filter.originalLength())
@@ -602,3 +660,56 @@ class SelectedItemsFilterTest(test.TestCase):
         self.list.append(otherTask)
         self.list.remove(self.task)
         self.assertEqual([otherTask], list(self.filter))
+
+
+class CategoryFilterAndViewFilterFixtureAndCommonTestsMixin(CategoryFilterHelpersMixin):
+    def setUp(self):
+        task.Task.settings = config.Settings(load=False)
+        self.parent = task.Task('parent task')
+        self.parent.setShouldMarkCompletedWhenAllChildrenCompleted(False)
+        self.child = task.Task('child task')
+        self.child.setCompletionDateTime()
+        self.childCategory = category.Category('child category')
+        self.childCategory.addCategorizable(self.child)
+        self.parent.addChild(self.child)
+        self.list = task.TaskList([self.parent, self.child])
+        self.categories = category.CategoryList([self.childCategory])
+        self.viewFilter = task.filter.ViewFilter(self.list, treeMode=self.treeMode) 
+        self.categoryFilter = category.filter.CategoryFilter(self.viewFilter, 
+            categories=self.categories, treeMode=self.treeMode)
+
+    def testThatParentIsHiddenWhenHiddenCompletedChildIsFiltered(self):
+        self.viewFilter.hideCompletedTasks(True)
+        self.assertEqual(1, len(self.viewFilter))
+        self.childCategory.setFiltered(True)
+        self.assertEqual(0, len(self.categoryFilter))
+        
+    def testThatParentIsShownWhenHiddenCompletedChildIsUnfiltered(self):
+        self.viewFilter.hideCompletedTasks(True)
+        self.childCategory.setFiltered(True)
+        self.assertEqual(0, len(self.categoryFilter))
+        self.childCategory.setFiltered(False)
+        self.assertEqual(1, len(self.categoryFilter))
+        
+    def testThatParentIsHiddenWhenFilteredCompletedChildIsHidden(self):
+        self.childCategory.setFiltered(True)
+        self.assertEqual(2, len(self.viewFilter))
+        self.viewFilter.hideCompletedTasks(True)
+        self.assertEqual(0, len(self.categoryFilter))        
+        
+    def testThatParentIsShownWhenFilteredCompletedChildIsUnhidden(self):
+        self.childCategory.setFiltered(True)
+        self.viewFilter.hideCompletedTasks(True)
+        self.assertEqual(0, len(self.categoryFilter))
+        self.viewFilter.hideCompletedTasks(False)
+        self.assertEqual(2 if self.treeMode else 1, len(self.categoryFilter))
+
+
+class CategoryFilterAndViewFilterInListModeTest(CategoryFilterAndViewFilterFixtureAndCommonTestsMixin, 
+                                                test.TestCase):
+    treeMode = False   
+
+
+class CategoryFilterAndViewFilterInTreeModeTest(CategoryFilterAndViewFilterFixtureAndCommonTestsMixin, 
+                                                test.TestCase):
+    treeMode = True

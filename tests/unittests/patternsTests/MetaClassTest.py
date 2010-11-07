@@ -20,7 +20,7 @@ import test
 from taskcoachlib import patterns
 
 
-class Numbered:
+class Numbered(object):
     __metaclass__ = patterns.NumberedInstances
     
     def __init__(self, instanceNumber=-1):
@@ -37,16 +37,39 @@ class NumberedInstancesTestsMixin(object):
         as metaclass. '''
         
     def testCounterIncreasesAfterEachInstantation(self):
+        instances = []
         for count in range(3):
-            self.assertEqual(count, 
-                patterns.NumberedInstances.count.get(self.classUnderTest, 0))
-            self.classUnderTest()
+            instance = self.classUnderTest()
+            self.assertEqual(count, instance.instanceNumber)
+            instances.append(instance)
         
-    def testInstanceNumberIsSet(self):
-        for count in range(3):
-            self.assertEqual(count, self.classUnderTest().instanceNumber)
-
-
+    def testInstanceNumbersAreReusedWhenFreed(self):
+        instance1 = self.classUnderTest()
+        del instance1
+        instance2 = self.classUnderTest()
+        self.assertEqual(0, instance2.instanceNumber)
+        
+    def testInstanceNumbersAreTheLowestFreeNumber(self):
+        instance1 = self.classUnderTest()
+        instance2 = self.classUnderTest()
+        instance2Number = instance2.instanceNumber
+        del instance2
+        instance3 = self.classUnderTest()
+        self.assertEqual(instance3.instanceNumber, instance2Number)
+        
+    def testInstanceNumbersFillTheGap(self):
+        instances = []
+        for count in range(10):
+            instances.append(self.classUnderTest())
+        del instances[4:6]
+        instance4 = self.classUnderTest()
+        self.assertEqual(4, instance4.instanceNumber)
+        instance5 = self.classUnderTest()
+        self.assertEqual(5, instance5.instanceNumber)
+        instance10 = self.classUnderTest()
+        self.assertEqual(10, instance10.instanceNumber)
+        
+        
 class NumberedInstancesTest(NumberedInstancesTestsMixin, 
                             test.TestCase):
     classUnderTest = Numbered
@@ -57,7 +80,9 @@ class SubclassOfNumberedInstancesTest(NumberedInstancesTestsMixin,
     classUnderTest = SubclassOfNumbered
 
     def testSubclassInstancesHaveTheirOwnNumbers(self):
-        SubclassOfNumbered()
-        self.assertEqual(0, patterns.NumberedInstances.count.get(Numbered, 0))
+        numberedInstance = Numbered()
+        subclassOfNumberedInstance = SubclassOfNumbered()
+        self.assertEqual(0, numberedInstance.instanceNumber)
+        self.assertEqual(0, subclassOfNumberedInstance.instanceNumber)
 
 

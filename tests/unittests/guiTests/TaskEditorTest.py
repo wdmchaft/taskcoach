@@ -196,8 +196,9 @@ class NewTaskTest(TaskEditorTestCase):
             self.errorMessage = args[0]
         att = attachment.FileAttachment(u'tÃƒÂ©st.ÃƒÂ©')
         openAttachment = uicommand.AttachmentOpen(\
-            viewer=self.editor._interior[5].viewer,
-            attachments=attachment.AttachmentList([att]))
+            viewer=self.editor._interior[6].viewer,
+            attachments=attachment.AttachmentList([att]),
+            settings=self.settings)
         openAttachment.doCommand(None, showerror=onError)
         if '__WXMSW__' in wx.PlatformInfo: # pragma: no cover
             if sys.version_info < (2,5):
@@ -213,7 +214,7 @@ class NewTaskTest(TaskEditorTestCase):
         self.failUnless(self.errorMessage.startswith(errorMessageStart))
 
     def testAddNote(self):
-        self.editor._interior[6].notes.append(note.Note(subject='New note'))
+        self.editor._interior[7].notes.append(note.Note(subject='New note'))
         self.editor.ok()
         self.assertEqual(1, len(self.task.notes()))
         
@@ -222,7 +223,7 @@ class NewTaskTest(TaskEditorTestCase):
         child = note.Note(subject='Child')
         parent.addChild(child)
         child.setParent(parent)
-        self.editor._interior[6].notes.extend([parent, child])
+        self.editor._interior[7].notes.extend([parent, child])
         self.editor.ok()
         # Only the parent note should be added to the notes list:
         self.assertEqual(1, len(self.task.notes())) 
@@ -309,30 +310,30 @@ class EditTaskTest(TaskEditorTestCase):
         self.assertEqual(-1, self.task.priority())
         
     def testSetHourlyFee(self):
-        self.editor._interior[4]._hourlyFeeEntry.set(100)
+        self.editor._interior[5]._hourlyFeeEntry.set(100)
         self.editor.ok()
         self.assertEqual(100, self.task.hourlyFee())
 
     def testSetFixedFee(self):
-        self.editor._interior[4]._fixedFeeEntry.set(100.5)
+        self.editor._interior[5]._fixedFeeEntry.set(100.5)
         self.editor.ok()
         self.assertEqual(100.5, self.task.fixedFee())
 
     def testBehaviorMarkCompleted(self):
-        self.editor._interior[2]._markTaskCompletedEntry.SetStringSelection('Yes')
+        self.editor._interior[3]._markTaskCompletedEntry.SetStringSelection('Yes')
         self.editor.ok()
         self.assertEqual(True, 
                          self.task.shouldMarkCompletedWhenAllChildrenCompleted())
 
     def testAddAttachment(self):
-        self.editor._interior[7].viewer.onDropFiles(None, ['filename'])
+        self.editor._interior[8].viewer.onDropFiles(None, ['filename'])
         self.editor.ok()
         # pylint: disable-msg=E1101
         self.failUnless('filename' in [att.location() for att in self.task.attachments()])
         self.failUnless('filename' in [att.subject() for att in self.task.attachments()])
         
     def testRemoveAttachment(self):
-        self.editor._interior[7].viewer.presentation().removeItems([self.attachment])
+        self.editor._interior[8].viewer.presentation().removeItems([self.attachment])
         self.editor.ok()
         self.assertEqual([], self.task.attachments()) # pylint: disable-msg=E1101
 
@@ -385,7 +386,7 @@ class EditTaskWithEffortTest(TaskEditorTestCase):
         return [self.task]
     
     def testEffortIsShown(self):
-        self.assertEqual(1, self.editor._interior[5].viewer.widget.GetItemCount())
+        self.assertEqual(1, self.editor._interior[6].viewer.widget.GetItemCount())
                           
     def testCancel(self):
         self.editor.cancel()

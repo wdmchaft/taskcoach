@@ -55,7 +55,7 @@ class CSVWriterTestCase(test.wxTestCase):
         self.failIf(csvFragment in csv, '%s in %s'%(csvFragment, csv))
 
     def selectItem(self, items):
-        self.viewer.widget.select(items)
+        self.viewer.select(items)
 
 
 class TaskTestsMixin(object):
@@ -68,6 +68,7 @@ class TaskTestsMixin(object):
     def testWriteSelectionOnly_SelectedChild(self):
         child = task.Task('Child', parent=self.task)
         self.taskFile.tasks().append(child)
+        self.viewer.expandAll()
         self.selectItem([child])
         self.expectInCSV('Child,', selectionOnly=True)
 
@@ -124,6 +125,6 @@ class EffortWriterTest(CSVWriterTestCase):
 
     def testEffortPerDay_SelectionOnly_SelectAll(self):
         self.viewer.showEffortAggregation('day')
-        self.viewer.selectall()
+        self.viewer.widget.selectall()
         self.expectInCSV('Total', selectionOnly=True)
         

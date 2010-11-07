@@ -85,8 +85,8 @@ th {
       text-align: center;
    }
 
-   If the exported HTML file contains tasks it possible to change the color of 
-   completed (or overdue, duesoon, inactive, active) tasks like this:
+   If the exported HTML file contains tasks it is possible to change the color 
+   of completed (or overdue, duesoon, inactive, active) tasks like this:
    
    .completed {
        color: red;

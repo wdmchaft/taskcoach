@@ -225,6 +225,19 @@ class Object(SynchronizedObject):
     def subjectChangedEventType(class_):
         return '%s.subject'%class_
     
+    @staticmethod
+    def subjectSortFunction(**kwargs):
+        ''' Function to pass to list.sort when sorting by subject. '''
+        if kwargs.get('sortCaseSensitive', False):
+            return lambda item: item.subject()
+        else:
+            return lambda item: item.subject().lower()
+        
+    @classmethod
+    def subjectSortEventTypes(class_):
+        ''' The event types that influence the subject sort order. '''
+        return (class_.subjectChangedEventType(),)
+    
     # Description:
     
     def description(self):
@@ -240,6 +253,19 @@ class Object(SynchronizedObject):
     @classmethod    
     def descriptionChangedEventType(class_):
         return '%s.description'%class_
+
+    @staticmethod
+    def descriptionSortFunction(**kwargs):
+        ''' Function to pass to list.sort when sorting by description. '''
+        if kwargs.get('sortCaseSensitive', False):
+            return lambda item: item.description()
+        else:
+            return lambda item: item.description().lower()
+    
+    @classmethod
+    def descriptionSortEventTypes(class_):
+        ''' The event types that influence the description sort order. '''
+        return (class_.descriptionChangedEventType(),)
     
     # Color:
     
@@ -360,6 +386,20 @@ class CompositeObject(Object, patterns.ObservableComposite):
         if recursive and self.parent():
             subject = u'%s -> %s'%(self.parent().subject(recursive=True), subject)
         return subject
+
+    def subjectChangedEvent(self, event):
+        super(CompositeObject, self).subjectChangedEvent(event)
+        for child in self.children():
+            child.subjectChangedEvent(event)
+
+    @staticmethod
+    def subjectSortFunction(**kwargs):
+        ''' Function to pass to list.sort when sorting by subject. '''
+        recursive = kwargs.get('treeMode', False)
+        if kwargs.get('sortCaseSensitive', False):
+            return lambda item: item.subject(recursive=recursive)
+        else:
+            return lambda item: item.subject(recursive=recursive).lower()
         
     # Description:
         
