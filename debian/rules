@@ -11,7 +11,7 @@ override_dh_auto_install:
          $(TMP)/usr/share/pyshared/taskcoachlib/thirdparty/aui/* \
          $(TMP)/usr/share/pyshared/taskcoachlib/thirdparty/chardet \
          $(TMP)/usr/share/pyshared/taskcoachlib/thirdparty/chardet \
-         $(TMP)/usr/share/pyshared/taskcoachlib/thirdparty/lockfile \
+         $(TMP)/usr/share/pyshared/taskcoachlib/thirdparty/lockfile/lockfile.py \
          $(TMP)/usr/share/pyshared/taskcoachlib/thirdparty/wmi.py \
          $(TMP)/usr/share/pyshared/taskcoachlib/thirdparty/sized_controls.py \
          $(TMP)/usr/share/pyshared/taskcoachlib/thirdparty/hypertreelist.py \
