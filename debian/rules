@@ -8,11 +8,19 @@ TMP     = $(CURDIR)/debian/$(PACKAGE)
 override_dh_auto_install:
 	dh_auto_install
 	rm -rf $(TMP)/usr/bin/taskcoach.pyw \
-          $(TMP)/usr/share/pyshared/taskcoachlib/thirdparty/aui \
-          $(TMP)/usr/share/pyshared/taskcoachlib/thirdparty/chardet \
-          $(TMP)/usr/share/pyshared/taskcoachlib/thirdparty/lockfile/lockfile.py \
-          $(TMP)/usr/share/pyshared/taskcoachlib/thirdparty/wmi.py \
-          $(TMP)/usr/share/pyshared/taskcoachlib/thirdparty/sized_controls.py \
-          $(TMP)/usr/share/pyshared/taskcoachlib/thirdparty/hypertreelist.py \
-          $(TMP)/usr/share/pyshared/taskcoachlib/thirdparty/customtreectrl.py
+          $(TMP)/usr/lib/python2.6/dist-packages/taskcoachlib/thirdparty/aui \
+          $(TMP)/usr/lib/python2.6/dist-packages/taskcoachlib/thirdparty/chardet \
+          $(TMP)/usr/lib/python2.6/dist-packages/taskcoachlib/thirdparty/lockfile/lockfile.py \
+          $(TMP)/usr/lib/python2.6/dist-packages/taskcoachlib/thirdparty/wmi.py \
+          $(TMP)/usr/lib/python2.6/dist-packages/thirdparty/sized_controls.py \
+          $(TMP)/usr/lib/python2.6/dist-packages/thirdparty/hypertreelist.py \
+          $(TMP)/usr/lib/python2.6/dist-packages/taskcoachlib/thirdparty/customtreectrl.py
+         
+          #$(TMP)/usr/share/pyshared/taskcoachlib/thirdparty/aui \
+          #$(TMP)/usr/share/pyshared/taskcoachlib/thirdparty/chardet \
+          #$(TMP)/usr/share/pyshared/taskcoachlib/thirdparty/lockfile/lockfile.py \
+          #$(TMP)/usr/share/pyshared/taskcoachlib/thirdparty/wmi.py \
+          #$(TMP)/usr/share/pyshared/taskcoachlib/thirdparty/sized_controls.py \
+          #$(TMP)/usr/share/pyshared/taskcoachlib/thirdparty/hypertreelist.py \
+          #$(TMP)/usr/share/pyshared/taskcoachlib/thirdparty/customtreectrl.py
 	mv $(TMP)/usr/bin/taskcoach.py $(TMP)/usr/bin/taskcoach
