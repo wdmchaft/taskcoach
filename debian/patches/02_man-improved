@@ -3,15 +3,7 @@ Forwarded: not-needed
 Author: Benoît Knecht <benoit.knecht@fsfe.org>
 --- a/debian/taskcoach.1
 +++ b/debian/taskcoach.1
-@@ -1,7 +1,4 @@
- .\"                                      Hey, EMACS: -*- nroff -*-
--.\" First parameter, NAME, should be all caps
--.\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
--.\" other parameters are allowed: see man(7), man(1)
- .TH TASKCOACH 1 "December 25, 2008"
- .SH NAME
- taskcoach \- friendly and simple task manager
-@@ -17,7 +14,7 @@ such as those provided with Outlook or Lotus Notes, do not provide
+@@ -17,7 +17,7 @@
  facilities for composite tasks.
  .SH OPTIONS
  The application follows the usual GNU command line syntax, with long
@@ -20,7 +12,7 @@ Author: Benoît Knecht <benoit.knecht@fsfe.org>
  A summary of options is included below.
  .TP
  .B \-h, \-\-help
-@@ -26,14 +23,20 @@ Show summary of options.
+@@ -26,14 +26,20 @@
  .B \-v, \-\-version
  Show version of program.
  .TP
