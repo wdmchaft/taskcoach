@@ -1,6 +1,6 @@
-usr/share/pyshared/psutil/wmi.py usr/share/pyshared/taskcoachlib/thirdparty/wmi.py
-#usr/share/pyshared/chardet usr/share/pyshared/taskcoachlib/thirdparty/charde
-usr/share/pyshared/lockfile.py usr/share/pyshared/taskcoachlib/thirdparty/lockfile/lockfile.py
-usr/lib/python2.6/dist-packages/wx-2.8-gtk2-unicode/wx/lib/agw/customtreectrl.py usr/share/pyshared/taskcoachlib/thirdparty/customtreectrl.py
-usr/lib/python2.6/dist-packages/wx-2.8-gtk2-unicode/wx/lib/agw/hypertreelist.py usr/share/pyshared/taskcoachlib/thirdparty/hypertreelist.py
-usr/lib/python2.6/dist-packages/wx-2.8-gtk2-unicode/wx/lib/sized_controls.py usr/share/pyshared/taskcoachlib/thirdparty/sized_controls.py
+/usr/share/pyshared/psutil/wmi.py usr/share/pyshared/taskcoachlib/thirdparty/wmi.py
+#/usr/share/pyshared/chardet usr/share/pyshared/taskcoachlib/thirdparty/charde
+/usr/share/pyshared/lockfile.py usr/share/pyshared/taskcoachlib/thirdparty/lockfile/lockfile.py
+/usr/lib/python2.6/dist-packages/wx-2.8-gtk2-unicode/wx/lib/agw/customtreectrl.py usr/share/pyshared/taskcoachlib/thirdparty/customtreectrl.py
+/usr/lib/python2.6/dist-packages/wx-2.8-gtk2-unicode/wx/lib/agw/hypertreelist.py usr/share/pyshared/taskcoachlib/thirdparty/hypertreelist.py
+/usr/lib/python2.6/dist-packages/wx-2.8-gtk2-unicode/wx/lib/sized_controls.py usr/share/pyshared/taskcoachlib/thirdparty/sized_controls.py
