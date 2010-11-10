@@ -7,5 +7,5 @@ usr/lib/python2.6/dist-packages/wx-2.8-gtk2-unicode/wx/lib/agw/hypertreelist.py 
                     usr/share/pyshared/taskcoachlib/thirdparty/hypertreelist.py
 usr/lib/python2.6/dist-packages/wx-2.8-gtk2-unicode/wx/lib/sized_controls.py \
                 usr/share/pyshared/taskcoachlib/thirdparty/sized_controls.py
-usr/lib/python2.6/dist-packages/wx-2.8-gtk2-unicode/wx/lib/agw/aui \
-                usr/share/pyshared/taskcoachlib/thirdparty/aui
+#usr/lib/python2.6/dist-packages/wx-2.8-gtk2-unicode/wx/lib/agw/aui \
+#                usr/share/pyshared/taskcoachlib/thirdparty/aui
