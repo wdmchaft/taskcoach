@@ -1,0 +1,49 @@
+Description: Improve manual page
+Forwarded: not-needed
+Author: Benoît Knecht <benoit.knecht@fsfe.org>
+--- a/debian/taskcoach.1
++++ b/debian/taskcoach.1
+@@ -1,7 +1,4 @@
+ .\"                                      Hey, EMACS: -*- nroff -*-
+-.\" First parameter, NAME, should be all caps
+-.\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
+-.\" other parameters are allowed: see man(7), man(1)
+ .TH TASKCOACH 1 "December 25, 2008"
+ .SH NAME
+ taskcoach \- friendly and simple task manager
+@@ -17,7 +14,7 @@ such as those provided with Outlook or Lotus Notes, do not provide
+ facilities for composite tasks.
+ .SH OPTIONS
+ The application follows the usual GNU command line syntax, with long
+-options starting with two dashes (`-').
++options starting with two dashes (`\-').
+ A summary of options is included below.
+ .TP
+ .B \-h, \-\-help
+@@ -26,14 +23,20 @@ Show summary of options.
+ .B \-v, \-\-version
+ Show version of program.
+ .TP
+-.B \-i INIFILE, \-\-ini=INIFILE
+-use the specified INIFILE for storing settings
++.BI \-i\  INIFILE ,\ \-\-ini= INIFILE
++Use the specified
++.I INIFILE
++for storing settings.
+ .TP
+-.B \-l LANGUAGE, \-\-language=LANGUAGE
+-use the specified LANGUAGE for the GUI (e.g. "nl" or "fr")
++.BI \-l\  LANGUAGE ,\ \-\-language= LANGUAGE
++Use the specified
++.I LANGUAGE
++for the GUI (e.g. "nl" or "fr").
+ .TP
+-.B \-p POFILE, \-\-po=POFILE
+-use the specified POFILE for translation of the GUI
++.BI \-p\  POFILE ,\ \-\-po= POFILE
++Use the specified
++.I POFILE
++for translation of the GUI.
+ .SH SEE ALSO
+ Official web page: www.taskcoach.org
+ .SH AUTHOR
