@@ -4,6 +4,7 @@ taskcoach (1.2.2-1) unstable; urgency=low
   * Thanks to Raphael Hertzog, Benoît Knecht and gregor herrmann by their help
   * Was applied the 01_fix-desktop-file patch to fix binary entry in desktop
     file. 
+  * Improve manual page (Thanks Benoît Knecht)
 
  -- Alejandro Garrido Mota <garridomota@gmail.com>  Fri, 03 Sep 2010 01:27:11 -0430
 
